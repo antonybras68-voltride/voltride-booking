@@ -1,0 +1,259 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Brand {
+  VOLTRIDE
+  MOTORRENT
+}
+
+enum Language {
+  FR
+  ES
+  EN
+}
+
+enum PaymentType {
+  DEPOSIT_50
+  FULL_PAYMENT
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum DepositStatus {
+  PENDING
+  HELD
+  RELEASED
+  CAPTURED
+}
+
+model Agency {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  name         Json
+  address      String
+  city         String
+  postalCode   String   @map("postal_code")
+  country      String   @default("ES")
+  phone        String?
+  email        String?
+  brand        Brand
+  openingHours Json     @map("opening_hours")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  inventory    AgencyInventory[]
+  bookings     Booking[]
+
+  @@map("agencies")
+}
+
+model VehicleCategory {
+  id                String   @id @default(uuid())
+  slug              String   @unique
+  name              Json
+  description       Json?
+  licenseRequired   String?  @map("license_required")
+  documentsRequired Json     @map("documents_required")
+  allowMultiple     Boolean  @default(true) @map("allow_multiple")
+  brand             Brand
+  sortOrder         Int      @default(0) @map("sort_order")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  vehicles          Vehicle[]
+
+  @@map("vehicle_categories")
+}
+
+model Vehicle {
+  id          String   @id @default(uuid())
+  categoryId  String   @map("category_id")
+  name        Json
+  description Json?
+  imageUrl    String?  @map("image_url")
+  deposit     Decimal  @db.Decimal(10, 2)
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  category      VehicleCategory   @relation(fields: [categoryId], references: [id])
+  pricing       VehiclePricing?
+  inventory     AgencyInventory[]
+  options       VehicleOption[]
+  bookingItems  BookingItem[]
+
+  @@map("vehicles")
+}
+
+model VehiclePricing {
+  id            String   @id @default(uuid())
+  vehicleId     String   @unique @map("vehicle_id")
+  day1          Decimal  @map("day_1") @db.Decimal(10, 2)
+  day2          Decimal  @map("day_2") @db.Decimal(10, 2)
+  day3          Decimal  @map("day_3") @db.Decimal(10, 2)
+  day4          Decimal  @map("day_4") @db.Decimal(10, 2)
+  day5          Decimal  @map("day_5") @db.Decimal(10, 2)
+  day6          Decimal  @map("day_6") @db.Decimal(10, 2)
+  day7          Decimal  @map("day_7") @db.Decimal(10, 2)
+  day8          Decimal  @map("day_8") @db.Decimal(10, 2)
+  day9          Decimal  @map("day_9") @db.Decimal(10, 2)
+  day10         Decimal  @map("day_10") @db.Decimal(10, 2)
+  day11         Decimal  @map("day_11") @db.Decimal(10, 2)
+  day12         Decimal  @map("day_12") @db.Decimal(10, 2)
+  day13         Decimal  @map("day_13") @db.Decimal(10, 2)
+  day14         Decimal  @map("day_14") @db.Decimal(10, 2)
+  extraDayPrice Decimal  @map("extra_day_price") @db.Decimal(10, 2)
+  extraHour1    Decimal  @map("extra_hour_1") @db.Decimal(10, 2)
+  extraHour2    Decimal  @map("extra_hour_2") @db.Decimal(10, 2)
+  extraHour3    Decimal  @map("extra_hour_3") @db.Decimal(10, 2)
+  extraHour4    Decimal  @map("extra_hour_4") @db.Decimal(10, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("vehicle_pricing")
+}
+
+model AgencyInventory {
+  id        String   @id @default(uuid())
+  agencyId  String   @map("agency_id")
+  vehicleId String   @map("vehicle_id")
+  quantity  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([agencyId, vehicleId])
+  @@map("agency_inventory")
+}
+
+model Option {
+  id          String   @id @default(uuid())
+  name        Json
+  description Json?
+  pricePerDay Decimal? @map("price_per_day") @db.Decimal(10, 2)
+  priceFlat   Decimal? @map("price_flat") @db.Decimal(10, 2)
+  maxQuantity Int      @default(10) @map("max_quantity")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  vehicles       VehicleOption[]
+  bookingOptions BookingOption[]
+
+  @@map("options")
+}
+
+model VehicleOption {
+  vehicleId String   @map("vehicle_id")
+  optionId  String   @map("option_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  option    Option   @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@id([vehicleId, optionId])
+  @@map("vehicle_options")
+}
+
+model Customer {
+  id                String   @id @default(uuid())
+  email             String   @unique
+  firstName         String   @map("first_name")
+  lastName          String   @map("last_name")
+  phone             String
+  address           String
+  postalCode        String   @map("postal_code")
+  city              String
+  country           String
+  preferredLanguage Language @default(FR) @map("preferred_language")
+  stripeCustomerId  String?  @unique @map("stripe_customer_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  bookings          Booking[]
+
+  @@map("customers")
+}
+
+model Booking {
+  id               String        @id @default(uuid())
+  reference        String        @unique
+  customerId       String        @map("customer_id")
+  agencyId         String        @map("agency_id")
+  startDate        DateTime      @map("start_date")
+  endDate          DateTime      @map("end_date")
+  durationDays     Int           @map("duration_days")
+  extraHours       Int           @default(0) @map("extra_hours")
+  subtotal         Decimal       @db.Decimal(10, 2)
+  depositTotal     Decimal       @map("deposit_total") @db.Decimal(10, 2)
+  totalAmount      Decimal       @map("total_amount") @db.Decimal(10, 2)
+  paymentType      PaymentType   @map("payment_type")
+  amountPaid       Decimal       @map("amount_paid") @db.Decimal(10, 2)
+  amountRemaining  Decimal       @map("amount_remaining") @db.Decimal(10, 2)
+  status           BookingStatus @default(PENDING)
+  depositStatus    DepositStatus @default(PENDING) @map("deposit_status")
+  stripePaymentId  String?       @map("stripe_payment_id")
+  stripeDepositId  String?       @map("stripe_deposit_id")
+  notes            String?
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  customer         Customer      @relation(fields: [customerId], references: [id])
+  agency           Agency        @relation(fields: [agencyId], references: [id])
+  items            BookingItem[]
+
+  @@map("bookings")
+}
+
+model BookingItem {
+  id              String   @id @default(uuid())
+  bookingId       String   @map("booking_id")
+  vehicleId       String   @map("vehicle_id")
+  quantity        Int      @default(1)
+  unitPrice       Decimal  @map("unit_price") @db.Decimal(10, 2)
+  extraHoursPrice Decimal  @default(0) @map("extra_hours_price") @db.Decimal(10, 2)
+  totalPrice      Decimal  @map("total_price") @db.Decimal(10, 2)
+  depositAmount   Decimal  @map("deposit_amount") @db.Decimal(10, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  booking         Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  vehicle         Vehicle        @relation(fields: [vehicleId], references: [id])
+  options         BookingOption[]
+
+  @@map("booking_items")
+}
+
+model BookingOption {
+  id            String      @id @default(uuid())
+  bookingItemId String      @map("booking_item_id")
+  optionId      String      @map("option_id")
+  quantity      Int         @default(1)
+  unitPrice     Decimal     @map("unit_price") @db.Decimal(10, 2)
+  totalPrice    Decimal     @map("total_price") @db.Decimal(10, 2)
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  bookingItem   BookingItem @relation(fields: [bookingItemId], references: [id], onDelete: Cascade)
+  option        Option      @relation(fields: [optionId], references: [id])
+
+  @@map("booking_options")
+}

@@ -125,11 +125,9 @@ function App() {
     const pricing = vehicle.pricing?.[0]
     if (!pricing) return 0
     let total = 0
-    for (let i = 1; i <= Math.min(days, 14); i++) {
-      const key = 'day' + i
-      total += Number(pricing[key]) || 0
-    }
-    if (days > 14) total += (days - 14) * (Number(pricing.day14) || 0)
+    const dayKey = 'day' + Math.min(days, 14)
+    total = Number(pricing[dayKey]) || 0
+    if (days > 14) total += (days - 14) * (Number(pricing.day14) || 0) / 14
     for (let i = 1; i <= Math.min(extraHours, 4); i++) {
       const key = 'extraHour' + i
       total += Number(pricing[key]) || 0

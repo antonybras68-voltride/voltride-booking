@@ -4,7 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-produc
 
 type Tab = 'dashboard' | 'bookings' | 'vehicles' | 'inventory' | 'agencies' | 'customers' | 'categories' | 'options'
 
-interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; isActive: boolean }
+interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartMonth: number; summerEndMonth: number; isActive: boolean }
 interface Category { id: string; code: string; name: any; brand: string; bookingFee: number; _count?: { vehicles: number }; options?: any[] }
 interface Vehicle { id: string; sku: string; name: any; description: any; deposit: number; hasPlate: boolean; imageUrl?: string; categoryId: string; category?: Category; pricing: any[]; inventory: any[] }
 interface Option { id: string; code: string; name: any; maxQuantity: number; includedByDefault: boolean; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
@@ -301,7 +301,7 @@ function App() {
 }
 
 function AgencyModal({ agency, onSave, onClose }: { agency: any; onSave: (data: any) => void; onClose: () => void }) {
-  const [form, setForm] = useState({ code: agency?.code || '', nameFr: agency?.name?.fr || '', nameEs: agency?.name?.es || '', nameEn: agency?.name?.en || '', address: agency?.address || '', city: agency?.city || '', postalCode: agency?.postalCode || '', country: agency?.country || 'ES', phone: agency?.phone || '', email: agency?.email || '', brand: agency?.brand || 'VOLTRIDE', openingTime: agency?.openingTime || '10:00', closingTimeSummer: agency?.closingTimeSummer || '19:00', closingTimeWinter: agency?.closingTimeWinter || '16:00', isActive: agency?.isActive ?? true })
+  const [form, setForm] = useState({ code: agency?.code || '', nameFr: agency?.name?.fr || '', nameEs: agency?.name?.es || '', nameEn: agency?.name?.en || '', address: agency?.address || '', city: agency?.city || '', postalCode: agency?.postalCode || '', country: agency?.country || 'ES', phone: agency?.phone || '', email: agency?.email || '', brand: agency?.brand || 'VOLTRIDE', openingTime: agency?.openingTime || '10:00', closingTimeSummer: agency?.closingTimeSummer || '19:00', closingTimeWinter: agency?.closingTimeWinter || '16:00', summerStartMonth: agency?.summerStartMonth || 4, summerEndMonth: agency?.summerEndMonth || 9, isActive: agency?.isActive ?? true })
   const handleSubmit = () => onSave({ ...form, name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn } })
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -337,6 +337,42 @@ function AgencyModal({ agency, onSave, onClose }: { agency: any; onSave: (data: 
             <div>
               <label className="block text-xs text-gray-500 mb-1">Fermeture hiver</label>
               <input type="time" value={form.closingTimeWinter} onChange={e => setForm({ ...form, closingTimeWinter: e.target.value })} className="w-full p-2 border rounded" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Début été (mois)</label>
+              <select value={form.summerStartMonth} onChange={e => setForm({ ...form, summerStartMonth: parseInt(e.target.value) })} className="w-full p-2 border rounded">
+                <option value={1}>Janvier</option>
+                <option value={2}>Février</option>
+                <option value={3}>Mars</option>
+                <option value={4}>Avril</option>
+                <option value={5}>Mai</option>
+                <option value={6}>Juin</option>
+                <option value={7}>Juillet</option>
+                <option value={8}>Août</option>
+                <option value={9}>Septembre</option>
+                <option value={10}>Octobre</option>
+                <option value={11}>Novembre</option>
+                <option value={12}>Décembre</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Fin été (mois)</label>
+              <select value={form.summerEndMonth} onChange={e => setForm({ ...form, summerEndMonth: parseInt(e.target.value) })} className="w-full p-2 border rounded">
+                <option value={1}>Janvier</option>
+                <option value={2}>Février</option>
+                <option value={3}>Mars</option>
+                <option value={4}>Avril</option>
+                <option value={5}>Mai</option>
+                <option value={6}>Juin</option>
+                <option value={7}>Juillet</option>
+                <option value={8}>Août</option>
+                <option value={9}>Septembre</option>
+                <option value={10}>Octobre</option>
+                <option value={11}>Novembre</option>
+                <option value={12}>Décembre</option>
+              </select>
             </div>
           </div>
         </div>

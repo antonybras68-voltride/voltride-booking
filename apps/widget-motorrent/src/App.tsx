@@ -288,9 +288,10 @@ function App() {
     setProcessing(false)
   }
 
-  const stepIndex = ['dates', 'vehicles', 'options', 'customer', 'payment'].indexOf(step)
-  const daysText = calculateDays() + ' ' + t.days
-  const extraHoursText = calculateExtraHours() > 0 ? ' + ' + calculateExtraHours() + ' ' + t.hours : ''
+  const days = calculateDays()
+  const daysText = days > 0 ? days + ' ' + t.days : ''
+  const extraHours = calculateExtraHours()
+  const extraHoursText = extraHours > 0 ? (days > 0 ? ' + ' : '') + extraHours + ' ' + t.hours : ''
   const filteredOptions = getFilteredOptions()
 
   if (loading) return (

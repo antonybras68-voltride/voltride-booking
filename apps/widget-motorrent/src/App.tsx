@@ -116,15 +116,16 @@ function App() {
   const calculateDays = (): number => {
     if (!startDate || !endDate) return 0
     const totalHours = calculateTotalHours()
-    return Math.floor(totalHours / 24)
+    const baseDays = Math.floor(totalHours / 24)
+    const remainingHours = totalHours % 24
+    return remainingHours > 4 ? baseDays + 1 : baseDays
   }
-  
+
   const calculateExtraHours = (): number => {
-    if (!startTime || !endTime) return 0
-    const [sH, sM] = startTime.split(':').map(Number)
-    const [eH, eM] = endTime.split(':').map(Number)
-    const diff = (eH * 60 + eM) - (sH * 60 + sM)
-    return diff > 0 ? Math.ceil(diff / 60) : 0
+    if (!startDate || !endDate) return 0
+    const totalHours = calculateTotalHours()
+    const remainingHours = totalHours % 24
+    return remainingHours > 4 ? 0 : Math.ceil(remainingHours)
   }
 
   const isMinimum24h = (): boolean => calculateTotalHours() >= 24

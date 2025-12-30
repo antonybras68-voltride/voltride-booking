@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'MOTOR-RENT'
 
-interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string }
+interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string }
 interface Category { id: string; name: { fr: string; es: string; en: string }; brand: string; bookingFee: number }
 interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; imageUrl?: string; category: Category; pricing: any[]; inventory: any[] }
 interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; maxQuantity: number; includedByDefault: boolean; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
@@ -17,16 +17,17 @@ const translations = {
   en: { title: 'Scooter & Motorcycle Rental', selectAgency: 'Agency', selectDates: 'Select your dates', pickupDate: 'Pickup date', returnDate: 'Return date', pickupTime: 'Pickup time', returnTime: 'Return time', continue: 'Continue', back: 'Back', selectVehicles: 'Choose your vehicles', quantity: 'Quantity', available: 'available', deposit: 'Deposit', perDay: '/day', options: 'Options & Accessories', yourInfo: 'Your information', firstName: 'First name', lastName: 'Last name', email: 'Email', phone: 'Phone', address: 'Address', postalCode: 'Postal code', city: 'City', country: 'Country', payment: 'Payment', summary: 'Summary', total: 'Total', depositToPay: 'Deposit to pay', payNow: 'Pay now', confirmation: 'Booking confirmed!', bookingRef: 'Reference', emailSent: 'A confirmation email has been sent.', requiredDocs: 'Required documents', docId: 'ID card or passport', docLicense: 'AM/A1/A2/B license depending on vehicle', securityDeposit: 'Security deposit payable on site', cashOrCard: 'Cash or credit card (no debit cards)', days: 'day(s)', hours: 'extra hour(s)', noVehicles: 'No vehicles available for this agency', processing: 'Processing...', licensePlateWarning: 'Licensed vehicle - only 1 per booking', fixedDeposit: 'Fixed deposit per category', included: 'Included', free: 'Free' }
 }
 
-const getTimeSlots = (dateStr: string): string[] => {
+const getTimeSlots = (dateStr: string, openingTime: string, closingTimeSummer: string, closingTimeWinter: string): string[] => {
   const date = dateStr ? new Date(dateStr) : new Date()
   const month = date.getMonth()
   const isSummer = month >= 3 && month <= 8
-  const endHour = isSummer ? 19 : 16
+  const startHour = parseInt(openingTime?.split(":")[0] || "10")
+  const endHour = parseInt((isSummer ? closingTimeSummer : closingTimeWinter)?.split(":")[0] || (isSummer ? "19" : "16"))
   const slots: string[] = []
-  for (let h = 10; h <= endHour; h++) {
-    for (const m of ['00', '15', '30', '45']) {
-      if (h === endHour && m !== '00') continue
-      slots.push(h.toString().padStart(2, '0') + ':' + m)
+  for (let h = startHour; h <= endHour; h++) {
+    for (const m of ["00", "15", "30", "45"]) {
+      if (h === endHour && m !== "00") continue
+      slots.push(h.toString().padStart(2, "0") + ":" + m)
     }
   }
   return slots
@@ -69,10 +70,10 @@ function App() {
   const [customer, setCustomer] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', postalCode: '', city: '', country: 'ES' })
   const [bookingRef, setBookingRef] = useState('')
   const [processing, setProcessing] = useState(false)
-
   const t = translations[lang]
-  const startTimeSlots = getTimeSlots(startDate)
-  const endTimeSlots = getTimeSlots(endDate)
+  const selectedAgencyData = agencies.find(a => a.id === selectedAgency)
+  const startTimeSlots = getTimeSlots(startDate, selectedAgencyData?.openingTime || "10:00", selectedAgencyData?.closingTimeSummer || "19:00", selectedAgencyData?.closingTimeWinter || "16:00")
+  const endTimeSlots = getTimeSlots(endDate, selectedAgencyData?.openingTime || "10:00", selectedAgencyData?.closingTimeSummer || "19:00", selectedAgencyData?.closingTimeWinter || "16:00")
 
   useEffect(() => { loadData() }, [])
   useEffect(() => { if (selectedAgency) loadVehicles() }, [selectedAgency])

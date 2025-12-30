@@ -107,6 +107,13 @@ function App() {
 
   const getName = (obj: any) => obj?.[lang] || obj?.es || obj?.fr || ''
   
+  const calculateTotalHours = (): number => {
+    if (!startDate || !endDate || !startTime || !endTime) return 0
+    const start = new Date(startDate + "T" + startTime)
+    const end = new Date(endDate + "T" + endTime)
+    return (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+  }
+
   const calculateDays = (): number => {
     if (!startDate || !endDate) return 0
     const totalHours = calculateTotalHours()
@@ -119,13 +126,6 @@ function App() {
     const [eH, eM] = endTime.split(':').map(Number)
     const diff = (eH * 60 + eM) - (sH * 60 + sM)
     return diff > 0 ? Math.ceil(diff / 60) : 0
-  }
-
-  const calculateTotalHours = (): number => {
-    if (!startDate || !endDate || !startTime || !endTime) return 0
-    const start = new Date(startDate + "T" + startTime)
-    const end = new Date(endDate + "T" + endTime)
-    return (end.getTime() - start.getTime()) / (1000 * 60 * 60)
   }
 
   const isMinimum24h = (): boolean => calculateTotalHours() >= 24

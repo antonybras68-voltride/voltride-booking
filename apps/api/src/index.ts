@@ -203,5 +203,5 @@ app.put('/api/bookings/:id/status', async (req, res) => {
   catch (error) { res.status(500).json({ error: 'Failed to update booking status' }) }
 })
 
-const PORT = parseInt(process.env.PORT || '3001', 10)
+const PORT = parseInt(process.env.PORT || '8080', 10)
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })

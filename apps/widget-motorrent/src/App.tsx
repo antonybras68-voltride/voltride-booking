@@ -69,6 +69,7 @@ function App() {
   const [customer, setCustomer] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', postalCode: '', city: '', country: 'ES' })
   const [bookingRef, setBookingRef] = useState('')
   const [processing, setProcessing] = useState(false)
+  const [dateError, setDateError] = useState<string | null>(null)
 
   const t = translations[lang]
   const startTimeSlots = getTimeSlots(startDate)
@@ -120,6 +121,15 @@ function App() {
     const diff = (eH * 60 + eM) - (sH * 60 + sM)
     return diff > 0 ? Math.ceil(diff / 60) : 0
   }
+
+  const calculateTotalHours = (): number => {
+    if (!startDate || !endDate || !startTime || !endTime) return 0
+    const start = new Date(startDate + "T" + startTime)
+    const end = new Date(endDate + "T" + endTime)
+    return (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+  }
+
+  const isMinimum24h = (): boolean => calculateTotalHours() >= 24
   
   const getVehiclePrice = (vehicle: Vehicle, days: number, extraHours: number): number => {
     const pricing = vehicle.pricing?.[0]
@@ -128,9 +138,9 @@ function App() {
     const dayKey = 'day' + Math.min(days, 14)
     total = Number(pricing[dayKey]) || 0
     if (days > 14) total += (days - 14) * (Number(pricing.day14) || 0) / 14
-    for (let i = 1; i <= Math.min(extraHours, 4); i++) {
-      const key = 'extraHour' + i
-      total += Number(pricing[key]) || 0
+    if (extraHours > 0) {
+      const extraKey = 'extraHour' + Math.min(extraHours, 4)
+      total += Number(pricing[extraKey]) || 0
     }
     return total
   }
@@ -350,7 +360,8 @@ function App() {
                   </select>
                 </div>
               </div>
-              <button onClick={() => setStep('vehicles')} disabled={!startDate || !endDate} className="w-full py-3 bg-gradient-to-r from-[#fcb900] to-[#ff9500] text-white font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
+              {!isMinimum24h() && startDate && endDate && <p className="text-red-500 text-sm text-center mb-2">⚠️ {lang === 'fr' ? 'Location minimum 24h' : lang === 'es' ? 'Alquiler mínimo 24h' : 'Minimum rental 24h'}</p>}
+              <button onClick={() => setStep('vehicles')} disabled={!startDate || !endDate || !isMinimum24h()} className="w-full py-3 bg-gradient-to-r from-[#fcb900] to-[#ff9500] text-white font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
                 {t.continue}
               </button>
             </div>

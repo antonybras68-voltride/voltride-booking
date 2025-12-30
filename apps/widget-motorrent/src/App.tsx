@@ -388,15 +388,20 @@ function App() {
                           </div>
                           <p className="text-sm text-gray-500">{getName(vehicle.category?.name)}</p>
                           <p className="text-sm text-gray-400">{t.deposit}: {vehicle.deposit}€</p>
-                          {bookingFee > 0 && <p className="text-xs text-green-600">Acompte: {bookingFee}€</p>}
-                          {isPlated && <p className="text-xs text-amber-600 mt-1">{t.licensePlateWarning}</p>}
+                          
+                          
                           <div className="flex justify-between items-center mt-2">
                             <span className="font-bold text-[#fcb900] text-lg">{price}€</span>
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-gray-400">{available} {t.available}</span>
-                              <select value={selectedVehicles[vehicle.id] || 0} onChange={(e) => handleVehicleSelect(vehicle.id, parseInt(e.target.value))} disabled={available === 0 || (isPlated && otherPlatedSelected)} className="p-2 border border-gray-200 rounded-lg disabled:opacity-50">
-                                {[...Array(maxQty + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}
-                              </select>
+     {isPlated ? (
+                                <input type="checkbox" checked={selectedVehicles[vehicle.id] === 1} onChange={(e) => handleVehicleSelect(vehicle.id, e.target.checked ? 1 : 0)} disabled={available === 0 || otherPlatedSelected} className="w-6 h-6 accent-[#fcb900]" />
+                              ) : (
+                                <select value={selectedVehicles[vehicle.id] || 0} onChange={(e) => handleVehicleSelect(vehicle.id, parseInt(e.target.value))} disabled={available === 0} className="p-2 border border-gray-200 rounded-lg disabled:opacity-50">
+                                  {[...Array(maxQty + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}
+                                </select>
+                              )}
+             
                             </div>
                           </div>
                         </div>
@@ -433,9 +438,7 @@ function App() {
                             {isIncluded ? t.free : price + '€'}
                           </p>
                         </div>
-                        <select value={selectedOptions[option.id] || 0} onChange={(e) => setSelectedOptions({ ...selectedOptions, [option.id]: parseInt(e.target.value) })} className="p-2 border border-gray-200 rounded-lg">
-                          {[...Array(option.maxQuantity + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}
-                        </select>
+                        <input type="checkbox" checked={(selectedOptions[option.id] || 0) > 0} onChange={(e) => setSelectedOptions({ ...selectedOptions, [option.id]: e.target.checked ? Object.values(selectedVehicles).reduce((a, b) => a + b, 0) : 0 })} className="w-6 h-6 accent-[#fcb900]" />
                       </div>
                     )
                   })}
@@ -516,7 +519,7 @@ function App() {
               </div>
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                 <p className="font-bold text-green-800">✅ {t.depositToPay}: {calculateDeposit()}€</p>
-                <p className="text-sm text-green-600">{t.fixedDeposit}</p>
+                
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="font-bold text-amber-800">⚠️ {t.securityDeposit}: {calculateSecurityDeposit()}€</p>

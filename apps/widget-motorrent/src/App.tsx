@@ -109,9 +109,8 @@ function App() {
   
   const calculateDays = (): number => {
     if (!startDate || !endDate) return 0
-    const start = new Date(startDate)
-    const end = new Date(endDate)
-    return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)))
+    const totalHours = calculateTotalHours()
+    return Math.floor(totalHours / 24)
   }
   
   const calculateExtraHours = (): number => {

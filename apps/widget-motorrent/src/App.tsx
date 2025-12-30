@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-production.up.railway.app'
+const API_URL = import.meta.env.VITE_API_URL || 'https:https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'MOTOR-RENT'
 
 interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string }

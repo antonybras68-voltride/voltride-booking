@@ -18,6 +18,9 @@ model Agency {
   phone      String
   email      String
   brand      String      @default("VOLTRIDE")
+  openingTime String      @default("10:00")
+  closingTimeSummer String @default("19:00")
+  closingTimeWinter String @default("16:00")
   isActive   Boolean     @default(true)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
@@ -30,6 +33,9 @@ model Category {
   code       String    @unique
   name       Json
   brand      String    @default("VOLTRIDE")
+  openingTime String      @default("10:00")
+  closingTimeSummer String @default("19:00")
+  closingTimeWinter String @default("16:00")
   bookingFee Float     @default(0)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt

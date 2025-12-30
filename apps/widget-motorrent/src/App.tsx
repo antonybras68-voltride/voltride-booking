@@ -375,7 +375,6 @@ function App() {
                     const price = getVehiclePrice(vehicle, calculateDays(), calculateExtraHours())
                     const isPlated = vehicle.hasPlate
                     const otherPlatedSelected = hasPlatedVehicleSelected() && !selectedVehicles[vehicle.id]
-                    const bookingFee = vehicle.category?.bookingFee || 0
                     return (
                       <div key={vehicle.id} className={'border rounded-xl p-4 flex gap-4 transition ' + (isPlated ? 'border-amber-300 bg-amber-50/50' : 'border-gray-200 hover:shadow-md')}>
                         <div className="w-24 h-24 bg-gradient-to-br from-[#fcb900]/20 to-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">

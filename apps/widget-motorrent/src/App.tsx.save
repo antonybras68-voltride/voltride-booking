@@ -136,7 +136,7 @@ function App() {
   }
 
   // Calculer le prix d'une option (0 si inclus par défaut)
-  const getOptionPrice = (option: Option, days: number): number => {
+ const getOptionPrice = (option: Option, days: number): number => {
     if (option.includedByDefault) return 0
     const dayKey = 'day' + Math.min(days, 14) as keyof Option
     let total = Number(option[dayKey]) || 0

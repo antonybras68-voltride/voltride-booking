@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const API_URL = 'https://stunning-broccoli-4j5vqr449v7w2j5jj-3001.app.github.dev'
+const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-production.up.railway.app'
 
 type Tab = 'dashboard' | 'bookings' | 'vehicles' | 'inventory' | 'agencies' | 'customers' | 'categories' | 'options'
 

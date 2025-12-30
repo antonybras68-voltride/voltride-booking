@@ -69,7 +69,6 @@ function App() {
   const [customer, setCustomer] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', postalCode: '', city: '', country: 'ES' })
   const [bookingRef, setBookingRef] = useState('')
   const [processing, setProcessing] = useState(false)
-  const [dateError, setDateError] = useState<string | null>(null)
 
   const t = translations[lang]
   const startTimeSlots = getTimeSlots(startDate)
@@ -287,6 +286,7 @@ function App() {
     } catch (error) { console.error('Booking error:', error) }
     setProcessing(false)
   }
+  const stepIndex = ['dates', 'vehicles', 'options', 'customer', 'payment'].indexOf(step)
 
   const days = calculateDays()
   const daysText = days > 0 ? days + ' ' + t.days : ''

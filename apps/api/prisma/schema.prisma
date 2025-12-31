@@ -54,6 +54,9 @@ model Vehicle {
   description Json
   deposit     Float
   hasPlate    Boolean       @default(false)
+  licenseType     String?       @default("")
+  kmIncluded      String?       @default("")
+  helmetIncluded  Boolean       @default(true)
   imageUrl    String?
   categoryId  String
   isActive    Boolean       @default(true)

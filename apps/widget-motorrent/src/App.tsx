@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'MOTOR-RENT'
 
-interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string }
+interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string }
 interface Category { id: string; name: { fr: string; es: string; en: string }; brand: string; bookingFee: number }
 interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; helmetIncluded?: boolean; imageUrl?: string; category: Category; pricing: any[]; inventory: any[] }
 interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; maxQuantity: number; includedByDefault: boolean; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }

@@ -21,8 +21,8 @@ model Agency {
   openingTime String      @default("10:00")
   closingTimeSummer String @default("19:00")
   closingTimeWinter String @default("16:00")
-  summerStartMonth Int         @default(4)
-  summerEndMonth   Int         @default(9)
+  summerStartDate String      @default("04-01")
+  summerEndDate   String      @default("09-30")
   isActive   Boolean     @default(true)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
@@ -38,8 +38,8 @@ model Category {
   openingTime String      @default("10:00")
   closingTimeSummer String @default("19:00")
   closingTimeWinter String @default("16:00")
-  summerStartMonth Int         @default(4)
-  summerEndMonth   Int         @default(9)
+  summerStartDate String      @default("04-01")
+  summerEndDate   String      @default("09-30")
   bookingFee Float     @default(0)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt

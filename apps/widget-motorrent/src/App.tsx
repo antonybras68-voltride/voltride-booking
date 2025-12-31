@@ -16,10 +16,12 @@ const translations = {
   es: { title: 'Alquiler de scooters y motos', selectAgency: 'Agencia', selectDates: 'Seleccione sus fechas', pickupDate: 'Fecha de recogida', returnDate: 'Fecha de devolución', pickupTime: 'Hora de recogida', returnTime: 'Hora de devolución', continue: 'Continuar', back: 'Volver', selectVehicles: 'Elija sus vehículos', quantity: 'Cantidad', available: 'disponible(s)', deposit: 'Fianza', perDay: '/día', options: 'Opciones y Accesorios', yourInfo: 'Sus datos', firstName: 'Nombre', lastName: 'Apellido', email: 'Email', phone: 'Teléfono', address: 'Dirección', postalCode: 'Código postal', city: 'Ciudad', country: 'País', payment: 'Pago', summary: 'Resumen', total: 'Total', depositToPay: 'Anticipo a pagar', payNow: 'Pagar ahora', confirmation: '¡Reserva confirmada!', bookingRef: 'Referencia', emailSent: 'Se ha enviado un email de confirmación.', requiredDocs: 'Documentos requeridos', docId: 'Documento de identidad o pasaporte', docLicense: 'Permiso AM/A1/A2/B según vehículo', securityDeposit: 'Fianza a pagar en tienda', cashOrCard: 'En efectivo o tarjeta de crédito (no débito)', days: 'día(s)', hours: 'hora(s) extra', noVehicles: 'No hay vehículos disponibles para esta agencia', processing: 'Procesando...', licensePlateWarning: 'Vehículo matriculado - solo 1 por reserva', fixedDeposit: 'Anticipo fijo por categoría', included: 'Incluido', free: 'Gratis' },
   en: { title: 'Scooter & Motorcycle Rental', selectAgency: 'Agency', selectDates: 'Select your dates', pickupDate: 'Pickup date', returnDate: 'Return date', pickupTime: 'Pickup time', returnTime: 'Return time', continue: 'Continue', back: 'Back', selectVehicles: 'Choose your vehicles', quantity: 'Quantity', available: 'available', deposit: 'Deposit', perDay: '/day', options: 'Options & Accessories', yourInfo: 'Your information', firstName: 'First name', lastName: 'Last name', email: 'Email', phone: 'Phone', address: 'Address', postalCode: 'Postal code', city: 'City', country: 'Country', payment: 'Payment', summary: 'Summary', total: 'Total', depositToPay: 'Deposit to pay', payNow: 'Pay now', confirmation: 'Booking confirmed!', bookingRef: 'Reference', emailSent: 'A confirmation email has been sent.', requiredDocs: 'Required documents', docId: 'ID card or passport', docLicense: 'AM/A1/A2/B license depending on vehicle', securityDeposit: 'Security deposit payable on site', cashOrCard: 'Cash or credit card (no debit cards)', days: 'day(s)', hours: 'extra hour(s)', noVehicles: 'No vehicles available for this agency', processing: 'Processing...', licensePlateWarning: 'Licensed vehicle - only 1 per booking', fixedDeposit: 'Fixed deposit per category', included: 'Included', free: 'Free' }
 }
-const getTimeSlots = (dateStr: string, openingTime: string, closingTimeSummer: string, closingTimeWinter: string, summerStartMonth: number, summerEndMonth: number): string[] => {
+const getTimeSlots = (dateStr: string, openingTime: string, closingTimeSummer: string, closingTimeWinter: string, summerStartDate: string, summerEndDate: string): string[] => {
   const date = dateStr ? new Date(dateStr) : new Date()
   const month = date.getMonth() + 1
-  const isSummer = month >= summerStartMonth && month <= summerEndMonth
+  const day = date.getDate()
+  const currentMMDD = String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0")
+  const isSummer = currentMMDD >= summerStartDate && currentMMDD <= summerEndDate
   const startHour = parseInt(openingTime?.split(":")[0] || "10")
   const endHour = parseInt((isSummer ? closingTimeSummer : closingTimeWinter)?.split(":")[0] || (isSummer ? "19" : "16"))
   const slots: string[] = []
@@ -71,8 +73,8 @@ function App() {
   const [processing, setProcessing] = useState(false)
   const t = translations[lang]
   const selectedAgencyData = agencies.find(a => a.id === selectedAgency)
-  const startTimeSlots = getTimeSlots(startDate, selectedAgencyData?.openingTime || "10:00", selectedAgencyData?.closingTimeSummer || "19:00", selectedAgencyData?.closingTimeWinter || "16:00", selectedAgencyData?.summerStartMonth || 4, selectedAgencyData?.summerEndMonth || 9)
-  const endTimeSlots = getTimeSlots(endDate, selectedAgencyData?.openingTime || "10:00", selectedAgencyData?.closingTimeSummer || "19:00", selectedAgencyData?.closingTimeWinter || "16:00", selectedAgencyData?.summerStartMonth || 4, selectedAgencyData?.summerEndMonth || 9)
+  const startTimeSlots = getTimeSlots(startDate, selectedAgencyData?.openingTime || "10:00", selectedAgencyData?.closingTimeSummer || "19:00", selectedAgencyData?.closingTimeWinter || "16:00", selectedAgencyData?.summerStartDate || "04-01", selectedAgencyData?.summerEndDate || "09-30")
+  const endTimeSlots = getTimeSlots(endDate, selectedAgencyData?.openingTime || "10:00", selectedAgencyData?.closingTimeSummer || "19:00", selectedAgencyData?.closingTimeWinter || "16:00", selectedAgencyData?.summerStartDate || "04-01", selectedAgencyData?.summerEndDate || "09-30")
 
   useEffect(() => { loadData() }, [])
   useEffect(() => { if (selectedAgency) loadVehicles() }, [selectedAgency])

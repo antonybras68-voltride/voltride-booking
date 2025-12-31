@@ -393,7 +393,7 @@ function VehicleModal({ vehicle, categories, onSave, onClose }: { vehicle: any; 
   const [form, setForm] = useState({
     sku: vehicle?.sku || '', nameFr: vehicle?.name?.fr || '', nameEs: vehicle?.name?.es || '', nameEn: vehicle?.name?.en || '',
     descFr: vehicle?.description?.fr || '', descEs: vehicle?.description?.es || '', descEn: vehicle?.description?.en || '',
-    deposit: vehicle?.deposit || 0, hasPlate: vehicle?.hasPlate || false, licenseType: vehicle?.licenseType || '', kmIncluded: vehicle?.kmIncluded || '', helmetIncluded: vehicle?.helmetIncluded ?? true, categoryId: vehicle?.categoryId || '', imageUrl: vehicle?.imageUrl || '',
+    deposit: vehicle?.deposit || 0, hasPlate: vehicle?.hasPlate || false, licenseTypeFr: vehicle?.licenseType?.fr || '', licenseTypeEs: vehicle?.licenseType?.es || '', licenseTypeEn: vehicle?.licenseType?.en || '', kmIncludedFr: vehicle?.kmIncluded?.fr || '', kmIncludedEs: vehicle?.kmIncluded?.es || '', kmIncludedEn: vehicle?.kmIncluded?.en || '', helmetIncluded: vehicle?.helmetIncluded ?? true, categoryId: vehicle?.categoryId || '', imageUrl: vehicle?.imageUrl || '',
     pricing: vehicle?.pricing?.[0] || {}
   })
   const [uploading, setUploading] = useState(false)
@@ -414,7 +414,7 @@ function VehicleModal({ vehicle, categories, onSave, onClose }: { vehicle: any; 
   const handleSubmit = () => onSave({
     sku: form.sku, name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn },
     description: { fr: form.descFr, es: form.descEs, en: form.descEn },
-    deposit: parseFloat(String(form.deposit)), hasPlate: form.hasPlate, licenseType: form.licenseType, kmIncluded: form.kmIncluded, helmetIncluded: form.helmetIncluded, categoryId: form.categoryId, imageUrl: form.imageUrl,
+    deposit: parseFloat(String(form.deposit)), hasPlate: form.hasPlate, licenseType: { fr: form.licenseTypeFr, es: form.licenseTypeEs, en: form.licenseTypeEn }, kmIncluded: { fr: form.kmIncludedFr, es: form.kmIncludedEs, en: form.kmIncludedEn }, helmetIncluded: form.helmetIncluded, categoryId: form.categoryId, imageUrl: form.imageUrl,
     pricing: form.pricing
   })
 
@@ -440,20 +440,26 @@ function VehicleModal({ vehicle, categories, onSave, onClose }: { vehicle: any; 
               Immatriculé
             </label>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Type permis</label>
-              <input type="text" placeholder="AM, A1, A2, B..." value={form.licenseType} onChange={e => setForm({ ...form, licenseType: e.target.value })} className="w-full p-2 border rounded" />
+          <div className="border rounded p-3">
+            <p className="text-sm font-medium mb-2">Type de permis</p>
+            <div className="grid grid-cols-3 gap-2">
+              <input type="text" placeholder="FR: A1, B +3 ans" value={form.licenseTypeFr} onChange={e => setForm({ ...form, licenseTypeFr: e.target.value })} className="p-2 border rounded text-sm" />
+              <input type="text" placeholder="ES: A1, B +3 años" value={form.licenseTypeEs} onChange={e => setForm({ ...form, licenseTypeEs: e.target.value })} className="p-2 border rounded text-sm" />
+              <input type="text" placeholder="EN: A1, B +3 years" value={form.licenseTypeEn} onChange={e => setForm({ ...form, licenseTypeEn: e.target.value })} className="p-2 border rounded text-sm" />
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Kms inclus</label>
-              <input type="text" placeholder="Illimité, 100km/j..." value={form.kmIncluded} onChange={e => setForm({ ...form, kmIncluded: e.target.value })} className="w-full p-2 border rounded" />
-            </div>
-            <label className="flex items-center gap-2 p-2 border rounded mt-5">
-              <input type="checkbox" checked={form.helmetIncluded} onChange={e => setForm({ ...form, helmetIncluded: e.target.checked })} />
-              Casque inclus
-            </label>
           </div>
+          <div className="border rounded p-3">
+            <p className="text-sm font-medium mb-2">Kms inclus</p>
+            <div className="grid grid-cols-3 gap-2">
+              <input type="text" placeholder="FR: 100km/jour" value={form.kmIncludedFr} onChange={e => setForm({ ...form, kmIncludedFr: e.target.value })} className="p-2 border rounded text-sm" />
+              <input type="text" placeholder="ES: 100km/día" value={form.kmIncludedEs} onChange={e => setForm({ ...form, kmIncludedEs: e.target.value })} className="p-2 border rounded text-sm" />
+              <input type="text" placeholder="EN: 100km/day" value={form.kmIncludedEn} onChange={e => setForm({ ...form, kmIncludedEn: e.target.value })} className="p-2 border rounded text-sm" />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 p-2 border rounded">
+            <input type="checkbox" checked={form.helmetIncluded} onChange={e => setForm({ ...form, helmetIncluded: e.target.checked })} />
+            Casque inclus
+          </label>
           <div className="border rounded p-3">
             <p className="text-sm font-medium mb-2">Photo</p>
             {form.imageUrl && <img src={form.imageUrl} alt="" className="w-24 h-24 object-cover rounded mb-2" />}

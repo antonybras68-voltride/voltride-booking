@@ -5,7 +5,7 @@ const BRAND = 'MOTOR-RENT'
 
 interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string }
 interface Category { id: string; name: { fr: string; es: string; en: string }; brand: string; bookingFee: number }
-interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; helmetIncluded?: boolean; imageUrl?: string; category: Category; pricing: any[]; inventory: any[] }
+interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; helmetIncluded?: boolean; imageUrl?: string; category: Category; pricing: any[]; inventory: any[] }
 interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; maxQuantity: number; includedByDefault: boolean; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
 
 type Lang = 'fr' | 'es' | 'en'
@@ -396,8 +396,8 @@ function App() {
                           <p className="text-sm text-gray-500">{getName(vehicle.category?.name)}</p>
                           <p className="text-sm text-gray-400">{t.deposit}: {vehicle.deposit}€</p>
                           <div className="flex flex-wrap gap-2 mt-1">
-                            {vehicle.licenseType && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">🪪 {vehicle.licenseType}</span>}
-                            {vehicle.kmIncluded && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">📍 {vehicle.kmIncluded}</span>}
+                            {getName(vehicle.licenseType) && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">🪪 {getName(vehicle.licenseType)}</span>}
+                            {getName(vehicle.kmIncluded) && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">📍 {getName(vehicle.kmIncluded)}</span>}
                             {vehicle.helmetIncluded && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">{t.helmetIncluded}</span>}
                           </div>
                           

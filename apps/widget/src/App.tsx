@@ -4,7 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-produc
 const BRAND = 'VOLTRIDE'
 
 interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string }
-interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; imageUrl?: string; category: { name: { fr: string; es: string; en: string }; brand: string }; pricing: any[]; inventory: any[] }
+interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { name: { fr: string; es: string; en: string }; brand: string }; pricing: any[]; inventory: any[] }
 interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; price: number; maxQuantity: number }
 
 type Lang = 'fr' | 'es' | 'en'

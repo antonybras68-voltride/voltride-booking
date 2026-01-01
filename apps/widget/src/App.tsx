@@ -395,6 +395,7 @@ function App() {
                                 className="p-2 border border-gray-200 rounded-lg disabled:opacity-50"
                               >
                                 {[...Array(maxQty + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}
+                              </select>
           
                             </div>
                           </div>

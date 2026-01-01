@@ -95,7 +95,7 @@ function App() {
       const res = await fetch(`${API_URL}/api/vehicles?agencyId=${selectedAgency}`)
       const data = await res.json()
       // Filtrer par marque ET par stock > 0
-      const filtered = data.filter((v: Vehicle) => {
+      const filtered = (Array.isArray(data) ? data : []).filter((v: Vehicle) => {
         if (v.category?.brand !== BRAND) return false
         const inv = v.inventory?.find((i: any) => i.agencyId === selectedAgency)
         return inv && inv.quantity > 0

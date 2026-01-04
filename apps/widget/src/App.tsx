@@ -66,7 +66,7 @@ function App() {
   const [selectedVehicles, setSelectedVehicles] = useState<Record<string, number>>({})
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({})
   const [customer, setCustomer] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', postalCode: '', city: '', country: 'ES' })
-  const [confirmEmail, setConfirmEmail] = useState('')
+  
   const [phonePrefix, setPhonePrefix] = useState('+34')
   
   const phonePrefixes = [
@@ -525,19 +525,16 @@ function App() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">{t.email}</label>
-                <input type="email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{lang === 'fr' ? 'Confirmer email' : lang === 'es' ? 'Confirmar email' : 'Confirm email'}</label>
-                <input type="email" value={confirmEmail} onChange={(e) => setConfirmEmail(e.target.value)} className={`w-full p-3 border rounded-xl focus:outline-none ${confirmEmail && confirmEmail !== customer.email ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-[#ffaf10]'}`} />
-                {confirmEmail && confirmEmail !== customer.email && <p className="text-xs text-red-500 mt-1">{lang === 'fr' ? 'Les emails ne correspondent pas' : lang === 'es' ? 'Los emails no coinciden' : 'Emails do not match'}</p>}
+                <input type="email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} className={`w-full p-3 border rounded-xl focus:outline-none ${customer.email && !isValidEmail(customer.email) ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-[#ffaf10]'}`} />
+                {customer.email && !isValidEmail(customer.email) && <p className="text-xs text-red-500 mt-1">{lang === 'fr' ? 'Email invalide' : lang === 'es' ? 'Email inválido' : 'Invalid email'}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">{t.phone}</label>
                 <div className="flex gap-2">
                   <select value={phonePrefix} onChange={(e) => setPhonePrefix(e.target.value)} className="p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
-                    {phonePrefixes.map(p => <option key={p.code} value={p.code}>{p.country} {p.code}</option>)}
+                    {phonePrefixes.map(p => <option key={p.code} value={p.code}>{p.country} {p.code !== 'other' ? p.code : ''}</option>)}
                   </select>
+                  {phonePrefix === 'other' && <input type="text" value={customPrefix} onChange={(e) => setCustomPrefix(e.target.value)} className="w-20 p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" placeholder="+XX" />}
                   <input type="tel" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} className="flex-1 p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" placeholder="612345678" />
                 </div>
               </div>
@@ -556,7 +553,9 @@ function App() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">{t.country}</label>
-                  <input type="text" value={customer.country} onChange={(e) => setCustomer({ ...customer, country: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                  <select value={customer.country} onChange={(e) => setCustomer({ ...customer, country: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
+                    {countries.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
               </div>
               
@@ -586,7 +585,7 @@ function App() {
               
               <div className="flex gap-3">
                 <button onClick={() => setStep('options')} className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition">{t.back}</button>
-                <button onClick={() => setStep('payment')} disabled={!customer.firstName || !customer.lastName || !customer.email || !customer.phone || customer.email !== confirmEmail || additionalDrivers.some(d => !d.firstName || !d.lastName || !d.email || !d.phone)} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">{t.continue}</button>
+                <button onClick={() => setStep('payment')} disabled={!customer.firstName || !customer.lastName || !customer.email || !isValidEmail(customer.email) || !customer.phone || (phonePrefix === "other" && !customPrefix) || additionalDrivers.some(d => !d.firstName || !d.lastName || !d.email || !d.phone)} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">{t.continue}</button>
               </div>
             </div>
           )}

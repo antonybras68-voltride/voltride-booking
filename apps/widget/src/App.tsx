@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { loadStripe } from '@stripe/stripe-js'
 
 
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'

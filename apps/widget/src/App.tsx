@@ -94,7 +94,26 @@ function App() {
     { code: '+212', country: '🇲🇦 MA' },
     { code: '+216', country: '🇹🇳 TN' },
     { code: '+213', country: '🇩🇿 DZ' },
+    { code: 'other', country: '🌍 Autre' },
   ]
+  const [customPrefix, setCustomPrefix] = useState('')
+  
+  const countries = [
+    'España', 'France', 'United Kingdom', 'Deutschland', 'Italia', 'Portugal', 
+    'Nederland', 'Belgique', 'Luxembourg', 'Suisse', 'Österreich', 'Ireland',
+    'Sverige', 'Norge', 'Danmark', 'Suomi', 'Ísland',
+    'Polska', 'Česko', 'Slovensko', 'Magyarország', 'România', 'България',
+    'Hrvatska', 'Slovenija', 'Srbija', 'BiH', 'Kosovo', 'Crna Gora', 'Makedonija', 'Shqipëria',
+    'Lietuva', 'Latvija', 'Eesti', 'Belarus', 'Україна', 'Moldova',
+    'Ελλάδα', 'Türkiye', 'Κύπρος',
+    'Maroc', 'Algérie', 'Tunisie', 'Libya', 'Egypt',
+    'Autre/Other'
+  ]
+  
+  const isValidEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
+  
   const [additionalDrivers, setAdditionalDrivers] = useState<Array<{ firstName: string; lastName: string; email: string; phone: string }>>([])
   
   // Mettre à jour les conducteurs additionnels quand le nombre de véhicules immatriculés change

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-production.up.railway.app'
+const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'VOLTRIDE'
 
 interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string }
 interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { id: string; name: { fr: string; es: string; en: string }; brand: string }; pricing: any[]; inventory: any[] }
-interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; price: number; maxQuantity: number; categories?: any[] }
+interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; maxQuantity: number; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
 
 type Lang = 'fr' | 'es' | 'en'
 type Step = 'dates' | 'vehicles' | 'options' | 'customer' | 'payment' | 'confirmation'
@@ -158,6 +158,14 @@ function App() {
     })
   }
   
+
+  // Calculer le prix d une option selon le nombre de jours
+  const getOptionPrice = (option: Option, days: number): number => {
+    const dayKey = ("day" + Math.min(days, 14)) as keyof Option
+    let total = Number(option[dayKey]) || 0
+    if (days > 14) total += (days - 14) * (Number(option.day14) || 0) / 14
+    return total
+  }
   const calculateTotal = (): number => {
     const days = calculateDays()
     const extraHours = calculateExtraHours()
@@ -256,7 +264,7 @@ function App() {
         .filter(([, qty]) => qty > 0)
         .map(([optionId, quantity]) => {
           const option = options.find(o => o.id === optionId)!
-          const unitPrice = option.price * days
+          const unitPrice = getOptionPrice(option, days)
           return { optionId, quantity, unitPrice, totalPrice: unitPrice * quantity }
         })
       const res = await fetch(`${API_URL}/api/bookings`, {
@@ -423,7 +431,7 @@ function App() {
                   <div key={option.id} className="border border-gray-200 rounded-xl p-4 flex justify-between items-center hover:shadow-md transition">
                     <div>
                       <h3 className="font-bold text-gray-800">{getName(option.name)}</h3>
-                      <p className="text-sm text-[#ffaf10]">{option.price}€ {t.perDay}</p>
+                      <p className="text-sm text-[#ffaf10]">{getOptionPrice(option, calculateDays())}€</p>
                     </div>
                     <input type="checkbox" checked={(selectedOptions[option.id] || 0) > 0} onChange={(e) => setSelectedOptions({ ...selectedOptions, [option.id]: e.target.checked ? 1 : 0 })} className="w-6 h-6 accent-[#ffaf10]" />
 

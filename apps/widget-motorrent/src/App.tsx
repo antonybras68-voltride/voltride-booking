@@ -6,7 +6,7 @@ const BRAND = 'MOTOR-RENT'
 interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string }
 interface Category { id: string; name: { fr: string; es: string; en: string }; brand: string; bookingFee: number }
 interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; helmetIncluded?: boolean; imageUrl?: string; category: Category; pricing: any[]; inventory: any[] }
-interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; maxQuantity: number; includedByDefault: boolean; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
+interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; maxQuantity: number; includedByDefault: boolean; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
 
 type Lang = 'fr' | 'es' | 'en'
 type Step = 'dates' | 'vehicles' | 'options' | 'customer' | 'payment' | 'confirmation'
@@ -441,14 +441,21 @@ function App() {
                     const isIncluded = option.includedByDefault
                     return (
                       <div key={option.id} className={'border rounded-xl p-4 flex justify-between items-center ' + (isIncluded ? 'border-green-300 bg-green-50/50' : 'border-gray-200')}>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-gray-800">{getName(option.name)}</h3>
+                        <div className="flex items-center gap-3">
+                          {option.imageUrl ? (
+                            <img src={option.imageUrl} alt="" className="w-16 h-16 object-cover rounded-lg" />
+                          ) : (
+                            <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">🎁</div>
+                          )}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-bold text-gray-800">{getName(option.name)}</h3>
                             {isIncluded && <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full">✓ {t.included}</span>}
                           </div>
                           <p className="text-sm text-[#fcb900]">
-                            {isIncluded ? t.free : price + '€'}
-                          </p>
+                              {isIncluded ? t.free : price + '€'}
+                            </p>
+                          </div>
                         </div>
                         <input type="checkbox" checked={(selectedOptions[option.id] || 0) > 0} onChange={(e) => setSelectedOptions({ ...selectedOptions, [option.id]: e.target.checked ? Object.values(selectedVehicles).reduce((a, b) => a + b, 0) : 0 })} className="w-6 h-6 accent-[#fcb900]" />
                       </div>

@@ -575,9 +575,16 @@ function App() {
               <div className="space-y-3">
                 {getFilteredOptions().map(option => (
                   <div key={option.id} className="border border-gray-200 rounded-xl p-4 flex justify-between items-center hover:shadow-md transition">
-                    <div>
-                      <h3 className="font-bold text-gray-800">{getName(option.name)}</h3>
-                      <p className="text-sm text-[#ffaf10]">{getOptionPrice(option, calculateDays())}€</p>
+                    <div className="flex items-center gap-3">
+                      {option.imageUrl ? (
+                        <img src={option.imageUrl} alt="" className="w-16 h-16 object-cover rounded-lg" />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">🎁</div>
+                      )}
+                      <div>
+                        <h3 className="font-bold text-gray-800">{getName(option.name)}</h3>
+                        <p className="text-sm text-[#ffaf10]">{getOptionPrice(option, calculateDays())}€</p>
+                      </div>
                     </div>
                     <select value={selectedOptions[option.id] || 0} onChange={(e) => setSelectedOptions({ ...selectedOptions, [option.id]: parseInt(e.target.value) })} className="p-2 border border-gray-200 rounded-lg">
                       {[...Array(getTotalSelectedVehicles() + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}

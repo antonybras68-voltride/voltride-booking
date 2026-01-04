@@ -8,51 +8,64 @@ datasource db {
 }
 
 model Agency {
-  id         String      @id @default(cuid())
-  code       String      @unique
-  name       Json
-  address    String
-  city       String
-  postalCode String
-  country    String      @default("ES")
-  phone      String
-  email      String
-  brand      String      @default("VOLTRIDE")
-  isActive   Boolean     @default(true)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  bookings   Booking[]
-  inventory  Inventory[]
+  id                String      @id @default(cuid())
+  code              String      @unique
+  name              Json
+  address           String
+  city              String
+  postalCode        String
+  country           String      @default("ES")
+  phone             String
+  email             String
+  brand             String      @default("VOLTRIDE")
+  isActive          Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  closingTimeSummer String      @default("19:00")
+  closingTimeWinter String      @default("16:00")
+  openingTime       String      @default("10:00")
+  summerEndDate     String      @default("09-30")
+  summerStartDate   String      @default("04-01")
+  bookings          Booking[]
+  inventory         Inventory[]
 }
 
 model Category {
-  id         String    @id @default(cuid())
-  code       String    @unique
-  name       Json
-  brand      String    @default("VOLTRIDE")
-  bookingFee Float     @default(0)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  vehicles   Vehicle[]
-  options    OptionCategory[]
+  id                String           @id @default(cuid())
+  code              String           @unique
+  name              Json
+  brand             String           @default("VOLTRIDE")
+  bookingFee        Float            @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  closingTimeSummer String           @default("19:00")
+  closingTimeWinter String           @default("16:00")
+  openingTime       String           @default("10:00")
+  summerEndDate     String           @default("09-30")
+  summerStartDate   String           @default("04-01")
+  options           OptionCategory[]
+  vehicles          Vehicle[]
 }
 
 model Vehicle {
-  id          String        @id @default(cuid())
-  sku         String        @unique
-  name        Json
-  description Json
-  deposit     Float
-  hasPlate    Boolean       @default(false)
-  imageUrl    String?
-  categoryId  String
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  category    Category      @relation(fields: [categoryId], references: [id])
-  pricing     Pricing[]
-  inventory   Inventory[]
-  bookingItems BookingItem[]
+  id             String        @id @default(cuid())
+  sku            String        @unique
+  name           Json
+  description    Json
+  deposit        Float
+  hasPlate       Boolean       @default(false)
+  imageUrl       String?
+  categoryId     String
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  helmetIncluded Boolean       @default(true)
+  kmIncluded     Json?         @default("{}")
+  licenseType    Json?         @default("{}")
+  bookingItems   BookingItem[]
+  inventory      Inventory[]
+  pricing        Pricing[]
+  category       Category      @relation(fields: [categoryId], references: [id])
 }
 
 model Pricing {
@@ -88,63 +101,64 @@ model Inventory {
   quantity  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@unique([vehicleId, agencyId])
 }
 
 model Option {
-  id            String          @id @default(cuid())
-  code          String          @unique
-  name          Json
-  maxQuantity   Int             @default(10)
-  includedByDefault Boolean     @default(false)
-  day1          Float           @default(0)
-  day2          Float           @default(0)
-  day3          Float           @default(0)
-  day4          Float           @default(0)
-  day5          Float           @default(0)
-  day6          Float           @default(0)
-  day7          Float           @default(0)
-  day8          Float           @default(0)
-  day9          Float           @default(0)
-  day10         Float           @default(0)
-  day11         Float           @default(0)
-  day12         Float           @default(0)
-  day13         Float           @default(0)
-  day14         Float           @default(0)
-  isActive      Boolean         @default(true)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  categories    OptionCategory[]
-  bookingOptions BookingOption[]
+  id                String           @id @default(cuid())
+  code              String           @unique
+  name              Json
+  maxQuantity       Int              @default(10)
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  day1              Float            @default(0)
+  day10             Float            @default(0)
+  day11             Float            @default(0)
+  day12             Float            @default(0)
+  day13             Float            @default(0)
+  day14             Float            @default(0)
+  day2              Float            @default(0)
+  day3              Float            @default(0)
+  day4              Float            @default(0)
+  day5              Float            @default(0)
+  day6              Float            @default(0)
+  day7              Float            @default(0)
+  day8              Float            @default(0)
+  day9              Float            @default(0)
+  includedByDefault Boolean          @default(false)
+  imageUrl          String?
+  bookingOptions    BookingOption[]
+  categories        OptionCategory[]
 }
 
 model OptionCategory {
   id         String   @id @default(cuid())
   optionId   String
   categoryId String
-  option     Option   @relation(fields: [optionId], references: [id], onDelete: Cascade)
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  option     Option   @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
   @@unique([optionId, categoryId])
 }
 
 model Customer {
-  id        String    @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String
-  phone     String
-  address   String?
+  id         String    @id @default(cuid())
+  firstName  String
+  lastName   String
+  email      String
+  phone      String
+  address    String?
   postalCode String?
-  city      String?
-  country   String    @default("ES")
-  language  String    @default("es")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  bookings  Booking[]
+  city       String?
+  country    String    @default("ES")
+  language   String    @default("es")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  bookings   Booking[]
 }
 
 model Booking {

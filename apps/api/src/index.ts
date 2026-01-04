@@ -123,7 +123,7 @@ app.post('/api/options', async (req, res) => {
   try {
     const option = await prisma.option.create({
       data: {
-        code: req.body.code, name: req.body.name, maxQuantity: req.body.maxQuantity || 10, includedByDefault: req.body.includedByDefault || false,
+        code: req.body.code, name: req.body.name, maxQuantity: req.body.maxQuantity || 10, includedByDefault: req.body.includedByDefault || false, imageUrl: req.body.imageUrl || null,
         day1: req.body.day1 || 0, day2: req.body.day2 || 0, day3: req.body.day3 || 0, day4: req.body.day4 || 0, day5: req.body.day5 || 0, day6: req.body.day6 || 0, day7: req.body.day7 || 0,
         day8: req.body.day8 || 0, day9: req.body.day9 || 0, day10: req.body.day10 || 0, day11: req.body.day11 || 0, day12: req.body.day12 || 0, day13: req.body.day13 || 0, day14: req.body.day14 || 0,
         isActive: req.body.isActive ?? true
@@ -141,7 +141,7 @@ app.put('/api/options/:id', async (req, res) => {
     const option = await prisma.option.update({
       where: { id: req.params.id },
       data: {
-        code: req.body.code, name: req.body.name, maxQuantity: req.body.maxQuantity, includedByDefault: req.body.includedByDefault,
+        code: req.body.code, name: req.body.name, maxQuantity: req.body.maxQuantity, includedByDefault: req.body.includedByDefault, imageUrl: req.body.imageUrl,
         day1: req.body.day1, day2: req.body.day2, day3: req.body.day3, day4: req.body.day4, day5: req.body.day5, day6: req.body.day6, day7: req.body.day7,
         day8: req.body.day8, day9: req.body.day9, day10: req.body.day10, day11: req.body.day11, day12: req.body.day12, day13: req.body.day13, day14: req.body.day14,
         isActive: req.body.isActive

@@ -248,13 +248,22 @@ function App() {
             <div className="grid grid-cols-2 gap-4">
               {options.map(o => (
                 <div key={o.id} className="bg-white p-4 rounded-xl shadow">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-bold">{getName(o.name)}</h3>
-                      <p className="text-sm text-gray-500">{o.code}</p>
-                      {o.includedByDefault && <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Inclus par défaut</span>}
+                  <div className="flex gap-3">
+                    {o.imageUrl ? (
+                      <img src={o.imageUrl} alt="" className="w-16 h-16 object-cover rounded-lg" />
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">🎁</div>
+                    )}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold">{getName(o.name)}</h3>
+                          <p className="text-sm text-gray-500">{o.code}</p>
+                          {o.includedByDefault && <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Inclus par défaut</span>}
+                        </div>
+                        <span className="text-sm text-gray-400">Max: {o.maxQuantity}</span>
+                      </div>
                     </div>
-                    <span className="text-sm text-gray-400">Max: {o.maxQuantity}</span>
                   </div>
                   <div className="mt-2">
                     <p className="text-xs text-gray-500">Tarifs: J1={o.day1}€, J2={o.day2}€, J3={o.day3}€...</p>
@@ -499,11 +508,22 @@ function OptionModal({ option, categories, onSave, onClose }: { option: any; cat
   const existingCatIds = option?.categories?.map((c: any) => c.categoryId) || []
   const [form, setForm] = useState({
     code: option?.code || '', nameFr: option?.name?.fr || '', nameEs: option?.name?.es || '', nameEn: option?.name?.en || '',
-    maxQuantity: option?.maxQuantity || 10, includedByDefault: option?.includedByDefault || false,
+    maxQuantity: option?.maxQuantity || 10, includedByDefault: option?.includedByDefault || false, imageUrl: option?.imageUrl || '',
     day1: option?.day1 || 0, day2: option?.day2 || 0, day3: option?.day3 || 0, day4: option?.day4 || 0, day5: option?.day5 || 0, day6: option?.day6 || 0, day7: option?.day7 || 0,
     day8: option?.day8 || 0, day9: option?.day9 || 0, day10: option?.day10 || 0, day11: option?.day11 || 0, day12: option?.day12 || 0, day13: option?.day13 || 0, day14: option?.day14 || 0,
     categoryIds: existingCatIds as string[]
   })
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', 'voltride_unsigned')
+    const res = await fetch('https://api.cloudinary.com/v1_1/dis5pcnfr/image/upload', { method: 'POST', body: formData })
+    const data = await res.json()
+    setForm({ ...form, imageUrl: data.secure_url })
+  }
 
   const toggleCategory = (catId: string) => {
     if (form.categoryIds.includes(catId)) {
@@ -515,7 +535,7 @@ function OptionModal({ option, categories, onSave, onClose }: { option: any; cat
 
   const handleSubmit = () => onSave({
     code: form.code, name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn },
-    maxQuantity: parseInt(String(form.maxQuantity)), includedByDefault: form.includedByDefault,
+    maxQuantity: parseInt(String(form.maxQuantity)), includedByDefault: form.includedByDefault, imageUrl: form.imageUrl,
     day1: parseFloat(String(form.day1)) || 0, day2: parseFloat(String(form.day2)) || 0, day3: parseFloat(String(form.day3)) || 0, day4: parseFloat(String(form.day4)) || 0,
     day5: parseFloat(String(form.day5)) || 0, day6: parseFloat(String(form.day6)) || 0, day7: parseFloat(String(form.day7)) || 0, day8: parseFloat(String(form.day8)) || 0,
     day9: parseFloat(String(form.day9)) || 0, day10: parseFloat(String(form.day10)) || 0, day11: parseFloat(String(form.day11)) || 0, day12: parseFloat(String(form.day12)) || 0,
@@ -538,6 +558,12 @@ function OptionModal({ option, categories, onSave, onClose }: { option: any; cat
               <input type="checkbox" checked={form.includedByDefault} onChange={e => setForm({ ...form, includedByDefault: e.target.checked })} />
               Inclus par défaut
             </label>
+          </div>
+          
+          <div className="border rounded p-3">
+            <p className="text-sm font-medium mb-2">Image</p>
+            {form.imageUrl && <img src={form.imageUrl} alt="" className="w-24 h-24 object-cover rounded mb-2" />}
+            <input type="file" accept="image/*" onChange={handleImageUpload} className="text-sm" />
           </div>
           
           <div className="border rounded p-3">

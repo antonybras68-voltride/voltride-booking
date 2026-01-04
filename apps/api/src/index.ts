@@ -3,12 +3,12 @@ import cors from 'cors'
 import { PrismaClient } from '@prisma/client'
 import Stripe from 'stripe'
 
-const stripeVoltride = new Stripe(process.env.STRIPE_SECRET_KEY_VOLTRIDE || '', { apiVersion: '2024-12-18.acacia' as any })
-const stripeMotorrent = new Stripe(process.env.STRIPE_SECRET_KEY_MOTORRENT || '', { apiVersion: '2024-12-18.acacia' as any })
+const stripeVoltride = process.env.STRIPE_SECRET_KEY_VOLTRIDE ? new Stripe(process.env.STRIPE_SECRET_KEY_VOLTRIDE, { apiVersion: '2024-12-18.acacia' as any }) : null
+const stripeMotorrent = process.env.STRIPE_SECRET_KEY_MOTORRENT ? new Stripe(process.env.STRIPE_SECRET_KEY_MOTORRENT, { apiVersion: '2024-12-18.acacia' as any }) : null
 
 
 const getStripeInstance = (brand: string) => {
-  return brand === 'MOTOR-RENT' ? stripeMotorrent : stripeVoltride
+  const stripe = brand === 'MOTOR-RENT' ? stripeMotorrent : stripeVoltride; if (!stripe) throw new Error('Stripe not configured'); return stripe
 }
 
 

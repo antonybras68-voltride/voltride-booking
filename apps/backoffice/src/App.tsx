@@ -519,7 +519,7 @@ function OptionModal({ option, categories, onSave, onClose }: { option: any; cat
     if (!file) return
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('upload_preset', 'voltride_unsigned')
+    formData.append('upload_preset', 'voltride')
     const res = await fetch('https://api.cloudinary.com/v1_1/dis5pcnfr/image/upload', { method: 'POST', body: formData })
     const data = await res.json()
     setForm({ ...form, imageUrl: data.secure_url })

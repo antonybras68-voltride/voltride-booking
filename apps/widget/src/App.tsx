@@ -179,7 +179,7 @@ function App() {
     Object.entries(selectedOptions).forEach(([id, qty]) => {
       const o = options.find(x => x.id === id)
       if (o && qty > 0) {
-        total += o.price * qty * days
+        total += getOptionPrice(o, days) * qty
       }
     })
     return total
@@ -503,7 +503,7 @@ function App() {
                 })}
                 {Object.entries(selectedOptions).filter(([, qty]) => qty > 0).map(([id, qty]) => {
                   const o = options.find(x => x.id === id)!
-                  return <div key={id} className="flex justify-between text-sm"><span>{getName(o.name)} x{qty}</span><span>{o.price * qty * calculateDays()}€</span></div>
+                  return <div key={id} className="flex justify-between text-sm"><span>{getName(o.name)} x{qty}</span><span>{getOptionPrice(o, calculateDays()) * qty}€</span></div>
                 })}
                 <div className="border-t border-[#ffaf10]/30 pt-2 flex justify-between font-bold text-lg">
                   <span>{t.total}</span>

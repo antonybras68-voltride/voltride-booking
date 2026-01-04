@@ -421,13 +421,13 @@ function App() {
                           </div>
                           <p className="text-sm text-gray-500">{getName(vehicle.category?.name)}</p>
                           <p className="text-sm text-gray-400">{t.deposit}: {vehicle.deposit}€</p>
-                          {isPlated && <p className="text-xs text-amber-600 mt-1">{t.licensePlateWarning}</p>}
+                          
                           <div className="flex flex-wrap gap-2 mt-1">
                             {getName(vehicle.licenseType) && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">🪪 {getName(vehicle.licenseType)}</span>}
                             {getName(vehicle.kmIncluded) && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">📍 {getName(vehicle.kmIncluded)}</span>}
                           </div>
                           <div className="flex justify-between items-center mt-2">
-                            <span className="font-bold text-[#ffaf10] text-lg">{price}€</span>
+                            <span className="font-bold text-[#ffaf10] text-lg">{price * (selectedVehicles[vehicle.id] || 1)}€ {(selectedVehicles[vehicle.id] || 0) > 1 && <span className="text-sm font-normal text-gray-500">({price}€ x {selectedVehicles[vehicle.id]})</span>}</span>
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-gray-400">{available} {t.available}</span>
                               <select 

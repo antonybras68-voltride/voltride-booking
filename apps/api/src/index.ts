@@ -3,20 +3,16 @@ import cors from 'cors'
 import { PrismaClient } from '@prisma/client'
 import Stripe from 'stripe'
 
-const stripeVoltride = new Stripe(process.env.STRIPE_SECRET_KEY_VOLTRIDE || '', { apiVersion: '2023-10-16' })
-const stripeMotorrent = new Stripe(process.env.STRIPE_SECRET_KEY_MOTORRENT || '', { apiVersion: '2023-10-16' })
+const stripeVoltride = new Stripe(process.env.STRIPE_SECRET_KEY_VOLTRIDE || '', { apiVersion: '2024-12-18.acacia' as any })
+const stripeMotorrent = new Stripe(process.env.STRIPE_SECRET_KEY_MOTORRENT || '', { apiVersion: '2024-12-18.acacia' as any })
+
 
 const getStripeInstance = (brand: string) => {
   return brand === 'MOTOR-RENT' ? stripeMotorrent : stripeVoltride
 }
-import Stripe from 'stripe'
 
-const stripeVoltride = new Stripe(process.env.STRIPE_SECRET_KEY_VOLTRIDE || '', { apiVersion: '2023-10-16' })
-const stripeMotorrent = new Stripe(process.env.STRIPE_SECRET_KEY_MOTORRENT || '', { apiVersion: '2023-10-16' })
 
-const getStripeInstance = (brand: string) => {
-  return brand === 'MOTOR-RENT' ? stripeMotorrent : stripeVoltride
-}
+
 
 const app = express()
 const prisma = new PrismaClient()

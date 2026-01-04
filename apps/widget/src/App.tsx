@@ -66,6 +66,35 @@ function App() {
   const [selectedVehicles, setSelectedVehicles] = useState<Record<string, number>>({})
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({})
   const [customer, setCustomer] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', postalCode: '', city: '', country: 'ES' })
+  const [confirmEmail, setConfirmEmail] = useState('')
+  const [phonePrefix, setPhonePrefix] = useState('+34')
+  
+  const phonePrefixes = [
+    { code: '+34', country: '🇪🇸 ES' },
+    { code: '+33', country: '🇫🇷 FR' },
+    { code: '+44', country: '🇬🇧 UK' },
+    { code: '+49', country: '🇩🇪 DE' },
+    { code: '+39', country: '🇮🇹 IT' },
+    { code: '+351', country: '🇵🇹 PT' },
+    { code: '+31', country: '🇳🇱 NL' },
+    { code: '+32', country: '🇧🇪 BE' },
+    { code: '+41', country: '🇨🇭 CH' },
+    { code: '+43', country: '🇦🇹 AT' },
+    { code: '+46', country: '🇸🇪 SE' },
+    { code: '+47', country: '🇳🇴 NO' },
+    { code: '+45', country: '🇩🇰 DK' },
+    { code: '+358', country: '🇫🇮 FI' },
+    { code: '+48', country: '🇵🇱 PL' },
+    { code: '+1', country: '🇺🇸 US' },
+    { code: '+52', country: '🇲🇽 MX' },
+    { code: '+55', country: '��🇷 BR' },
+    { code: '+54', country: '🇦🇷 AR' },
+    { code: '+56', country: '🇨🇱 CL' },
+    { code: '+57', country: '🇨🇴 CO' },
+    { code: '+212', country: '🇲🇦 MA' },
+    { code: '+216', country: '🇹🇳 TN' },
+    { code: '+213', country: '🇩🇿 DZ' },
+  ]
   const [additionalDrivers, setAdditionalDrivers] = useState<Array<{ firstName: string; lastName: string; email: string; phone: string }>>([])
   
   // Mettre à jour les conducteurs additionnels quand le nombre de véhicules immatriculés change
@@ -337,8 +366,8 @@ function App() {
           <p className="text-gray-700 font-medium">{t.title}</p>
           <div className="flex justify-center gap-2 mt-3">
             {(['fr', 'es', 'en'] as Lang[]).map(l => (
-              <button key={l} onClick={() => setLang(l)} className={`px-3 py-1 rounded-full text-sm font-bold transition shadow-md ${lang === l ? 'bg-white text-[#ffaf10]' : 'bg-white/50 text-gray-700 hover:bg-white/70'}`}>
-                {l.toUpperCase()}
+              <button key={l} onClick={() => setLang(l)} className={`px-3 py-1 rounded-full text-2xl transition shadow-md ${lang === l ? 'bg-white' : 'bg-white/50 hover:bg-white/70'}`}>
+                {l === 'fr' ? '🇫🇷' : l === 'es' ? '🇪🇸' : '🇬🇧'}
               </button>
             ))}
           </div>
@@ -356,7 +385,7 @@ function App() {
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6">
           {step === 'dates' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-800">🌴 {t.selectDates}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t.selectDates}</h2>
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">{t.selectAgency}</label>
                 <select value={selectedAgency} onChange={(e) => setSelectedAgency(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
@@ -395,7 +424,7 @@ function App() {
 
           {step === 'vehicles' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-800">🚲 {t.selectVehicles}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t.selectVehicles}</h2>
               <p className="text-gray-500">{calculateDays()} {t.days} {calculateExtraHours() > 0 && `+ ${calculateExtraHours()} ${t.hours}`}</p>
               
               {vehicles.length === 0 ? (
@@ -459,7 +488,7 @@ function App() {
 
           {step === 'options' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-800">🎒 {t.options}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t.options}</h2>
               <div className="space-y-3">
                 {getFilteredOptions().map(option => (
                   <div key={option.id} className="border border-gray-200 rounded-xl p-4 flex justify-between items-center hover:shadow-md transition">
@@ -499,8 +528,18 @@ function App() {
                 <input type="email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">{lang === 'fr' ? 'Confirmer email' : lang === 'es' ? 'Confirmar email' : 'Confirm email'}</label>
+                <input type="email" value={confirmEmail} onChange={(e) => setConfirmEmail(e.target.value)} className={`w-full p-3 border rounded-xl focus:outline-none ${confirmEmail && confirmEmail !== customer.email ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-[#ffaf10]'}`} />
+                {confirmEmail && confirmEmail !== customer.email && <p className="text-xs text-red-500 mt-1">{lang === 'fr' ? 'Les emails ne correspondent pas' : lang === 'es' ? 'Los emails no coinciden' : 'Emails do not match'}</p>}
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">{t.phone}</label>
-                <input type="tel" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                <div className="flex gap-2">
+                  <select value={phonePrefix} onChange={(e) => setPhonePrefix(e.target.value)} className="p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
+                    {phonePrefixes.map(p => <option key={p.code} value={p.code}>{p.country} {p.code}</option>)}
+                  </select>
+                  <input type="tel" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} className="flex-1 p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" placeholder="612345678" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">{t.address}</label>
@@ -547,7 +586,7 @@ function App() {
               
               <div className="flex gap-3">
                 <button onClick={() => setStep('options')} className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition">{t.back}</button>
-                <button onClick={() => setStep('payment')} disabled={!customer.firstName || !customer.lastName || !customer.email || !customer.phone || additionalDrivers.some(d => !d.firstName || !d.lastName || !d.email || !d.phone)} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">{t.continue}</button>
+                <button onClick={() => setStep('payment')} disabled={!customer.firstName || !customer.lastName || !customer.email || !customer.phone || customer.email !== confirmEmail || additionalDrivers.some(d => !d.firstName || !d.lastName || !d.email || !d.phone)} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">{t.continue}</button>
               </div>
             </div>
           )}

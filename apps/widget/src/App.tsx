@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
 
-const _stripePromise = loadStripe('pk_live_51SGki6Q6HBSRwJIhFcB9JtWvWWvUJum3LAiQlP5yPCmP1ENFjPU1DaLmokWiqS2Vo8Ao52deiji7gjtIYokJLqlK00D9UTu3cr')
 
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'VOLTRIDE'

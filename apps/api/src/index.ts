@@ -263,11 +263,7 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
       if (bookingId) {
         await prisma.booking.update({
           where: { id: bookingId },
-          data: { 
-            status: 'CONFIRMED',
-            paymentStatus: 'PAID',
-            stripeSessionId: session.id
-          }
+          data: { status: 'CONFIRMED' }
         })
       }
     }
@@ -327,11 +323,7 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
       if (bookingId) {
         await prisma.booking.update({
           where: { id: bookingId },
-          data: { 
-            status: 'CONFIRMED',
-            paymentStatus: 'PAID',
-            stripeSessionId: session.id
-          }
+          data: { status: 'CONFIRMED' }
         })
       }
     }

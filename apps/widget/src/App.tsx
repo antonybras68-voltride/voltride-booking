@@ -126,15 +126,14 @@ function App() {
   const getVehiclePrice = (vehicle: Vehicle, days: number, extraHours: number): number => {
     const pricing = vehicle.pricing?.[0]
     if (!pricing) return 0
-    let total = 0
-    for (let i = 1; i <= Math.min(days, 14); i++) {
-      total += Number(pricing[`day${i}`]) || 0
-    }
+    const dayKey = `day${Math.min(days, 14)}` as keyof typeof pricing
+    let total = Number(pricing[dayKey]) || 0
     if (days > 14) {
-      total += (days - 14) * (Number(pricing.day14) || 0)
+      const dailyRate = (Number(pricing.day14) || 0) / 14
+      total += (days - 14) * dailyRate
     }
     for (let i = 1; i <= Math.min(extraHours, 4); i++) {
-      total += Number(pricing[`extraHour${i}`]) || 0
+      total += Number(pricing[`extraHour${i}` as keyof typeof pricing]) || 0
     }
     return total
   }
@@ -205,6 +204,10 @@ function App() {
   }
 
 
+  const getTotalSelectedVehicles = (): number => {
+    return Object.values(selectedVehicles).reduce((sum, qty) => sum + qty, 0)
+  }
+
   // Récupérer les catégories des véhicules sélectionnés
   const getSelectedCategoryIds = (): string[] => {
     const categoryIds: string[] = []
@@ -230,21 +233,27 @@ function App() {
   const handleVehicleSelect = (vehicleId: string, quantity: number) => {
     const vehicle = vehicles.find(v => v.id === vehicleId)
     if (vehicle?.hasPlate) {
+      // Véhicule immatriculé : efface tout et ne garde que celui-ci
+      if (quantity > 0) {
+        setSelectedVehicles({ [vehicleId]: quantity })
+      } else {
+        setSelectedVehicles({ ...selectedVehicles, [vehicleId]: 0 })
+      }
+    } else {
+      // Véhicule non-immatriculé : efface les immatriculés existants
       if (quantity > 0) {
         const newSelection: Record<string, number> = {}
         Object.entries(selectedVehicles).forEach(([id, qty]) => {
           const v = vehicles.find(x => x.id === id)
-          if (!v?.hasPlate) {
+          if (!v?.hasPlate && qty > 0) {
             newSelection[id] = qty
           }
         })
         newSelection[vehicleId] = quantity
         setSelectedVehicles(newSelection)
       } else {
-        setSelectedVehicles({ ...selectedVehicles, [vehicleId]: 0 })
+        setSelectedVehicles({ ...selectedVehicles, [vehicleId]: quantity })
       }
-    } else {
-      setSelectedVehicles({ ...selectedVehicles, [vehicleId]: quantity })
     }
   }
 
@@ -433,7 +442,9 @@ function App() {
                       <h3 className="font-bold text-gray-800">{getName(option.name)}</h3>
                       <p className="text-sm text-[#ffaf10]">{getOptionPrice(option, calculateDays())}€</p>
                     </div>
-                    <input type="checkbox" checked={(selectedOptions[option.id] || 0) > 0} onChange={(e) => setSelectedOptions({ ...selectedOptions, [option.id]: e.target.checked ? 1 : 0 })} className="w-6 h-6 accent-[#ffaf10]" />
+                    <select value={selectedOptions[option.id] || 0} onChange={(e) => setSelectedOptions({ ...selectedOptions, [option.id]: parseInt(e.target.value) })} className="p-2 border border-gray-200 rounded-lg">
+                      {[...Array(getTotalSelectedVehicles() + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}
+                    </select>
 
                   </div>
                 ))}

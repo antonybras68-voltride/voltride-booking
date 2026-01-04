@@ -66,6 +66,22 @@ function App() {
   const [selectedVehicles, setSelectedVehicles] = useState<Record<string, number>>({})
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({})
   const [customer, setCustomer] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', postalCode: '', city: '', country: 'ES' })
+  const [additionalDrivers, setAdditionalDrivers] = useState<Array<{ firstName: string; lastName: string; email: string; phone: string }>>([])
+  
+  // Mettre à jour les conducteurs additionnels quand le nombre de véhicules immatriculés change
+  useEffect(() => {
+    const platedCount = getPlatedVehiclesCount()
+    const driversNeeded = Math.max(0, platedCount - 1)
+    if (additionalDrivers.length < driversNeeded) {
+      const newDrivers = [...additionalDrivers]
+      for (let i = additionalDrivers.length; i < driversNeeded; i++) {
+        newDrivers.push({ firstName: '', lastName: '', email: '', phone: '' })
+      }
+      setAdditionalDrivers(newDrivers)
+    } else if (additionalDrivers.length > driversNeeded) {
+      setAdditionalDrivers(additionalDrivers.slice(0, driversNeeded))
+    }
+  }, [selectedVehicles])
   const [bookingRef, setBookingRef] = useState('')
   const [processing, setProcessing] = useState(false)
 
@@ -145,7 +161,6 @@ function App() {
 
   const getMaxQuantity = (vehicle: Vehicle): number => {
     const available = getAvailableQuantity(vehicle)
-    if (vehicle.hasPlate) return Math.min(1, available)
     return available
   }
 
@@ -255,6 +270,16 @@ function App() {
         setSelectedVehicles({ ...selectedVehicles, [vehicleId]: quantity })
       }
     }
+  }
+  
+  // Compter le nombre de véhicules immatriculés sélectionnés
+  const getPlatedVehiclesCount = (): number => {
+    let count = 0
+    Object.entries(selectedVehicles).forEach(([id, qty]) => {
+      const v = vehicles.find(x => x.id === id)
+      if (v?.hasPlate && qty > 0) count += qty
+    })
+    return count
   }
 
   const handleSubmit = async () => {
@@ -458,7 +483,7 @@ function App() {
 
           {step === 'customer' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-800">👤 {t.yourInfo}</h2>
+              <h2 className="text-xl font-bold text-gray-800">👤 {t.yourInfo} {getPlatedVehiclesCount() > 1 && <span className="text-sm font-normal text-gray-500">({lang === 'fr' ? 'Conducteur 1' : lang === 'es' ? 'Conductor 1' : 'Driver 1'})</span>}</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">{t.firstName}</label>
@@ -495,9 +520,34 @@ function App() {
                   <input type="text" value={customer.country} onChange={(e) => setCustomer({ ...customer, country: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                 </div>
               </div>
+              
+              {additionalDrivers.map((driver, index) => (
+                <div key={index} className="border-t border-gray-200 pt-4 mt-4">
+                  <h3 className="text-lg font-bold text-gray-800 mb-3">👤 {lang === 'fr' ? `Conducteur ${index + 2}` : lang === 'es' ? `Conductor ${index + 2}` : `Driver ${index + 2}`}</h3>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">{t.firstName}</label>
+                      <input type="text" value={driver.firstName} onChange={(e) => { const newDrivers = [...additionalDrivers]; newDrivers[index].firstName = e.target.value; setAdditionalDrivers(newDrivers); }} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">{t.lastName}</label>
+                      <input type="text" value={driver.lastName} onChange={(e) => { const newDrivers = [...additionalDrivers]; newDrivers[index].lastName = e.target.value; setAdditionalDrivers(newDrivers); }} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">{t.email}</label>
+                    <input type="email" value={driver.email} onChange={(e) => { const newDrivers = [...additionalDrivers]; newDrivers[index].email = e.target.value; setAdditionalDrivers(newDrivers); }} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">{t.phone}</label>
+                    <input type="tel" value={driver.phone} onChange={(e) => { const newDrivers = [...additionalDrivers]; newDrivers[index].phone = e.target.value; setAdditionalDrivers(newDrivers); }} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                  </div>
+                </div>
+              ))}
+              
               <div className="flex gap-3">
                 <button onClick={() => setStep('options')} className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition">{t.back}</button>
-                <button onClick={() => setStep('payment')} disabled={!customer.firstName || !customer.lastName || !customer.email || !customer.phone} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">{t.continue}</button>
+                <button onClick={() => setStep('payment')} disabled={!customer.firstName || !customer.lastName || !customer.email || !customer.phone || additionalDrivers.some(d => !d.firstName || !d.lastName || !d.email || !d.phone)} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">{t.continue}</button>
               </div>
             </div>
           )}
@@ -507,6 +557,10 @@ function App() {
               <h2 className="text-xl font-bold text-gray-800">💳 {t.payment}</h2>
               <div className="bg-gradient-to-br from-[#abdee6]/20 to-[#ffaf10]/20 rounded-xl p-4 space-y-3">
                 <h3 className="font-bold text-gray-700">{t.summary}</h3>
+                <div className="text-sm text-gray-600 border-b border-[#ffaf10]/30 pb-2 mb-2">
+                  <p>📅 {startDate} {startTime} → {endDate} {endTime}</p>
+                  <p>📍 {agencies.find(a => a.id === selectedAgency)?.city}</p>
+                </div>
                 {Object.entries(selectedVehicles).filter(([, qty]) => qty > 0).map(([id, qty]) => {
                   const v = vehicles.find(x => x.id === id)!
                   const price = getVehiclePrice(v, calculateDays(), calculateExtraHours())
@@ -520,10 +574,10 @@ function App() {
                   <span>{t.total}</span>
                   <span className="text-[#ffaf10]">{calculateTotal()}€</span>
                 </div>
+                <p className="text-xs text-gray-500 text-right">IVA inclusa (21%)</p>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                 <p className="font-bold text-green-800">✅ {t.depositToPay}: {calculateDeposit()}€</p>
-                <p className="text-sm text-green-600">{calculateTotal() > 100 ? t.depositInfo20 : t.depositInfo50}</p>
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="font-bold text-amber-800">⚠️ {t.securityDeposit}: {calculateSecurityDeposit()}€</p>

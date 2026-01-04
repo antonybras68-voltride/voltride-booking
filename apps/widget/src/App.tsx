@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react'
+import { loadStripe } from '@stripe/stripe-js'
+
+const stripePromise = loadStripe('pk_live_51SGki6Q6HBSRwJIhFcB9JtWvWWvUJum3LAiQlP5yPCmP1ENFjPU1DaLmokWiqS2Vo8Ao52deiji7gjtIYokJLqlK00D9UTu3cr')
 
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'VOLTRIDE'
@@ -158,7 +161,24 @@ function App() {
   const startTimeSlots = getTimeSlots(startDate)
   const endTimeSlots = getTimeSlots(endDate)
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => { 
+    loadData()
+    // Gérer le retour de Stripe
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('success') === 'true') {
+      const ref = params.get('ref')
+      if (ref) {
+        setBookingRef(ref)
+        setStep('confirmation')
+        // Nettoyer l'URL
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+    }
+    if (params.get('canceled') === 'true') {
+      alert(lang === 'fr' ? 'Paiement annulé' : lang === 'es' ? 'Pago cancelado' : 'Payment canceled')
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
   useEffect(() => { if (selectedAgency) loadVehicles() }, [selectedAgency])
   useEffect(() => { if (startDate && !startTimeSlots.includes(startTime)) setStartTime(startTimeSlots[0] || '10:00') }, [startDate, startTimeSlots])
   useEffect(() => { if (endDate && !endTimeSlots.includes(endTime)) setEndTime(endTimeSlots[0] || '10:00') }, [endDate, endTimeSlots])
@@ -358,36 +378,61 @@ function App() {
       const extraHours = calculateExtraHours()
       const items = Object.entries(selectedVehicles)
         .filter(([, qty]) => qty > 0)
-        .map(([vehicleId, quantity]) => {
-          const vehicle = vehicles.find(v => v.id === vehicleId)!
+        .map(([id, qty]) => {
+          const vehicle = vehicles.find(v => v.id === id)!
           const unitPrice = getVehiclePrice(vehicle, days, extraHours)
-          return { vehicleId, quantity, unitPrice, totalPrice: unitPrice * quantity }
+          return { vehicleId: id, quantity: qty, unitPrice, totalPrice: unitPrice * qty }
         })
-      const opts = Object.entries(selectedOptions)
+      const optionItems = Object.entries(selectedOptions)
         .filter(([, qty]) => qty > 0)
-        .map(([optionId, quantity]) => {
-          const option = options.find(o => o.id === optionId)!
+        .map(([id, qty]) => {
+          const option = options.find(o => o.id === id)!
           const unitPrice = getOptionPrice(option, days)
-          return { optionId, quantity, unitPrice, totalPrice: unitPrice * quantity }
+          return { optionId: id, quantity: qty, unitPrice, totalPrice: unitPrice * qty }
         })
-      const res = await fetch(`${API_URL}/api/bookings`, {
+      
+      // Créer la réservation d'abord
+      const bookingRes = await fetch(`${API_URL}/api/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           agencyId: selectedAgency,
-          customer: { ...customer, language: lang },
           startDate, endDate, startTime, endTime,
-          items, options: opts,
           totalPrice: calculateTotal(),
           depositAmount: calculateDeposit(),
-          language: lang
+          language: lang,
+          customer: { ...customer, phone: phonePrefix === 'other' ? customPrefix + customer.phone : phonePrefix + customer.phone },
+          items,
+          options: optionItems
         })
       })
-      const booking = await res.json()
-      setBookingRef(booking.reference)
-      setStep('confirmation')
-    } catch (error) { console.error('Booking error:', error) }
-    setProcessing(false)
+      const booking = await bookingRes.json()
+      
+      // Créer la session Stripe
+      const stripeRes = await fetch(`${API_URL}/api/create-checkout-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brand: 'VOLTRIDE',
+          bookingId: booking.id,
+          amount: calculateDeposit(),
+          customerEmail: customer.email,
+          successUrl: window.location.origin + window.location.pathname + '?success=true&ref=' + booking.reference,
+          cancelUrl: window.location.origin + window.location.pathname + '?canceled=true'
+        })
+      })
+      const { url } = await stripeRes.json()
+      
+      // Rediriger vers Stripe
+      if (url) {
+        window.location.href = url
+      }
+    } catch (error) {
+      console.error(error)
+      alert(lang === 'fr' ? 'Erreur lors du paiement' : lang === 'es' ? 'Error en el pago' : 'Payment error')
+    } finally {
+      setProcessing(false)
+    }
   }
 
   if (loading) return (

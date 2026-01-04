@@ -1,6 +1,22 @@
 import express from 'express'
 import cors from 'cors'
 import { PrismaClient } from '@prisma/client'
+import Stripe from 'stripe'
+
+const stripeVoltride = new Stripe(process.env.STRIPE_SECRET_KEY_VOLTRIDE || '', { apiVersion: '2023-10-16' })
+const stripeMotorrent = new Stripe(process.env.STRIPE_SECRET_KEY_MOTORRENT || '', { apiVersion: '2023-10-16' })
+
+const getStripeInstance = (brand: string) => {
+  return brand === 'MOTOR-RENT' ? stripeMotorrent : stripeVoltride
+}
+import Stripe from 'stripe'
+
+const stripeVoltride = new Stripe(process.env.STRIPE_SECRET_KEY_VOLTRIDE || '', { apiVersion: '2023-10-16' })
+const stripeMotorrent = new Stripe(process.env.STRIPE_SECRET_KEY_MOTORRENT || '', { apiVersion: '2023-10-16' })
+
+const getStripeInstance = (brand: string) => {
+  return brand === 'MOTOR-RENT' ? stripeMotorrent : stripeVoltride
+}
 
 const app = express()
 const prisma = new PrismaClient()
@@ -201,6 +217,134 @@ app.post('/api/bookings', async (req, res) => {
 app.put('/api/bookings/:id/status', async (req, res) => {
   try { const booking = await prisma.booking.update({ where: { id: req.params.id }, data: { status: req.body.status } }); res.json(booking) }
   catch (error) { res.status(500).json({ error: 'Failed to update booking status' }) }
+})
+
+// ============== STRIPE CHECKOUT ==============
+app.post('/api/create-checkout-session', async (req, res) => {
+  try {
+    const { brand, bookingId, amount, customerEmail, successUrl, cancelUrl } = req.body
+    const stripe = getStripeInstance(brand)
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer_email: customerEmail,
+      line_items: [{
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: brand === 'MOTOR-RENT' ? 'Réservation Motor-Rent' : 'Réservation Voltride',
+            description: `Acompte réservation #${bookingId}`,
+          },
+          unit_amount: Math.round(amount * 100),
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
+        bookingId: bookingId,
+        brand: brand
+      }
+    })
+    
+    res.json({ sessionId: session.id, url: session.url })
+  } catch (error) {
+    console.error('Stripe error:', error)
+    res.status(500).json({ error: 'Failed to create checkout session' })
+  }
+})
+
+// ============== STRIPE WEBHOOK ==============
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const event = req.body
+    
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object
+      const bookingId = session.metadata?.bookingId
+      
+      if (bookingId) {
+        await prisma.booking.update({
+          where: { id: bookingId },
+          data: { 
+            status: 'CONFIRMED',
+            paymentStatus: 'PAID',
+            stripeSessionId: session.id
+          }
+        })
+      }
+    }
+    
+    res.json({ received: true })
+  } catch (error) {
+    console.error('Webhook error:', error)
+    res.status(400).json({ error: 'Webhook error' })
+  }
+})
+
+// ============== STRIPE CHECKOUT ==============
+app.post('/api/create-checkout-session', async (req, res) => {
+  try {
+    const { brand, bookingId, amount, customerEmail, successUrl, cancelUrl } = req.body
+    const stripe = getStripeInstance(brand)
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer_email: customerEmail,
+      line_items: [{
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: brand === 'MOTOR-RENT' ? 'Réservation Motor-Rent' : 'Réservation Voltride',
+            description: `Acompte réservation #${bookingId}`,
+          },
+          unit_amount: Math.round(amount * 100),
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
+        bookingId: bookingId,
+        brand: brand
+      }
+    })
+    
+    res.json({ sessionId: session.id, url: session.url })
+  } catch (error) {
+    console.error('Stripe error:', error)
+    res.status(500).json({ error: 'Failed to create checkout session' })
+  }
+})
+
+// ============== STRIPE WEBHOOK ==============
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const event = req.body
+    
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object
+      const bookingId = session.metadata?.bookingId
+      
+      if (bookingId) {
+        await prisma.booking.update({
+          where: { id: bookingId },
+          data: { 
+            status: 'CONFIRMED',
+            paymentStatus: 'PAID',
+            stripeSessionId: session.id
+          }
+        })
+      }
+    }
+    
+    res.json({ received: true })
+  } catch (error) {
+    console.error('Webhook error:', error)
+    res.status(400).json({ error: 'Webhook error' })
+  }
 })
 
 const PORT = parseInt(process.env.PORT || '8080', 10)

@@ -672,7 +672,6 @@ function App() {
 
           {step === 'confirmation' && (
             <div className="text-center space-y-4">
-              <div className="text-6xl animate-bounce">🎉</div>
               <h2 className="text-2xl font-bold text-gray-800">{t.confirmation}</h2>
               <div className="bg-gradient-to-br from-[#abdee6]/20 to-[#ffaf10]/20 rounded-xl p-4">
                 <p className="text-gray-600">{t.bookingRef}</p>
@@ -680,17 +679,17 @@ function App() {
               </div>
               <p className="text-gray-600">📧 {t.emailSent}</p>
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-left">
-                <h3 className="font-bold text-blue-800 mb-2">�� {t.requiredDocs}</h3>
+                <h3 className="font-bold text-blue-800 mb-2">{t.requiredDocs}</h3>
                 <ul className="text-sm text-blue-600 space-y-1">
                   <li>• {t.docId}</li>
-                  <li>• {t.docLicense}</li>
+                  <li>• {lang === 'fr' ? 'Permis AM, si location moto électrique' : lang === 'es' ? 'Permiso AM, si alquiler de moto eléctrica' : 'AM license, if electric motorcycle rental'}</li>
                 </ul>
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
                 <h3 className="font-bold text-amber-800">💰 {t.securityDeposit}: {calculateSecurityDeposit()}€</h3>
                 <p className="text-sm text-amber-600">{t.cashOrCard}</p>
               </div>
-              <p className="text-4xl">🌴☀️🚲</p>
+              <p className="text-gray-500 text-sm mt-4">{lang === 'fr' ? 'Merci pour votre confiance ! À bientôt chez Voltride.' : lang === 'es' ? '¡Gracias por su confianza! Hasta pronto en Voltride.' : 'Thank you for your trust! See you soon at Voltride.'}</p>
             </div>
           )}
         </div>

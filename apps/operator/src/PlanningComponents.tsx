@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 
-// Types
 interface FleetVehicle {
   id: string
   vehicleNumber: string
@@ -18,44 +17,22 @@ interface Booking {
   endDate: string
   startTime: string
   endTime: string
-  totalPrice: number
   status: string
-  customer: { firstName: string; lastName: string; email: string; phone: string }
-  items: { vehicle: { id: string; name: any } }[]
+  customer: { firstName: string; lastName: string }
   fleetVehicleId?: string
   checkedIn?: boolean
   checkedOut?: boolean
 }
 
-interface PlanningProps {
-  fleet: FleetVehicle[]
-  bookings: Booking[]
-  days: Date[]
-  selectedAgency: string
-  onBookingClick: (booking: Booking) => void
-  onCellClick: (fleetVehicle: FleetVehicle, date: Date) => void
-  onBookingUpdate: () => void
-  onCheckIn: (booking: Booking) => void
-  onCheckOut: (booking: Booking) => void
-}
-
 const getName = (obj: any) => obj?.fr || obj?.es || obj?.en || ''
-const formatDate = (d: Date) => d.toISOString().split('T')[0]
 
-const STATUS_COLORS: Record<string, string> = {
-  AVAILABLE: 'bg-green-500',
-  RESERVED: 'bg-yellow-500',
-  RENTED: 'bg-blue-500',
-  MAINTENANCE: 'bg-orange-500',
-  OUT_OF_SERVICE: 'bg-red-500'
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  AVAILABLE: 'Disponible',
-  RESERVED: 'Réservé',
-  RENTED: 'En location',
-  MAINTENANCE: 'Maintenance',
-  OUT_OF_SERVICE: 'Hors service'
+// Couleurs alternées pour les réservations - une normale et une plus claire
+const BOOKING_COLORS = {
+  CONFIRMED: ['bg-blue-500', 'bg-blue-400'],
+  PENDING: ['bg-yellow-500', 'bg-yellow-400'],
+  CHECKED_IN: ['bg-green-600', 'bg-green-500'],
+  CHECKED_OUT: ['bg-gray-400', 'bg-gray-300'],
+  MAINTENANCE: ['bg-orange-500', 'bg-orange-400']
 }
 
 // ============== ADVANCED PLANNING ==============
@@ -69,440 +46,267 @@ export function AdvancedPlanning({
   onBookingUpdate,
   onCheckIn,
   onCheckOut
-}: PlanningProps) {
-  const [draggedBooking, setDraggedBooking] = useState<Booking | null>(null)
-  const [dragType, setDragType] = useState<'move' | 'resize-start' | 'resize-end' | null>(null)
-  const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null)
-  const [hoveredBooking, setHoveredBooking] = useState<Booking | null>(null)
-  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null)
-  const [dropTarget, setDropTarget] = useState<{ fleetId: string; dayIndex: number } | null>(null)
-  const [hasConflict, setHasConflict] = useState(false)
+}: {
+  fleet: FleetVehicle[]
+  bookings: Booking[]
+  days: Date[]
+  selectedAgency: string
+  onBookingClick: (b: Booking) => void
+  onCellClick: (f: FleetVehicle, d: Date) => void
+  onBookingUpdate: () => void
+  onCheckIn: (b: Booking) => void
+  onCheckOut: (b: Booking) => void
+}) {
+  const [tooltip, setTooltip] = useState<{ booking: Booking; x: number; y: number } | null>(null)
   const [contextMenu, setContextMenu] = useState<{ booking: Booking; x: number; y: number } | null>(null)
-  const planningRef = useRef<HTMLDivElement>(null)
 
-  // Get bookings for a fleet vehicle
-  const getBookingsForFleet = (fleetVehicle: FleetVehicle) => {
-    const firstDay = formatDate(days[0])
-    const lastDay = formatDate(days[days.length - 1])
-    
+  const formatDate = (d: Date) => d.toISOString().split('T')[0]
+  const today = formatDate(new Date())
+
+  // Trier les bookings par date de début pour pouvoir alterner les couleurs
+  const sortedBookings = [...bookings].sort((a, b) => 
+    new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+  )
+
+  // Pour chaque véhicule, tracker l'index de la dernière réservation pour alterner les couleurs
+  const vehicleBookingIndex: Record<string, number> = {}
+
+  const getBookingsForCell = (fleetId: string, date: Date) => {
+    const dateStr = formatDate(date)
     return bookings.filter(b => {
-      if (selectedAgency !== 'all' && !fleet.find(f => f.id === b.fleetVehicleId && f.agency.id === selectedAgency)) return false
+      if (b.fleetVehicleId !== fleetId) return false
       const start = b.startDate.split('T')[0]
       const end = b.endDate.split('T')[0]
-      
-      if (b.fleetVehicleId === fleetVehicle.id) {
-        return start <= lastDay && end >= firstDay
-      }
-      
-      if (!b.fleetVehicleId && fleet.find(f => f.id === fleetVehicle.id)?.agency.id === selectedAgency) {
-        const hasVehicleType = b.items.some(item => item.vehicle.id === fleetVehicle.vehicle.id)
-        return hasVehicleType && start <= lastDay && end >= firstDay
-      }
-      
-      return false
-    }).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-  }
-
-  // Calculate booking position and style
-  const getBookingStyle = (booking: Booking, allBookings: Booking[]) => {
-    const startDate = new Date(booking.startDate)
-    const endDate = new Date(booking.endDate)
-    const firstDay = days[0]
-    const lastDay = days[days.length - 1]
-    
-    const effectiveStart = startDate < firstDay ? firstDay : startDate
-    const effectiveEnd = endDate > lastDay ? lastDay : endDate
-    
-    const startIndex = days.findIndex(d => formatDate(d) === formatDate(effectiveStart))
-    const endIndex = days.findIndex(d => formatDate(d) === formatDate(effectiveEnd))
-    
-    if (startIndex === -1 || endIndex === -1) return null
-    
-    const left = startIndex * (100 / days.length)
-    const width = ((endIndex - startIndex + 1) * (100 / days.length))
-    
-    // Determine if this booking is at the start/end of visible range
-    const isStartVisible = startDate >= firstDay
-    const isEndVisible = endDate <= lastDay
-    
-    // Check if there's a booking immediately before or after
-    const bookingIndex = allBookings.findIndex(b => b.id === booking.id)
-    const prevBooking = bookingIndex > 0 ? allBookings[bookingIndex - 1] : null
-    const nextBooking = bookingIndex < allBookings.length - 1 ? allBookings[bookingIndex + 1] : null
-    
-    const prevEnd = prevBooking ? new Date(prevBooking.endDate) : null
-    const nextStart = nextBooking ? new Date(nextBooking.startDate) : null
-    
-    const isConnectedToPrev = prevEnd && formatDate(prevEnd) === formatDate(new Date(startDate.getTime() - 86400000))
-    const isConnectedToNext = nextStart && formatDate(nextStart) === formatDate(new Date(endDate.getTime() + 86400000))
-    
-    // Determine border radius
-    let borderRadius = ''
-    if (isStartVisible && !isConnectedToPrev) {
-      borderRadius += 'rounded-l-lg '
-    }
-    if (isEndVisible && !isConnectedToNext) {
-      borderRadius += 'rounded-r-lg '
-    }
-    
-    return { left: `${left}%`, width: `${width}%`, borderRadius: borderRadius.trim() }
-  }
-
-  // Get booking color based on status
-  const getBookingColor = (booking: Booking) => {
-    if (booking.checkedOut) return 'bg-gray-400' // Terminé
-    if (booking.checkedIn) return 'bg-green-600' // En cours (client parti)
-    if (booking.status === 'CONFIRMED') return 'bg-blue-500' // Confirmé
-    if (booking.status === 'PENDING') return 'bg-yellow-500' // En attente
-    return 'bg-gray-300'
-  }
-
-  // Handle drag start
-  const handleDragStart = (e: React.MouseEvent, booking: Booking, type: 'move' | 'resize-start' | 'resize-end') => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDraggedBooking(booking)
-    setDragType(type)
-    setDragStartPos({ x: e.clientX, y: e.clientY })
-  }
-
-  // Handle drag over cell
-  const handleDragOver = (fleetId: string, dayIndex: number) => {
-    if (!draggedBooking) return
-    
-    setDropTarget({ fleetId, dayIndex })
-    
-    // Check for conflicts
-    const targetFleet = fleet.find(f => f.id === fleetId)
-    if (!targetFleet) return
-    
-    const existingBookings = getBookingsForFleet(targetFleet)
-    const targetDate = days[dayIndex]
-    
-    const conflict = existingBookings.some(b => {
-      if (b.id === draggedBooking.id) return false
-      const start = new Date(b.startDate)
-      const end = new Date(b.endDate)
-      return targetDate >= start && targetDate <= end
+      return dateStr >= start && dateStr <= end
     })
-    
-    setHasConflict(conflict)
   }
 
-  // Handle drop
-  const handleDrop = async () => {
-    if (!draggedBooking || !dropTarget || hasConflict) {
-      resetDrag()
-      return
+  const getBookingColor = (booking: Booking, fleetId: string): string => {
+    // Déterminer le type de couleur
+    let colorType: keyof typeof BOOKING_COLORS = 'CONFIRMED'
+    if (booking.checkedOut) colorType = 'CHECKED_OUT'
+    else if (booking.checkedIn) colorType = 'CHECKED_IN'
+    else if (booking.status === 'PENDING') colorType = 'PENDING'
+    
+    // Calculer l'index pour ce véhicule
+    const key = `${fleetId}-${booking.startDate}`
+    if (vehicleBookingIndex[fleetId] === undefined) {
+      vehicleBookingIndex[fleetId] = 0
     }
     
-    const newDate = days[dropTarget.dayIndex]
-    const originalStart = new Date(draggedBooking.startDate)
-    const originalEnd = new Date(draggedBooking.endDate)
-    const duration = Math.ceil((originalEnd.getTime() - originalStart.getTime()) / (1000 * 60 * 60 * 24))
+    // Trouver l'index de cette réservation parmi toutes les réservations de ce véhicule
+    const vehicleBookings = sortedBookings.filter(b => b.fleetVehicleId === fleetId)
+    const bookingIndex = vehicleBookings.findIndex(b => b.id === booking.id)
     
-    let newStartDate: Date
-    let newEndDate: Date
-    
-    if (dragType === 'move') {
-      newStartDate = newDate
-      newEndDate = new Date(newDate.getTime() + duration * 86400000)
-    } else if (dragType === 'resize-start') {
-      newStartDate = newDate
-      newEndDate = originalEnd
-    } else {
-      newStartDate = originalStart
-      newEndDate = newDate
-    }
-    
-    // Update booking via API
-    try {
-      const updates: any = {}
-      
-      if (dragType === 'move' && dropTarget.fleetId !== draggedBooking.fleetVehicleId) {
-        updates.fleetVehicleId = dropTarget.fleetId
-      }
-      
-      if (formatDate(newStartDate) !== formatDate(originalStart)) {
-        updates.startDate = newStartDate.toISOString()
-      }
-      
-      if (formatDate(newEndDate) !== formatDate(originalEnd)) {
-        updates.endDate = newEndDate.toISOString()
-      }
-      
-      if (Object.keys(updates).length > 0) {
-        // Note: You'll need to add this endpoint to the API
-        await fetch(`${API_URL}/api/bookings/${draggedBooking.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates)
-        })
-        onBookingUpdate()
-      }
-    } catch (e) {
-      console.error('Failed to update booking:', e)
-    }
-    
-    resetDrag()
+    // Alterner: index pair = couleur normale, index impair = couleur claire
+    const colorIndex = bookingIndex % 2
+    return BOOKING_COLORS[colorType][colorIndex]
   }
 
-  // Reset drag state
-  const resetDrag = () => {
-    setDraggedBooking(null)
-    setDragType(null)
-    setDragStartPos(null)
-    setDropTarget(null)
-    setHasConflict(false)
+  const getBookingPosition = (booking: Booking, date: Date, cellIndex: number) => {
+    const dateStr = formatDate(date)
+    const start = booking.startDate.split('T')[0]
+    const end = booking.endDate.split('T')[0]
+    
+    const isStart = dateStr === start
+    const isEnd = dateStr === end
+    
+    // Vérifier si une autre réservation se termine juste avant ou commence juste après
+    const prevDate = new Date(date)
+    prevDate.setDate(prevDate.getDate() - 1)
+    const nextDate = new Date(date)
+    nextDate.setDate(nextDate.getDate() + 1)
+    
+    return { isStart, isEnd }
   }
 
-  // Handle double click for quick check-in
+  const handleContextMenu = (e: React.MouseEvent, booking: Booking) => {
+    e.preventDefault()
+    setContextMenu({ booking, x: e.clientX, y: e.clientY })
+  }
+
   const handleDoubleClick = (booking: Booking) => {
-    if (!booking.checkedIn && booking.status === 'CONFIRMED') {
+    if (!booking.checkedIn && booking.status === 'CONFIRMED' && booking.fleetVehicleId) {
       onCheckIn(booking)
     } else if (booking.checkedIn && !booking.checkedOut) {
       onCheckOut(booking)
     }
   }
 
-  // Handle right click for context menu
-  const handleContextMenu = (e: React.MouseEvent, booking: Booking) => {
-    e.preventDefault()
-    setContextMenu({ booking, x: e.clientX, y: e.clientY })
+  // Fermer le menu contextuel quand on clique ailleurs
+  const handleClickOutside = () => {
+    setContextMenu(null)
+    setTooltip(null)
   }
-
-  // Close context menu on click outside
-  useEffect(() => {
-    const handleClick = () => setContextMenu(null)
-    window.addEventListener('click', handleClick)
-    return () => window.removeEventListener('click', handleClick)
-  }, [])
-
-  // Handle mouse up (drop)
-  useEffect(() => {
-    const handleMouseUp = () => {
-      if (draggedBooking) handleDrop()
-    }
-    window.addEventListener('mouseup', handleMouseUp)
-    return () => window.removeEventListener('mouseup', handleMouseUp)
-  }, [draggedBooking, dropTarget, hasConflict])
-
-  const formatDateShort = (d: Date) => {
-    const daysArr = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM']
-    return { day: daysArr[d.getDay()], num: d.getDate() }
-  }
-
-  const filteredFleet = fleet.filter(f => {
-    if (selectedAgency !== 'all' && f.agency.id !== selectedAgency) return false
-    return true
-  })
 
   return (
-    <div ref={planningRef} className="relative">
+    <div className="bg-white rounded-xl shadow overflow-hidden" onClick={handleClickOutside}>
       {/* Legend */}
-      <div className="flex gap-4 mb-4 flex-wrap">
-        <div className="flex items-center gap-2"><div className="w-4 h-4 bg-blue-500 rounded"></div><span className="text-sm">Confirmé</span></div>
-        <div className="flex items-center gap-2"><div className="w-4 h-4 bg-yellow-500 rounded"></div><span className="text-sm">En attente</span></div>
-        <div className="flex items-center gap-2"><div className="w-4 h-4 bg-green-600 rounded"></div><span className="text-sm">Check-in fait</span></div>
-        <div className="flex items-center gap-2"><div className="w-4 h-4 bg-gray-400 rounded"></div><span className="text-sm">Terminé</span></div>
-        <div className="flex items-center gap-2"><div className="w-4 h-4 bg-orange-500 rounded"></div><span className="text-sm">Maintenance</span></div>
+      <div className="p-3 border-b flex flex-wrap gap-3 text-sm">
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-blue-500"></div> Confirmé</div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-yellow-500"></div> En attente</div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-green-600"></div> Check-in fait</div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-gray-400"></div> Terminé</div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-orange-500"></div> Maintenance</div>
       </div>
       
-      {/* Planning Grid */}
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        {/* Header */}
-        <div className="grid" style={{ gridTemplateColumns: '200px repeat(10, 1fr)' }}>
-          <div className="p-3 bg-gray-50 border-b border-r font-bold">Véhicule</div>
-          {days.map((day, i) => {
-            const { day: d, num } = formatDateShort(day)
-            const isToday = formatDate(day) === formatDate(new Date())
-            return (
-              <div key={i} className={`p-2 text-center border-b ${isToday ? 'bg-blue-500 text-white' : 'bg-gray-50'}`}>
-                <p className="text-xs">{d}</p>
-                <p className="text-lg font-bold">{num}</p>
-                {isToday && <p className="text-xs">Aujourd'hui</p>}
-              </div>
-            )
-          })}
-        </div>
-        
-        {/* Rows */}
-        {filteredFleet.map(fleetVehicle => {
-          const fleetBookings = getBookingsForFleet(fleetVehicle)
-          const isUnavailable = fleetVehicle.status === 'MAINTENANCE' || fleetVehicle.status === 'OUT_OF_SERVICE'
-          
-          return (
-            <div key={fleetVehicle.id} className="grid border-b" style={{ gridTemplateColumns: '200px repeat(10, 1fr)' }}>
-              {/* Vehicle Info */}
-              <div className="p-2 border-r flex items-center gap-2">
-                {fleetVehicle.vehicle.imageUrl ? (
-                  <img src={fleetVehicle.vehicle.imageUrl} className="w-10 h-10 rounded object-cover" />
-                ) : (
-                  <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">🚲</div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm">{fleetVehicle.vehicleNumber}</p>
-                  <p className="text-xs text-gray-500 truncate">{getName(fleetVehicle.vehicle.name)}</p>
-                  <span className={`text-xs px-1 rounded text-white ${STATUS_COLORS[fleetVehicle.status]}`}>
-                    {STATUS_LABELS[fleetVehicle.status]}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Timeline */}
-              <div className="col-span-10 relative h-16">
-                {/* Background cells */}
-                <div className="absolute inset-0 grid grid-cols-10">
-                  {days.map((day, i) => {
-                    const isDropTarget = dropTarget?.fleetId === fleetVehicle.id && dropTarget?.dayIndex === i
-                    return (
-                      <div
-                        key={i}
-                        onClick={() => !isUnavailable && onCellClick(fleetVehicle, day)}
-                        onMouseEnter={() => draggedBooking && handleDragOver(fleetVehicle.id, i)}
-                        className={`border-l h-full transition-colors ${
-                          isUnavailable ? 'bg-gray-100 cursor-not-allowed' :
-                          isDropTarget && hasConflict ? 'bg-red-100' :
-                          isDropTarget ? 'bg-green-100' :
-                          formatDate(day) === formatDate(new Date()) ? 'bg-blue-50' : ''
-                        } ${!isUnavailable && !draggedBooking ? 'cursor-pointer hover:bg-blue-50' : ''}`}
-                      />
-                    )
-                  })}
-                </div>
-                
-                {/* Unavailable overlay */}
-                {isUnavailable && (
-                  <div className={`absolute inset-0 ${fleetVehicle.status === 'MAINTENANCE' ? 'bg-orange-100' : 'bg-red-100'} opacity-50`} />
-                )}
-                
-                {/* Bookings */}
-                {fleetBookings.map((booking) => {
-                  const style = getBookingStyle(booking, fleetBookings)
-                  if (!style) return null
-                  
-                  const isAssigned = booking.fleetVehicleId === fleetVehicle.id
-                  const isDragging = draggedBooking?.id === booking.id
-                  const color = getBookingColor(booking)
+      {/* Grid */}
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[800px]">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="sticky left-0 bg-gray-50 px-4 py-3 text-left font-medium w-48 z-10">Véhicule</th>
+              {days.map((day, i) => {
+                const dateStr = formatDate(day)
+                const isToday = dateStr === today
+                const isWeekend = day.getDay() === 0 || day.getDay() === 6
+                return (
+                  <th key={i} className={`px-1 py-2 text-center min-w-[80px] ${isToday ? 'bg-blue-100' : isWeekend ? 'bg-gray-100' : ''}`}>
+                    <div className={`text-xs uppercase ${isToday ? 'text-blue-600 font-bold' : 'text-gray-500'}`}>
+                      {day.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                    </div>
+                    <div className={`text-lg ${isToday ? 'text-blue-600 font-bold' : ''}`}>
+                      {day.getDate()}
+                    </div>
+                    {isToday && <div className="text-xs text-blue-600">Aujourd'hui</div>}
+                  </th>
+                )
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {fleet.map(f => (
+              <tr key={f.id} className="border-t hover:bg-gray-50">
+                <td className="sticky left-0 bg-white px-4 py-2 z-10 border-r">
+                  <div className="flex items-center gap-2">
+                    {f.vehicle.imageUrl ? (
+                      <img src={f.vehicle.imageUrl} className="w-10 h-10 rounded object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-lg">🚲</div>
+                    )}
+                    <div>
+                      <p className="font-bold text-sm">{f.vehicleNumber}</p>
+                      <p className="text-xs text-gray-500 truncate max-w-[120px]">{getName(f.vehicle.name)}</p>
+                      <span className={`text-xs px-1 py-0.5 rounded ${f.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {f.status === 'AVAILABLE' ? 'Disponible' : f.status}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                {days.map((day, dayIndex) => {
+                  const dateStr = formatDate(day)
+                  const isToday = dateStr === today
+                  const isWeekend = day.getDay() === 0 || day.getDay() === 6
+                  const cellBookings = getBookingsForCell(f.id, day)
                   
                   return (
-                    <div
-                      key={booking.id}
-                      className={`absolute top-1 bottom-1 ${color} ${style.borderRadius} text-white cursor-grab shadow flex items-center group transition-all ${
-                        isDragging ? 'opacity-50 scale-95' : ''
-                      } ${!isAssigned ? 'border-2 border-dashed border-blue-700 bg-opacity-70' : ''}`}
-                      style={{ left: style.left, width: style.width }}
-                      onMouseDown={(e) => handleDragStart(e, booking, 'move')}
-                      onDoubleClick={() => handleDoubleClick(booking)}
-                      onContextMenu={(e) => handleContextMenu(e, booking)}
-                      onMouseEnter={(e) => {
-                        setHoveredBooking(booking)
-                        setTooltipPos({ x: e.clientX, y: e.clientY })
-                      }}
-                      onMouseLeave={() => setHoveredBooking(null)}
+                    <td 
+                      key={dayIndex} 
+                      className={`px-0.5 py-1 h-16 relative ${isToday ? 'bg-blue-50' : isWeekend ? 'bg-gray-50' : ''}`}
+                      onClick={() => cellBookings.length === 0 && onCellClick(f, day)}
                     >
-                      {/* Resize handle left */}
-                      <div
-                        className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 bg-white/30"
-                        onMouseDown={(e) => { e.stopPropagation(); handleDragStart(e, booking, 'resize-start') }}
-                      />
+                      {cellBookings.map(booking => {
+                        const { isStart, isEnd } = getBookingPosition(booking, day, dayIndex)
+                        const color = getBookingColor(booking, f.id)
+                        
+                        // Calculer les marges pour l'espacement entre réservations
+                        const marginLeft = isStart ? '2px' : '0'
+                        const marginRight = isEnd ? '2px' : '0'
+                        
+                        return (
+                          <div
+                            key={booking.id}
+                            className={`absolute inset-y-1 ${color} text-white text-xs cursor-pointer overflow-hidden transition-all hover:brightness-110`}
+                            style={{
+                              left: marginLeft,
+                              right: marginRight,
+                              borderTopLeftRadius: isStart ? '6px' : '0',
+                              borderBottomLeftRadius: isStart ? '6px' : '0',
+                              borderTopRightRadius: isEnd ? '6px' : '0',
+                              borderBottomRightRadius: isEnd ? '6px' : '0',
+                            }}
+                            onClick={(e) => { e.stopPropagation(); onBookingClick(booking) }}
+                            onDoubleClick={(e) => { e.stopPropagation(); handleDoubleClick(booking) }}
+                            onContextMenu={(e) => handleContextMenu(e, booking)}
+                            onMouseEnter={(e) => setTooltip({ booking, x: e.clientX, y: e.clientY })}
+                            onMouseLeave={() => setTooltip(null)}
+                          >
+                            {isStart && (
+                              <div className="p-1 h-full flex flex-col justify-center">
+                                <p className="font-medium truncate">{booking.startTime} {booking.customer.lastName}</p>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                       
-                      {/* Content */}
-                      <div className="flex-1 px-2 flex items-center overflow-hidden">
-                        <span className="text-xs mr-1 opacity-75">{booking.startTime}</span>
-                        <span className="flex-1 truncate font-bold text-sm">{booking.customer.lastName}</span>
-                        <span className="text-xs ml-1 opacity-75">{booking.endTime}</span>
-                      </div>
-                      
-                      {/* Check-in indicator */}
-                      {booking.checkedIn && !booking.checkedOut && (
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
+                      {/* Empty cell indicator */}
+                      {cellBookings.length === 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                          <span className="text-gray-400 text-xl">+</span>
+                        </div>
                       )}
-                      
-                      {/* Resize handle right */}
-                      <div
-                        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 bg-white/30"
-                        onMouseDown={(e) => { e.stopPropagation(); handleDragStart(e, booking, 'resize-end') }}
-                      />
-                    </div>
+                    </td>
                   )
                 })}
-              </div>
-            </div>
-          )
-        })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
       
       {/* Tooltip */}
-      {hoveredBooking && tooltipPos && !draggedBooking && (
+      {tooltip && (
         <div
-          className="fixed z-50 bg-gray-900 text-white p-3 rounded-lg shadow-xl text-sm max-w-xs"
-          style={{ left: tooltipPos.x + 10, top: tooltipPos.y + 10 }}
+          className="fixed z-50 bg-gray-900 text-white p-3 rounded-lg shadow-xl text-sm max-w-xs pointer-events-none"
+          style={{ left: tooltip.x + 10, top: tooltip.y + 10 }}
         >
-          <p className="font-bold">{hoveredBooking.customer.firstName} {hoveredBooking.customer.lastName}</p>
-          <p className="text-gray-300">{hoveredBooking.customer.email}</p>
-          <p className="text-gray-300">{hoveredBooking.customer.phone}</p>
-          <div className="border-t border-gray-700 mt-2 pt-2">
-            <p>{new Date(hoveredBooking.startDate).toLocaleDateString('fr-FR')} {hoveredBooking.startTime}</p>
-            <p>→ {new Date(hoveredBooking.endDate).toLocaleDateString('fr-FR')} {hoveredBooking.endTime}</p>
-          </div>
-          <p className="font-bold mt-2">{hoveredBooking.totalPrice}€</p>
-          <p className="text-xs text-gray-400 mt-1">Double-clic = Check-in rapide</p>
+          <p className="font-bold">{tooltip.booking.customer.firstName} {tooltip.booking.customer.lastName}</p>
+          <p className="text-gray-300">{tooltip.booking.reference}</p>
+          <p className="mt-1">
+            {new Date(tooltip.booking.startDate).toLocaleDateString('fr-FR')} {tooltip.booking.startTime}
+            {' → '}
+            {new Date(tooltip.booking.endDate).toLocaleDateString('fr-FR')} {tooltip.booking.endTime}
+          </p>
+          <p className="mt-1 text-xs text-gray-400">Double-clic = Check-in/out rapide</p>
         </div>
       )}
       
       {/* Context Menu */}
       {contextMenu && (
         <div
-          className="fixed z-50 bg-white rounded-lg shadow-xl border overflow-hidden"
+          className="fixed z-50 bg-white border rounded-lg shadow-xl py-1 min-w-[160px]"
           style={{ left: contextMenu.x, top: contextMenu.y }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
           <button
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
             onClick={() => { onBookingClick(contextMenu.booking); setContextMenu(null) }}
           >
-            <span>👁️</span> Voir détails
+            👁️ Voir détails
           </button>
-          {!contextMenu.booking.checkedIn && contextMenu.booking.status === 'CONFIRMED' && (
+          {!contextMenu.booking.checkedIn && contextMenu.booking.status === 'CONFIRMED' && contextMenu.booking.fleetVehicleId && (
             <button
-              className="w-full px-4 py-2 text-left hover:bg-green-50 text-green-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm text-green-600"
               onClick={() => { onCheckIn(contextMenu.booking); setContextMenu(null) }}
             >
-              <span>✅</span> Check-in
+              ✅ Check-in
             </button>
           )}
           {contextMenu.booking.checkedIn && !contextMenu.booking.checkedOut && (
             <button
-              className="w-full px-4 py-2 text-left hover:bg-blue-50 text-blue-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm text-orange-600"
               onClick={() => { onCheckOut(contextMenu.booking); setContextMenu(null) }}
             >
-              <span>🏁</span> Check-out
+              🏁 Check-out
             </button>
           )}
           <button
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-            onClick={() => { /* TODO: Modifier */ setContextMenu(null) }}
+            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm text-red-600"
+            onClick={() => { setContextMenu(null) }}
           >
-            <span>✏️</span> Modifier
+            ❌ Annuler réservation
           </button>
-          <button
-            className="w-full px-4 py-2 text-left hover:bg-red-50 text-red-700 flex items-center gap-2"
-            onClick={() => { /* TODO: Annuler */ setContextMenu(null) }}
-          >
-            <span>❌</span> Annuler
-          </button>
-        </div>
-      )}
-      
-      {/* Drag indicator */}
-      {draggedBooking && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-xl z-50">
-          {hasConflict ? (
-            <span className="text-red-400">⚠️ Conflit détecté - Déposez ailleurs</span>
-          ) : (
-            <span>📦 Déplacez vers une nouvelle position</span>
-          )}
         </div>
       )}
     </div>
@@ -516,8 +320,8 @@ export function CheckInModal({
   onClose,
   onComplete
 }: {
-  booking: Booking
-  fleetVehicle: FleetVehicle | null
+  booking: any
+  fleetVehicle: any
   onClose: () => void
   onComplete: () => void
 }) {
@@ -528,60 +332,68 @@ export function CheckInModal({
     fuelLevel: 'FULL',
     condition: 'GOOD',
     notes: '',
-    depositMethod: 'CARD',
-    depositPaid: false
+    depositPaid: false,
+    paymentMethod: 'CARD'
   })
-
-  const getName = (obj: any) => obj?.fr || obj?.es || obj?.en || ''
 
   const handleComplete = async () => {
     setLoading(true)
     try {
-      // Create contract and inspection via API
-      // Note: This is a simplified version - you'd need to implement the full flow
+      // Créer le contrat
       await fetch(`${API_URL}/api/contracts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bookingId: booking.id,
           fleetVehicleId: fleetVehicle?.id,
-          agencyId: fleetVehicle?.agency.id,
-          customer: booking.customer,
+          agencyId: booking.agency.id,
+          customerId: booking.customer.id,
           startDate: booking.startDate,
           endDate: booking.endDate,
-          source: 'ONLINE_WIDGET',
-          dailyRate: booking.totalPrice / Math.ceil((new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime()) / (1000 * 60 * 60 * 24)),
-          totalDays: Math.ceil((new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime()) / (1000 * 60 * 60 * 24)),
-          subtotal: booking.totalPrice / 1.21,
-          taxRate: 21,
-          taxAmount: booking.totalPrice - booking.totalPrice / 1.21,
+          startTime: booking.startTime,
+          endTime: booking.endTime,
           totalAmount: booking.totalPrice,
-          depositAmount: booking.depositAmount
+          depositAmount: booking.depositAmount,
+          startMileage: form.mileage,
+          startFuelLevel: form.fuelLevel,
+          startCondition: form.condition,
+          notes: form.notes,
+          depositPaid: form.depositPaid,
+          paymentMethod: form.paymentMethod
         })
       })
+      
+      // Mettre à jour le booking
+      await fetch(`${API_URL}/api/bookings/${booking.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkedIn: true })
+      })
+      
       onComplete()
     } catch (e) {
       console.error(e)
+      alert('Erreur lors du check-in')
     }
     setLoading(false)
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6 border-b">
-          <h2 className="text-xl font-bold">Check-in - {booking.reference}</h2>
-          <p className="text-gray-500">{booking.customer.firstName} {booking.customer.lastName}</p>
+          <h2 className="text-xl font-bold">✅ Check-in</h2>
+          <p className="text-gray-500">{booking.reference} - {booking.customer.firstName} {booking.customer.lastName}</p>
         </div>
         
-        {/* Progress Steps */}
+        {/* Progress */}
         <div className="flex border-b">
           {['vehicle', 'inspection', 'signature', 'payment'].map((s, i) => (
             <div
               key={s}
-              className={`flex-1 py-3 text-center text-sm font-medium ${
-                step === s ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' :
-                i < ['vehicle', 'inspection', 'signature', 'payment'].indexOf(step) ? 'text-green-600' : 'text-gray-400'
+              className={`flex-1 py-2 text-center text-xs font-medium ${
+                step === s ? 'bg-green-50 text-green-600 border-b-2 border-green-500' :
+                ['vehicle', 'inspection', 'signature', 'payment'].indexOf(step) > i ? 'text-green-600 bg-green-50' : 'text-gray-400'
               }`}
             >
               {i + 1}. {s === 'vehicle' ? 'Véhicule' : s === 'inspection' ? 'Inspection' : s === 'signature' ? 'Signature' : 'Paiement'}
@@ -590,143 +402,116 @@ export function CheckInModal({
         </div>
         
         <div className="p-6">
-          {/* Step 1: Vehicle */}
           {step === 'vehicle' && (
             <div className="space-y-4">
-              <h3 className="font-bold">Véhicule assigné</h3>
-              {fleetVehicle ? (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-4">
-                  {fleetVehicle.vehicle.imageUrl && <img src={fleetVehicle.vehicle.imageUrl} className="w-16 h-16 rounded object-cover" />}
-                  <div>
-                    <p className="font-bold text-lg">{fleetVehicle.vehicleNumber}</p>
-                    <p className="text-gray-600">{getName(fleetVehicle.vehicle.name)}</p>
-                  </div>
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                {fleetVehicle?.vehicle?.imageUrl && (
+                  <img src={fleetVehicle.vehicle.imageUrl} className="w-20 h-20 rounded object-cover" />
+                )}
+                <div>
+                  <p className="font-bold text-lg">{fleetVehicle?.vehicleNumber}</p>
+                  <p className="text-gray-600">{getName(fleetVehicle?.vehicle?.name)}</p>
+                  <p className="text-sm text-gray-500">Kilométrage actuel: {fleetVehicle?.currentMileage} km</p>
                 </div>
-              ) : (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-yellow-800">⚠️ Aucun véhicule assigné - Veuillez en sélectionner un</p>
-                </div>
-              )}
-              <button onClick={() => setStep('inspection')} className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium">
-                Continuer →
-              </button>
+              </div>
             </div>
           )}
           
-          {/* Step 2: Inspection */}
           {step === 'inspection' && (
             <div className="space-y-4">
-              <h3 className="font-bold">État du véhicule</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Kilométrage</label>
-                  <input
-                    type="number"
-                    value={form.mileage}
-                    onChange={e => setForm({...form, mileage: parseInt(e.target.value) || 0})}
-                    className="w-full border rounded-lg px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Niveau carburant</label>
-                  <select
-                    value={form.fuelLevel}
-                    onChange={e => setForm({...form, fuelLevel: e.target.value})}
-                    className="w-full border rounded-lg px-3 py-2"
-                  >
-                    <option value="FULL">Plein</option>
-                    <option value="THREE_QUARTERS">3/4</option>
-                    <option value="HALF">1/2</option>
-                    <option value="QUARTER">1/4</option>
-                    <option value="EMPTY">Vide</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">État général</label>
-                  <select
-                    value={form.condition}
-                    onChange={e => setForm({...form, condition: e.target.value})}
-                    className="w-full border rounded-lg px-3 py-2"
-                  >
-                    <option value="EXCELLENT">Excellent</option>
-                    <option value="GOOD">Bon</option>
-                    <option value="FAIR">Moyen</option>
-                    <option value="POOR">Mauvais</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Kilométrage au départ</label>
+                <input type="number" value={form.mileage} onChange={e => setForm({...form, mileage: parseInt(e.target.value) || 0})}
+                  className="w-full border rounded-lg px-3 py-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Notes / Remarques</label>
-                <textarea
-                  value={form.notes}
-                  onChange={e => setForm({...form, notes: e.target.value})}
-                  className="w-full border rounded-lg px-3 py-2"
-                  rows={3}
-                  placeholder="Dégâts existants, accessoires remis..."
-                />
+                <label className="block text-sm font-medium mb-1">Niveau de carburant</label>
+                <select value={form.fuelLevel} onChange={e => setForm({...form, fuelLevel: e.target.value})}
+                  className="w-full border rounded-lg px-3 py-2">
+                  <option value="FULL">Plein</option>
+                  <option value="THREE_QUARTERS">3/4</option>
+                  <option value="HALF">1/2</option>
+                  <option value="QUARTER">1/4</option>
+                  <option value="EMPTY">Vide</option>
+                </select>
               </div>
-              <div className="flex gap-3">
-                <button onClick={() => setStep('vehicle')} className="px-4 py-2 bg-gray-200 rounded-lg">← Retour</button>
-                <button onClick={() => setStep('signature')} className="flex-1 py-3 bg-blue-500 text-white rounded-lg font-medium">Continuer →</button>
+              <div>
+                <label className="block text-sm font-medium mb-1">État général</label>
+                <select value={form.condition} onChange={e => setForm({...form, condition: e.target.value})}
+                  className="w-full border rounded-lg px-3 py-2">
+                  <option value="EXCELLENT">Excellent</option>
+                  <option value="GOOD">Bon</option>
+                  <option value="FAIR">Moyen</option>
+                  <option value="POOR">Mauvais</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Notes</label>
+                <textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}
+                  className="w-full border rounded-lg px-3 py-2" rows={3} placeholder="Remarques sur l'état du véhicule..." />
               </div>
             </div>
           )}
           
-          {/* Step 3: Signature */}
           {step === 'signature' && (
             <div className="space-y-4">
-              <h3 className="font-bold">Signature du client</h3>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg h-48 flex items-center justify-center">
+              <div className="border-2 border-dashed rounded-lg h-40 flex items-center justify-center bg-gray-50">
                 <p className="text-gray-400">Zone de signature (à implémenter)</p>
               </div>
-              <div className="flex gap-3">
-                <button onClick={() => setStep('inspection')} className="px-4 py-2 bg-gray-200 rounded-lg">← Retour</button>
-                <button onClick={() => setStep('payment')} className="flex-1 py-3 bg-blue-500 text-white rounded-lg font-medium">Continuer →</button>
-              </div>
+              <p className="text-sm text-gray-500">Le client doit signer pour accepter les conditions de location.</p>
             </div>
           )}
           
-          {/* Step 4: Payment */}
           {step === 'payment' && (
             <div className="space-y-4">
-              <h3 className="font-bold">Paiement de la caution</h3>
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="p-4 bg-blue-50 rounded-lg">
                 <div className="flex justify-between mb-2">
-                  <span>Caution à encaisser</span>
+                  <span>Caution</span>
                   <span className="font-bold">{booking.depositAmount}€</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total à encaisser</span>
+                  <span className="text-blue-600">{booking.totalPrice}€</span>
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Mode de paiement</label>
-                <select
-                  value={form.depositMethod}
-                  onChange={e => setForm({...form, depositMethod: e.target.value})}
-                  className="w-full border rounded-lg px-3 py-2"
-                >
+                <select value={form.paymentMethod} onChange={e => setForm({...form, paymentMethod: e.target.value})}
+                  className="w-full border rounded-lg px-3 py-2">
                   <option value="CARD">Carte bancaire</option>
                   <option value="CASH">Espèces</option>
                   <option value="TRANSFER">Virement</option>
                 </select>
               </div>
               <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={form.depositPaid}
-                  onChange={e => setForm({...form, depositPaid: e.target.checked})}
-                />
+                <input type="checkbox" checked={form.depositPaid} onChange={e => setForm({...form, depositPaid: e.target.checked})} />
                 <span>Caution encaissée</span>
               </label>
-              <div className="flex gap-3">
-                <button onClick={() => setStep('signature')} className="px-4 py-2 bg-gray-200 rounded-lg">← Retour</button>
-                <button
-                  onClick={handleComplete}
-                  disabled={!form.depositPaid || loading}
-                  className="flex-1 py-3 bg-green-500 text-white rounded-lg font-medium disabled:opacity-50"
-                >
-                  {loading ? 'Validation...' : '✅ Valider le Check-in'}
-                </button>
-              </div>
             </div>
+          )}
+        </div>
+        
+        <div className="p-6 border-t flex gap-3">
+          {step !== 'vehicle' && (
+            <button onClick={() => {
+              if (step === 'inspection') setStep('vehicle')
+              else if (step === 'signature') setStep('inspection')
+              else if (step === 'payment') setStep('signature')
+            }} className="px-4 py-2 bg-gray-200 rounded-lg">← Retour</button>
+          )}
+          <div className="flex-1" />
+          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-lg">Annuler</button>
+          {step !== 'payment' ? (
+            <button onClick={() => {
+              if (step === 'vehicle') setStep('inspection')
+              else if (step === 'inspection') setStep('signature')
+              else if (step === 'signature') setStep('payment')
+            }} className="px-6 py-2 bg-green-500 text-white rounded-lg">Continuer →</button>
+          ) : (
+            <button onClick={handleComplete} disabled={loading}
+              className="px-6 py-2 bg-green-500 text-white rounded-lg disabled:opacity-50">
+              {loading ? 'Validation...' : '✅ Valider le check-in'}
+            </button>
           )}
         </div>
       </div>
@@ -741,154 +526,161 @@ export function CheckOutModal({
   onClose,
   onComplete
 }: {
-  booking: Booking
-  fleetVehicle: FleetVehicle | null
+  booking: any
+  fleetVehicle: any
   onClose: () => void
   onComplete: () => void
 }) {
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
-    mileage: fleetVehicle?.currentMileage || 0,
+    endMileage: fleetVehicle?.currentMileage || 0,
     fuelLevel: 'FULL',
     condition: 'GOOD',
-    hasDamages: false,
+    hasDamage: false,
     damageDescription: '',
     deductionAmount: 0,
     notes: ''
   })
 
+  const refundAmount = Math.max(0, booking.depositAmount - form.deductionAmount)
+
   const handleComplete = async () => {
     setLoading(true)
     try {
-      // Mark as checked out via API
-      // Note: Implement the actual API call
-      console.log('Check-out:', form)
+      // Mettre à jour le contrat
+      const contractRes = await fetch(`${API_URL}/api/contracts/by-booking/${booking.id}`)
+      if (contractRes.ok) {
+        const contract = await contractRes.json()
+        await fetch(`${API_URL}/api/contracts/${contract.id}/checkout`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            endMileage: form.endMileage,
+            endFuelLevel: form.fuelLevel,
+            endCondition: form.condition,
+            damageDescription: form.hasDamage ? form.damageDescription : null,
+            deductionAmount: form.deductionAmount,
+            notes: form.notes
+          })
+        })
+      }
+      
+      // Mettre à jour le booking
+      await fetch(`${API_URL}/api/bookings/${booking.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkedOut: true })
+      })
+      
+      // Mettre à jour le véhicule
+      if (fleetVehicle) {
+        await fetch(`${API_URL}/api/fleet/${fleetVehicle.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentMileage: form.endMileage,
+            status: 'AVAILABLE',
+            condition: form.condition
+          })
+        })
+      }
+      
       onComplete()
     } catch (e) {
       console.error(e)
+      alert('Erreur lors du check-out')
     }
     setLoading(false)
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6 border-b">
-          <h2 className="text-xl font-bold">Check-out - {booking.reference}</h2>
-          <p className="text-gray-500">{booking.customer.firstName} {booking.customer.lastName}</p>
+          <h2 className="text-xl font-bold">🏁 Check-out</h2>
+          <p className="text-gray-500">{booking.reference} - {booking.customer.firstName} {booking.customer.lastName}</p>
         </div>
         
         <div className="p-6 space-y-4">
-          <h3 className="font-bold">État du véhicule au retour</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Kilométrage final</label>
-              <input
-                type="number"
-                value={form.mileage}
-                onChange={e => setForm({...form, mileage: parseInt(e.target.value) || 0})}
-                className="w-full border rounded-lg px-3 py-2"
-              />
+              <input type="number" value={form.endMileage} onChange={e => setForm({...form, endMileage: parseInt(e.target.value) || 0})}
+                className="w-full border rounded-lg px-3 py-2" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Niveau carburant</label>
-              <select
-                value={form.fuelLevel}
-                onChange={e => setForm({...form, fuelLevel: e.target.value})}
-                className="w-full border rounded-lg px-3 py-2"
-              >
+              <select value={form.fuelLevel} onChange={e => setForm({...form, fuelLevel: e.target.value})}
+                className="w-full border rounded-lg px-3 py-2">
                 <option value="FULL">Plein</option>
                 <option value="THREE_QUARTERS">3/4</option>
                 <option value="HALF">1/2</option>
                 <option value="QUARTER">1/4</option>
-                <option value="EMPTY">Vide</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">État général</label>
-              <select
-                value={form.condition}
-                onChange={e => setForm({...form, condition: e.target.value})}
-                className="w-full border rounded-lg px-3 py-2"
-              >
-                <option value="EXCELLENT">Excellent</option>
-                <option value="GOOD">Bon</option>
-                <option value="FAIR">Moyen</option>
-                <option value="POOR">Mauvais</option>
               </select>
             </div>
           </div>
           
+          <div>
+            <label className="block text-sm font-medium mb-1">État général</label>
+            <select value={form.condition} onChange={e => setForm({...form, condition: e.target.value})}
+              className="w-full border rounded-lg px-3 py-2">
+              <option value="EXCELLENT">Excellent</option>
+              <option value="GOOD">Bon</option>
+              <option value="FAIR">Moyen</option>
+              <option value="POOR">Mauvais</option>
+            </select>
+          </div>
+          
           <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={form.hasDamages}
-              onChange={e => setForm({...form, hasDamages: e.target.checked})}
-            />
+            <input type="checkbox" checked={form.hasDamage} onChange={e => setForm({...form, hasDamage: e.target.checked})} />
             <span className="font-medium text-red-600">Dégâts constatés</span>
           </label>
           
-          {form.hasDamages && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-3">
+          {form.hasDamage && (
+            <div className="space-y-3 p-4 bg-red-50 rounded-lg">
               <div>
                 <label className="block text-sm font-medium mb-1">Description des dégâts</label>
-                <textarea
-                  value={form.damageDescription}
-                  onChange={e => setForm({...form, damageDescription: e.target.value})}
-                  className="w-full border rounded-lg px-3 py-2"
-                  rows={3}
-                />
+                <textarea value={form.damageDescription} onChange={e => setForm({...form, damageDescription: e.target.value})}
+                  className="w-full border rounded-lg px-3 py-2" rows={3} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Montant à déduire de la caution (€)</label>
-                <input
-                  type="number"
-                  value={form.deductionAmount}
-                  onChange={e => setForm({...form, deductionAmount: parseFloat(e.target.value) || 0})}
-                  className="w-full border rounded-lg px-3 py-2"
-                />
+                <label className="block text-sm font-medium mb-1">Montant à déduire (€)</label>
+                <input type="number" value={form.deductionAmount} onChange={e => setForm({...form, deductionAmount: parseFloat(e.target.value) || 0})}
+                  className="w-full border rounded-lg px-3 py-2" max={booking.depositAmount} />
               </div>
             </div>
           )}
           
           <div>
             <label className="block text-sm font-medium mb-1">Notes</label>
-            <textarea
-              value={form.notes}
-              onChange={e => setForm({...form, notes: e.target.value})}
-              className="w-full border rounded-lg px-3 py-2"
-              rows={2}
-            />
+            <textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}
+              className="w-full border rounded-lg px-3 py-2" rows={2} />
           </div>
           
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium mb-2">Récapitulatif caution</h4>
-            <div className="flex justify-between">
-              <span>Caution encaissée</span>
+          <div className="p-4 bg-green-50 rounded-lg">
+            <div className="flex justify-between mb-2">
+              <span>Caution initiale</span>
               <span>{booking.depositAmount}€</span>
             </div>
-            {form.hasDamages && (
-              <div className="flex justify-between text-red-600">
+            {form.deductionAmount > 0 && (
+              <div className="flex justify-between mb-2 text-red-600">
                 <span>Déduction dégâts</span>
                 <span>-{form.deductionAmount}€</span>
               </div>
             )}
-            <div className="flex justify-between font-bold border-t mt-2 pt-2">
+            <div className="flex justify-between text-lg font-bold border-t pt-2">
               <span>À rembourser</span>
-              <span className="text-green-600">{booking.depositAmount - form.deductionAmount}€</span>
+              <span className="text-green-600">{refundAmount}€</span>
             </div>
           </div>
-          
-          <div className="flex gap-3">
-            <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-lg">Annuler</button>
-            <button
-              onClick={handleComplete}
-              disabled={loading}
-              className="flex-1 py-3 bg-blue-500 text-white rounded-lg font-medium disabled:opacity-50"
-            >
-              {loading ? 'Validation...' : '🏁 Valider le Check-out'}
-            </button>
-          </div>
+        </div>
+        
+        <div className="p-6 border-t flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2 bg-gray-200 rounded-lg">Annuler</button>
+          <button onClick={handleComplete} disabled={loading}
+            className="flex-1 py-2 bg-orange-500 text-white rounded-lg disabled:opacity-50">
+            {loading ? 'Validation...' : '🏁 Valider le check-out'}
+          </button>
         </div>
       </div>
     </div>

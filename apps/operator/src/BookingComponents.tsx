@@ -6,7 +6,7 @@ interface FleetVehicle {
   id: string
   vehicleNumber: string
   status: string
-  vehicle: { id: string; name: any; imageUrl?: string; deposit: number; category: { brand: string } }
+  vehicle: { id: string; name: any; imageUrl?: string; deposit: number; category: { brand: string }; pricing?: any[] }
   agency: { id: string; city: string; code: string }
 }
 
@@ -27,6 +27,27 @@ interface Agency {
 }
 
 const getName = (obj: any) => obj?.fr || obj?.es || obj?.en || ''
+
+// Calculer le prix selon la grille tarifaire
+const calculatePrice = (pricing: any, days: number): number => {
+  if (!pricing) return 0
+  
+  // Si le nombre de jours correspond à un tarif direct
+  const dayKey = `day${days}`
+  if (pricing[dayKey] !== undefined) {
+    return pricing[dayKey]
+  }
+  
+  // Si plus de 14 jours, calculer proportionnellement
+  if (days > 14) {
+    const day14Price = pricing.day14 || 0
+    const extraDays = days - 14
+    const avgDailyRate = day14Price / 14
+    return day14Price + (extraDays * avgDailyRate * 0.8) // Réduction de 20% pour jours supplémentaires
+  }
+  
+  return 0
+}
 
 // ============== NEW BOOKING MODAL ==============
 export function NewBookingModal({
@@ -64,11 +85,11 @@ export function NewBookingModal({
   const [startTime, setStartTime] = useState('10:00')
   const [endTime, setEndTime] = useState('10:00')
   
-  // Pricing
-  const [dailyRate, setDailyRate] = useState(0)
+  // Pricing (auto-calculated)
   const [totalDays, setTotalDays] = useState(1)
   const [totalPrice, setTotalPrice] = useState(0)
   const [depositAmount, setDepositAmount] = useState(0)
+  const [priceOverride, setPriceOverride] = useState<number | null>(null) // Pour override manuel
 
   // Load fleet when agency changes
   useEffect(() => {
@@ -77,21 +98,29 @@ export function NewBookingModal({
     }
   }, [selectedAgency])
 
-  // Calculate pricing when dates change
+  // Calculate pricing when dates or vehicle change
   useEffect(() => {
     if (startDate && endDate) {
       const start = new Date(startDate)
       const end = new Date(endDate)
       const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1)
       setTotalDays(days)
-      setTotalPrice(dailyRate * days)
+      
+      // Auto-calculate price from vehicle pricing
+      if (selectedFleetVehicle?.vehicle?.pricing?.[0] && priceOverride === null) {
+        const pricing = selectedFleetVehicle.vehicle.pricing[0]
+        const calculatedPrice = calculatePrice(pricing, days)
+        setTotalPrice(calculatedPrice)
+      }
     }
-  }, [startDate, endDate, dailyRate])
+  }, [startDate, endDate, selectedFleetVehicle, priceOverride])
 
   // Set deposit from vehicle
   useEffect(() => {
     if (selectedFleetVehicle) {
       setDepositAmount(selectedFleetVehicle.vehicle.deposit || 0)
+      // Reset price override when vehicle changes
+      setPriceOverride(null)
     }
   }, [selectedFleetVehicle])
 
@@ -144,8 +173,8 @@ export function NewBookingModal({
         endTime,
         vehicleId: selectedFleetVehicle?.vehicle.id,
         quantity: 1,
-        unitPrice: totalPrice,
-        totalPrice,
+        unitPrice: priceOverride !== null ? priceOverride : totalPrice,
+        totalPrice: priceOverride !== null ? priceOverride : totalPrice,
         depositAmount,
         language: 'fr'
       }
@@ -182,7 +211,7 @@ export function NewBookingModal({
     switch (step) {
       case 'vehicle': return selectedFleetVehicle !== null
       case 'customer': return selectedCustomer !== null || (isNewCustomer && newCustomer.firstName && newCustomer.lastName && newCustomer.email && newCustomer.phone)
-      case 'dates': return startDate && endDate && startTime && endTime && dailyRate > 0
+      case 'dates': return startDate && endDate && startTime && endTime && totalPrice > 0
       default: return true
     }
   }
@@ -199,28 +228,33 @@ export function NewBookingModal({
     else if (step === 'summary') setStep('dates')
   }
 
+  // Get pricing grid for display
+  const getPricingInfo = () => {
+    if (!selectedFleetVehicle?.vehicle?.pricing?.[0]) return null
+    const p = selectedFleetVehicle.vehicle.pricing[0]
+    return { day1: p.day1, day2: p.day2, day3: p.day3, day7: p.day7, day14: p.day14 }
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="p-6 border-b">
+        <div className="p-4 sm:p-6 border-b">
           <h2 className="text-xl font-bold">Nouvelle réservation</h2>
         </div>
         
         {/* Progress */}
-        <div className="flex border-b">
+        <div className="flex border-b overflow-x-auto">
           {['vehicle', 'customer', 'dates', 'summary'].map((s, i) => (
             <div
               key={s}
-              className={`flex-1 py-3 text-center text-sm font-medium cursor-pointer ${
+              className={`flex-1 min-w-0 py-3 text-center text-sm font-medium cursor-pointer whitespace-nowrap px-2 ${
                 step === s ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500' :
                 ['vehicle', 'customer', 'dates', 'summary'].indexOf(step) > i ? 'text-green-600 bg-green-50' : 'text-gray-400'
               }`}
               onClick={() => {
                 const steps = ['vehicle', 'customer', 'dates', 'summary']
-                if (steps.indexOf(s) < steps.indexOf(step)) {
-                  setStep(s as any)
-                }
+                if (steps.indexOf(s) < steps.indexOf(step)) setStep(s as any)
               }}
             >
               {i + 1}. {s === 'vehicle' ? 'Véhicule' : s === 'customer' ? 'Client' : s === 'dates' ? 'Dates & Prix' : 'Résumé'}
@@ -229,10 +263,8 @@ export function NewBookingModal({
         </div>
         
         {/* Content */}
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>
-          )}
+        <div className="p-4 sm:p-6">
+          {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}
           
           {/* Step 1: Vehicle */}
           {step === 'vehicle' && (
@@ -257,7 +289,7 @@ export function NewBookingModal({
                   {availableFleet.length === 0 ? (
                     <p className="text-gray-500 text-center py-4">Aucun véhicule disponible dans cette agence</p>
                   ) : (
-                    <div className="grid grid-cols-2 gap-3 max-h-64 overflow-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-auto">
                       {availableFleet.map(f => (
                         <div
                           key={f.id}
@@ -272,9 +304,9 @@ export function NewBookingModal({
                             ) : (
                               <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">🚲</div>
                             )}
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <p className="font-bold">{f.vehicleNumber}</p>
-                              <p className="text-sm text-gray-600">{getName(f.vehicle.name)}</p>
+                              <p className="text-sm text-gray-600 truncate">{getName(f.vehicle.name)}</p>
                               <p className="text-xs text-gray-400">Caution: {f.vehicle.deposit}€</p>
                             </div>
                           </div>
@@ -296,16 +328,16 @@ export function NewBookingModal({
           {/* Step 2: Customer */}
           {step === 'customer' && (
             <div className="space-y-4">
-              <div className="flex gap-4 mb-4">
+              <div className="flex gap-2 sm:gap-4 mb-4">
                 <button
                   onClick={() => { setIsNewCustomer(false); setNewCustomer({ firstName: '', lastName: '', email: '', phone: '' }) }}
-                  className={`flex-1 py-2 rounded-lg border ${!isNewCustomer ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-gray-300'}`}
+                  className={`flex-1 py-2 rounded-lg border text-sm ${!isNewCustomer ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-gray-300'}`}
                 >
                   Client existant
                 </button>
                 <button
                   onClick={() => { setIsNewCustomer(true); setSelectedCustomer(null) }}
-                  className={`flex-1 py-2 rounded-lg border ${isNewCustomer ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-gray-300'}`}
+                  className={`flex-1 py-2 rounded-lg border text-sm ${isNewCustomer ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-gray-300'}`}
                 >
                   Nouveau client
                 </button>
@@ -400,56 +432,61 @@ export function NewBookingModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Date de début *</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={e => setStartDate(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2"
-                  />
+                  <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Heure de début *</label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={e => setStartTime(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2"
-                  />
+                  <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Date de fin *</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={e => setEndDate(e.target.value)}
-                    min={startDate}
-                    className="w-full border rounded-lg px-3 py-2"
-                  />
+                  <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate}
+                    className="w-full border rounded-lg px-3 py-2" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Heure de fin *</label>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={e => setEndTime(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2"
-                  />
+                  <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2" />
                 </div>
               </div>
+              
+              {/* Pricing Info */}
+              {getPricingInfo() && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium mb-2">Grille tarifaire :</p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="px-2 py-1 bg-white rounded">1j: {getPricingInfo()?.day1}€</span>
+                    <span className="px-2 py-1 bg-white rounded">2j: {getPricingInfo()?.day2}€</span>
+                    <span className="px-2 py-1 bg-white rounded">3j: {getPricingInfo()?.day3}€</span>
+                    <span className="px-2 py-1 bg-white rounded">7j: {getPricingInfo()?.day7}€</span>
+                    <span className="px-2 py-1 bg-white rounded">14j: {getPricingInfo()?.day14}€</span>
+                  </div>
+                </div>
+              )}
               
               <div className="border-t pt-4">
                 <h3 className="font-bold mb-3">Tarification</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Prix journalier (€) *</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Prix total (€) * 
+                      <span className="text-xs text-gray-500 ml-1">(auto-calculé)</span>
+                    </label>
                     <input
                       type="number"
-                      value={dailyRate}
-                      onChange={e => setDailyRate(parseFloat(e.target.value) || 0)}
+                      value={priceOverride !== null ? priceOverride : totalPrice}
+                      onChange={e => setPriceOverride(parseFloat(e.target.value) || 0)}
                       className="w-full border rounded-lg px-3 py-2"
                       min="0"
                       step="0.01"
                     />
+                    {priceOverride !== null && (
+                      <button onClick={() => setPriceOverride(null)} className="text-xs text-blue-600 mt-1">
+                        ↩ Revenir au tarif auto
+                      </button>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">Caution (€)</label>
@@ -468,13 +505,9 @@ export function NewBookingModal({
                     <span>Durée</span>
                     <span className="font-medium">{totalDays} jour(s)</span>
                   </div>
-                  <div className="flex justify-between mb-2">
-                    <span>Prix journalier</span>
-                    <span>{dailyRate.toFixed(2)}€</span>
-                  </div>
                   <div className="flex justify-between text-lg font-bold border-t pt-2">
                     <span>Total</span>
-                    <span className="text-blue-600">{totalPrice.toFixed(2)}€</span>
+                    <span className="text-blue-600">{(priceOverride !== null ? priceOverride : totalPrice).toFixed(2)}€</span>
                   </div>
                 </div>
               </div>
@@ -486,7 +519,7 @@ export function NewBookingModal({
             <div className="space-y-4">
               <h3 className="font-bold">Récapitulatif de la réservation</h3>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500 mb-1">Véhicule</p>
                   <p className="font-bold">{selectedFleetVehicle?.vehicleNumber}</p>
@@ -534,7 +567,7 @@ export function NewBookingModal({
                 </div>
                 <div className="flex justify-between mb-2">
                   <span>Prix location</span>
-                  <span>{totalPrice.toFixed(2)}€</span>
+                  <span>{(priceOverride !== null ? priceOverride : totalPrice).toFixed(2)}€</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span>Caution</span>
@@ -542,7 +575,7 @@ export function NewBookingModal({
                 </div>
                 <div className="flex justify-between text-xl font-bold border-t pt-2">
                   <span>Total à payer</span>
-                  <span className="text-blue-600">{totalPrice.toFixed(2)}€</span>
+                  <span className="text-blue-600">{(priceOverride !== null ? priceOverride : totalPrice).toFixed(2)}€</span>
                 </div>
               </div>
             </div>
@@ -550,7 +583,7 @@ export function NewBookingModal({
         </div>
         
         {/* Footer */}
-        <div className="p-6 border-t flex gap-3">
+        <div className="p-4 sm:p-6 border-t flex flex-wrap gap-3">
           {step !== 'vehicle' && (
             <button onClick={prevStep} className="px-4 py-2 bg-gray-200 rounded-lg">← Retour</button>
           )}
@@ -594,14 +627,10 @@ export function AssignVehicleModal({
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(booking.fleetVehicleId)
   const [loading, setLoading] = useState(false)
   
-  // Filter fleet by vehicle type and agency
   const compatibleFleet = fleet.filter(f => {
-    // Same agency
     if (f.agency.id !== booking.agency.id) return false
-    // Same vehicle type
     const bookingVehicleIds = booking.items.map((i: any) => i.vehicle.id)
     if (!bookingVehicleIds.includes(f.vehicle.id)) return false
-    // Available or already assigned to this booking
     if (f.status !== 'AVAILABLE' && f.id !== booking.fleetVehicleId) return false
     return true
   })
@@ -615,22 +644,19 @@ export function AssignVehicleModal({
         body: JSON.stringify({ fleetVehicleId: selectedVehicle })
       })
       onAssigned()
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
     setLoading(false)
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
         <h2 className="text-xl font-bold mb-4">Assigner un véhicule</h2>
         <p className="text-gray-600 mb-4">Réservation: <span className="font-mono">{booking.reference}</span></p>
         
         {compatibleFleet.length === 0 ? (
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
-            <p className="text-yellow-800">Aucun véhicule compatible disponible dans cette agence.</p>
-            <p className="text-sm text-yellow-600 mt-1">Véhicule requis: {booking.items.map((i: any) => getName(i.vehicle.name)).join(', ')}</p>
+            <p className="text-yellow-800">Aucun véhicule compatible disponible.</p>
           </div>
         ) : (
           <div className="space-y-2 mb-4 max-h-64 overflow-auto">
@@ -647,9 +673,6 @@ export function AssignVehicleModal({
                   <p className="font-bold">{f.vehicleNumber}</p>
                   <p className="text-sm text-gray-600">{getName(f.vehicle.name)}</p>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded ${f.status === 'AVAILABLE' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                  {f.status}
-                </span>
               </div>
             ))}
           </div>

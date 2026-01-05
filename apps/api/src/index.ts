@@ -1488,7 +1488,7 @@ app.put('/api/bookings/:id/assign', async (req, res) => {
     const today = new Date().toISOString().split('T')[0]
     const startDate = booking.startDate.toISOString().split('T')[0]
     if (startDate === today && fleetVehicleId) {
-      await prisma.fleetVehicle.update({
+      await prisma.fleet.update({
         where: { id: fleetVehicleId },
         data: { status: 'RESERVED' }
       })
@@ -1604,7 +1604,8 @@ app.post('/api/bookings/operator', async (req, res) => {
           create: [{
             vehicleId,
             quantity,
-            unitPrice: unitPrice || totalPrice
+            unitPrice: unitPrice || totalPrice,
+            totalPrice: (unitPrice || totalPrice) * quantity
           }]
         }
       },
@@ -1620,7 +1621,7 @@ app.post('/api/bookings/operator', async (req, res) => {
       const today = new Date().toISOString().split('T')[0]
       const startDateStr = new Date(startDate).toISOString().split('T')[0]
       if (startDateStr === today) {
-        await prisma.fleetVehicle.update({
+        await prisma.fleet.update({
           where: { id: fleetVehicleId },
           data: { status: 'RESERVED' }
         })
@@ -1644,7 +1645,7 @@ app.get('/api/fleet/available', async (req, res) => {
     if (agencyId) where.agencyId = agencyId
     if (vehicleId) where.vehicleId = vehicleId
     
-    const fleetVehicles = await prisma.fleetVehicle.findMany({
+    const fleetVehicles = await prisma.fleet.findMany({
       where,
       include: {
         vehicle: { include: { category: true } },

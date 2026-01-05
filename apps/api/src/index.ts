@@ -320,6 +320,43 @@ app.get('/api/fleet', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to fetch fleet' }) }
 })
 
+
+// Get available fleet vehicles (MUST BE BEFORE /:id route!)
+app.get('/api/fleet/available', async (req, res) => {
+  try {
+    const { agencyId, vehicleId, startDate, endDate } = req.query
+    const where: any = { isActive: true, status: { in: ['AVAILABLE', 'RESERVED'] } }
+    if (agencyId) where.agencyId = agencyId
+    if (vehicleId) where.vehicleId = vehicleId
+    
+    const fleetVehicles = await prisma.fleet.findMany({
+      where,
+      include: { vehicle: { include: { category: true } }, agency: true }
+    })
+    
+    if (!startDate || !endDate) return res.json(fleetVehicles)
+    
+    const start = new Date(startDate as string)
+    const end = new Date(endDate as string)
+    
+    const conflictingBookings = await prisma.booking.findMany({
+      where: {
+        fleetVehicleId: { in: fleetVehicles.map(f => f.id) },
+        status: { in: ['CONFIRMED', 'PENDING'] },
+        startDate: { lte: end },
+        endDate: { gte: start }
+      },
+      select: { fleetVehicleId: true }
+    })
+    
+    const conflictingIds = new Set(conflictingBookings.map(b => b.fleetVehicleId))
+    res.json(fleetVehicles.filter(f => !conflictingIds.has(f.id)))
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to get available vehicles' })
+  }
+})
+
 app.get('/api/fleet/:id', async (req, res) => {
   try {
     const fleetVehicle = await prisma.fleet.findUnique({
@@ -1636,50 +1673,6 @@ app.post('/api/bookings/operator', async (req, res) => {
 })
 
 // Get available fleet vehicles for a date range
-app.get('/api/fleet/available', async (req, res) => {
-  try {
-    const { agencyId, vehicleId, startDate, endDate } = req.query
-    
-    // Get all fleet vehicles matching criteria
-    const where: any = { isActive: true, status: { in: ['AVAILABLE', 'RESERVED'] } }
-    if (agencyId) where.agencyId = agencyId
-    if (vehicleId) where.vehicleId = vehicleId
-    
-    const fleetVehicles = await prisma.fleet.findMany({
-      where,
-      include: {
-        vehicle: { include: { category: true } },
-        agency: true
-      }
-    })
-    
-    if (!startDate || !endDate) {
-      return res.json(fleetVehicles)
-    }
-    
-    // Check for conflicts
-    const start = new Date(startDate as string)
-    const end = new Date(endDate as string)
-    
-    const conflictingBookings = await prisma.booking.findMany({
-      where: {
-        fleetVehicleId: { in: fleetVehicles.map(f => f.id) },
-        status: { in: ['CONFIRMED', 'PENDING'] },
-        startDate: { lte: end },
-        endDate: { gte: start }
-      },
-      select: { fleetVehicleId: true }
-    })
-    
-    const conflictingIds = new Set(conflictingBookings.map(b => b.fleetVehicleId))
-    const available = fleetVehicles.filter(f => !conflictingIds.has(f.id))
-    
-    res.json(available)
-  } catch (e) {
-    console.error(e)
-    res.status(500).json({ error: 'Failed to get available vehicles' })
-  }
-})
 
 // Search customers
 app.get('/api/customers/search', async (req, res) => {

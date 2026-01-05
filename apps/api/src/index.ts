@@ -1709,7 +1709,7 @@ app.delete('/api/fleet/:id', async (req, res) => {
     // First delete related records
     await prisma.fleetDocument.deleteMany({ where: { fleetId: req.params.id } })
     await prisma.fleetDamage.deleteMany({ where: { fleetId: req.params.id } })
-    await prisma.fleetMaintenance.deleteMany({ where: { fleetId: req.params.id } })
+    await prisma.maintenanceRecord.deleteMany({ where: { fleetId: req.params.id } })
     await prisma.fleetSparePart.deleteMany({ where: { fleetId: req.params.id } })
     
     // Then delete the fleet vehicle

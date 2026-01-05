@@ -1709,3 +1709,59 @@ app.get('/api/customers/search', async (req, res) => {
 })
 
 console.log('Booking assignment and operator routes loaded')
+
+// ============== DELETE FLEET VEHICLE ==============
+app.delete('/api/fleet/:id', async (req, res) => {
+  try {
+    // First delete related records
+    await prisma.fleetDocument.deleteMany({ where: { fleetId: req.params.id } })
+    await prisma.fleetDamage.deleteMany({ where: { fleetId: req.params.id } })
+    await prisma.fleetMaintenance.deleteMany({ where: { fleetId: req.params.id } })
+    await prisma.fleetSparePart.deleteMany({ where: { fleetId: req.params.id } })
+    
+    // Then delete the fleet vehicle
+    await prisma.fleet.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to delete fleet vehicle' })
+  }
+})
+
+// ============== DELETE DOCUMENT ==============
+app.delete('/api/fleet/documents/:id', async (req, res) => {
+  try {
+    await prisma.fleetDocument.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to delete document' })
+  }
+})
+
+// ============== DELETE SPARE PART ==============
+app.delete('/api/fleet/spare-parts/:id', async (req, res) => {
+  try {
+    await prisma.fleetSparePart.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to delete spare part' })
+  }
+})
+
+// ============== UPDATE SPARE PART ==============
+app.put('/api/fleet/spare-parts/:id', async (req, res) => {
+  try {
+    const part = await prisma.fleetSparePart.update({
+      where: { id: req.params.id },
+      data: req.body
+    })
+    res.json(part)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to update spare part' })
+  }
+})
+
+console.log('Delete and update routes loaded')

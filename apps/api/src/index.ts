@@ -165,7 +165,7 @@ app.delete('/api/options/:id', async (req, res) => {
 // ============== INVENTORY ==============
 app.get('/api/inventory', async (req, res) => {
   try {
-    const inventory = await prisma.inventory.findMany({ include: { vehicle: { include: { category: true } }, agency: true } })
+    const inventory = await prisma.inventory.findMany({ include: { vehicle: { include: { category: true, pricing: true } }, agency: true } })
     res.json(inventory)
   } catch (error) { res.status(500).json({ error: 'Failed to fetch inventory' }) }
 })
@@ -331,7 +331,7 @@ app.get('/api/fleet/available', async (req, res) => {
     
     const fleetVehicles = await prisma.fleet.findMany({
       where,
-      include: { vehicle: { include: { category: true } }, agency: true }
+      include: { vehicle: { include: { category: true, pricing: true } }, agency: true }
     })
     
     if (!startDate || !endDate) return res.json(fleetVehicles)
@@ -409,7 +409,7 @@ app.post('/api/fleet', async (req, res) => {
         condition: req.body.condition || 'GOOD',
         notes: req.body.notes
       },
-      include: { vehicle: { include: { category: true } }, agency: true }
+      include: { vehicle: { include: { category: true, pricing: true } }, agency: true }
     })
     res.json(fleetVehicle)
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create fleet vehicle' }) }
@@ -436,7 +436,7 @@ app.put('/api/fleet/:id', async (req, res) => {
         notes: req.body.notes,
         isActive: req.body.isActive
       },
-      include: { vehicle: { include: { category: true } }, agency: true }
+      include: { vehicle: { include: { category: true, pricing: true } }, agency: true }
     })
     res.json(fleetVehicle)
   } catch (error) { res.status(500).json({ error: 'Failed to update fleet vehicle' }) }

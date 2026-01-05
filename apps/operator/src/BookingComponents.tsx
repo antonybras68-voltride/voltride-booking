@@ -110,7 +110,14 @@ export function NewBookingModal({
       if (selectedFleetVehicle?.vehicle?.pricing?.[0] && priceOverride === null) {
         const pricing = selectedFleetVehicle.vehicle.pricing[0]
         const calculatedPrice = calculatePrice(pricing, days)
+        console.log('Pricing calculation:', { days, pricing, calculatedPrice })
         setTotalPrice(calculatedPrice)
+      } else {
+        console.log('No pricing available:', { 
+          vehicle: selectedFleetVehicle?.vehicleNumber,
+          hasPricing: !!selectedFleetVehicle?.vehicle?.pricing,
+          pricingLength: selectedFleetVehicle?.vehicle?.pricing?.length
+        })
       }
     }
   }, [startDate, endDate, selectedFleetVehicle, priceOverride])
@@ -216,9 +223,22 @@ export function NewBookingModal({
     }
   }
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (step === 'vehicle') setStep('customer')
-    else if (step === 'customer') setStep('dates')
+    else if (step === 'customer') {
+      // Recharger le véhicule avec pricing avant d'aller aux dates
+      if (selectedFleetVehicle && !selectedFleetVehicle.vehicle?.pricing?.length) {
+        try {
+          const res = await fetch(\`\${API_URL}/api/fleet/\${selectedFleetVehicle.id}\`)
+          const fullVehicle = await res.json()
+          if (fullVehicle.vehicle?.pricing) {
+            setSelectedFleetVehicle(fullVehicle)
+            console.log('Vehicle reloaded with pricing:', fullVehicle.vehicle.pricing)
+          }
+        } catch (e) { console.error('Failed to reload vehicle', e) }
+      }
+      setStep('dates')
+    }
     else if (step === 'dates') setStep('summary')
   }
 

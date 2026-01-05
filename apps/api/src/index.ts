@@ -361,7 +361,7 @@ app.get('/api/fleet/:id', async (req, res) => {
   try {
     const fleetVehicle = await prisma.fleet.findUnique({
       where: { id: req.params.id },
-      include: { vehicle: { include: { category: true } }, agency: true, documents: true, damages: true, inspections: { orderBy: { inspectedAt: 'desc' }, take: 10 }, maintenanceRecords: { orderBy: { createdAt: 'desc' }, take: 10 }, spareParts: true }
+      include: { vehicle: { include: { category: true, pricing: true } }, agency: true, documents: true, damages: true, inspections: { orderBy: { inspectedAt: 'desc' }, take: 10 }, maintenanceRecords: { orderBy: { createdAt: 'desc' }, take: 10 }, spareParts: true }
     })
     if (!fleetVehicle) return res.status(404).json({ error: 'Fleet vehicle not found' })
     res.json(fleetVehicle)

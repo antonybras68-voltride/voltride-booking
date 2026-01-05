@@ -1461,3 +1461,250 @@ app.post('/api/extension-settings', async (req, res) => {
     res.json(settings)
   } catch (error) { res.status(500).json({ error: 'Failed to save extension settings' }) }
 })
+
+// ============== BOOKING ASSIGNMENT ==============
+
+// Assign fleet vehicle to booking
+app.put('/api/bookings/:id/assign', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { fleetVehicleId } = req.body
+    
+    const booking = await prisma.booking.update({
+      where: { id },
+      data: {
+        fleetVehicleId,
+        assignmentType: 'MANUAL',
+        assignedAt: new Date()
+      },
+      include: {
+        agency: true,
+        customer: true,
+        items: { include: { vehicle: true } }
+      }
+    })
+    
+    // Update fleet vehicle status if booking starts today
+    const today = new Date().toISOString().split('T')[0]
+    const startDate = booking.startDate.toISOString().split('T')[0]
+    if (startDate === today && fleetVehicleId) {
+      await prisma.fleetVehicle.update({
+        where: { id: fleetVehicleId },
+        data: { status: 'RESERVED' }
+      })
+    }
+    
+    res.json(booking)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to assign vehicle' })
+  }
+})
+
+// Update booking dates/times
+app.put('/api/bookings/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { startDate, endDate, startTime, endTime, fleetVehicleId, status } = req.body
+    
+    const updateData: any = {}
+    if (startDate) updateData.startDate = new Date(startDate)
+    if (endDate) updateData.endDate = new Date(endDate)
+    if (startTime) updateData.startTime = startTime
+    if (endTime) updateData.endTime = endTime
+    if (fleetVehicleId !== undefined) {
+      updateData.fleetVehicleId = fleetVehicleId
+      updateData.assignmentType = fleetVehicleId ? 'MANUAL' : null
+      updateData.assignedAt = fleetVehicleId ? new Date() : null
+    }
+    if (status) updateData.status = status
+    
+    const booking = await prisma.booking.update({
+      where: { id },
+      data: updateData,
+      include: {
+        agency: true,
+        customer: true,
+        items: { include: { vehicle: true } }
+      }
+    })
+    
+    res.json(booking)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to update booking' })
+  }
+})
+
+// Create new booking (operator)
+app.post('/api/bookings/operator', async (req, res) => {
+  try {
+    const {
+      agencyId,
+      fleetVehicleId,
+      customerId,
+      customerData, // { firstName, lastName, email, phone }
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      vehicleId,
+      quantity = 1,
+      unitPrice,
+      totalPrice,
+      depositAmount,
+      language = 'fr'
+    } = req.body
+    
+    // Create or find customer
+    let customer
+    if (customerId) {
+      customer = await prisma.customer.findUnique({ where: { id: customerId } })
+    } else if (customerData) {
+      // Check if customer exists by email
+      customer = await prisma.customer.findFirst({ where: { email: customerData.email } })
+      if (!customer) {
+        customer = await prisma.customer.create({
+          data: {
+            firstName: customerData.firstName,
+            lastName: customerData.lastName,
+            email: customerData.email,
+            phone: customerData.phone,
+            language
+          }
+        })
+      }
+    }
+    
+    if (!customer) {
+      return res.status(400).json({ error: 'Customer required' })
+    }
+    
+    // Generate reference
+    const reference = `VR-${Date.now().toString(36).toUpperCase()}`
+    
+    // Create booking
+    const booking = await prisma.booking.create({
+      data: {
+        reference,
+        agencyId,
+        customerId: customer.id,
+        fleetVehicleId,
+        assignmentType: fleetVehicleId ? 'MANUAL' : null,
+        assignedAt: fleetVehicleId ? new Date() : null,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        startTime,
+        endTime,
+        totalPrice,
+        depositAmount,
+        status: 'CONFIRMED',
+        language,
+        items: {
+          create: [{
+            vehicleId,
+            quantity,
+            unitPrice: unitPrice || totalPrice
+          }]
+        }
+      },
+      include: {
+        agency: true,
+        customer: true,
+        items: { include: { vehicle: true } }
+      }
+    })
+    
+    // Update fleet vehicle status
+    if (fleetVehicleId) {
+      const today = new Date().toISOString().split('T')[0]
+      const startDateStr = new Date(startDate).toISOString().split('T')[0]
+      if (startDateStr === today) {
+        await prisma.fleetVehicle.update({
+          where: { id: fleetVehicleId },
+          data: { status: 'RESERVED' }
+        })
+      }
+    }
+    
+    res.json(booking)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to create booking' })
+  }
+})
+
+// Get available fleet vehicles for a date range
+app.get('/api/fleet/available', async (req, res) => {
+  try {
+    const { agencyId, vehicleId, startDate, endDate } = req.query
+    
+    // Get all fleet vehicles matching criteria
+    const where: any = { isActive: true, status: { in: ['AVAILABLE', 'RESERVED'] } }
+    if (agencyId) where.agencyId = agencyId
+    if (vehicleId) where.vehicleId = vehicleId
+    
+    const fleetVehicles = await prisma.fleetVehicle.findMany({
+      where,
+      include: {
+        vehicle: { include: { category: true } },
+        agency: true
+      }
+    })
+    
+    if (!startDate || !endDate) {
+      return res.json(fleetVehicles)
+    }
+    
+    // Check for conflicts
+    const start = new Date(startDate as string)
+    const end = new Date(endDate as string)
+    
+    const conflictingBookings = await prisma.booking.findMany({
+      where: {
+        fleetVehicleId: { in: fleetVehicles.map(f => f.id) },
+        status: { in: ['CONFIRMED', 'PENDING'] },
+        startDate: { lte: end },
+        endDate: { gte: start }
+      },
+      select: { fleetVehicleId: true }
+    })
+    
+    const conflictingIds = new Set(conflictingBookings.map(b => b.fleetVehicleId))
+    const available = fleetVehicles.filter(f => !conflictingIds.has(f.id))
+    
+    res.json(available)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to get available vehicles' })
+  }
+})
+
+// Search customers
+app.get('/api/customers/search', async (req, res) => {
+  try {
+    const { q } = req.query
+    if (!q || (q as string).length < 2) {
+      return res.json([])
+    }
+    
+    const customers = await prisma.customer.findMany({
+      where: {
+        OR: [
+          { firstName: { contains: q as string, mode: 'insensitive' } },
+          { lastName: { contains: q as string, mode: 'insensitive' } },
+          { email: { contains: q as string, mode: 'insensitive' } },
+          { phone: { contains: q as string } }
+        ]
+      },
+      take: 10
+    })
+    
+    res.json(customers)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to search customers' })
+  }
+})
+
+console.log('Booking assignment and operator routes loaded')

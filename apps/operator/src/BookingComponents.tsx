@@ -132,7 +132,7 @@ export function NewBookingModal({ fleetVehicle, initialDate, agencies, onClose, 
     
     if (selectedFleetVehicle?.vehicle?.pricing?.[0] && priceOverride === null) {
       const pricing = selectedFleetVehicle.vehicle.pricing[0]
-      const calculatedPrice = calculatePrice(pricing, days, hours); console.log("PRICING DEBUG:", { pricing, days, hours, calculatedPrice }); console.log("PRICING DEBUG:", JSON.stringify({ hasPricing: !!pricing, day1: pricing?.day1, days, hours, calculatedPrice }))
+      const calculatedPrice = calculatePrice(pricing, days, hours)
       setTotalPrice(calculatedPrice)
     }
   }, [startDate, endDate, startTime, endTime, selectedFleetVehicle, priceOverride])
@@ -151,7 +151,7 @@ export function NewBookingModal({ fleetVehicle, initialDate, agencies, onClose, 
       if (selectedAgency) params.append('agencyId', selectedAgency)
       const res = await fetch(API_URL + '/api/fleet/available?' + params)
       const data = await res.json()
-      console.log("FLEET DATA:", data); setAvailableFleet(Array.isArray(data) ? data : [])
+      setAvailableFleet(Array.isArray(data) ? data : [])
     } catch (e) {
       console.error(e)
       setAvailableFleet([])

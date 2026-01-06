@@ -45,6 +45,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   // Step 4 - Documents
   const [idCardUrl, setIdCardUrl] = useState('')
   const [licenseUrl, setLicenseUrl] = useState('')
+  const [licenseVersoUrl, setLicenseVersoUrl] = useState('')
   
   // Step 5 - Signature
   const [termsLang, setTermsLang] = useState(booking?.language || 'fr')
@@ -62,6 +63,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   const [depositMethod, setDepositMethod] = useState('CARD')
   const [discount, setDiscount] = useState(0)
   const [discountReason, setDiscountReason] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('CARD')
 
   const totalSteps = 6
   const lang = termsLang
@@ -71,9 +73,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   const paidOnline = booking?.paidAmount || 0
   const depositAmount = booking?.depositAmount || fleetVehicle?.vehicle?.deposit || 100
   const subtotal = Math.max(0, locationAmount - paidOnline - discount)
-  const taxRate = 0.21
-  const taxAmount = subtotal * taxRate
-  const totalToPay = subtotal + taxAmount
+  const totalToPay = subtotal // Prices already include TVA
 
   // Upload photo
   const uploadPhoto = async (file) => {
@@ -227,7 +227,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
       case 3: return true
       case 4: 
         const needsLicense = fleetVehicle?.vehicle?.hasPlate
-        return idCardUrl && (!needsLicense || licenseUrl)
+        return idCardUrl && (!needsLicense || (licenseUrl && licenseVersoUrl))
       case 5: return termsAccepted && rgpdAccepted && signature
       case 6: return locationPaid && depositPaid
       default: return true
@@ -255,6 +255,8 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
         equipmentChecklist: equipment.filter(e => e.checked),
         customerIdCardUrl: idCardUrl,
         customerLicenseUrl: licenseUrl,
+        customerLicenseVersoUrl: licenseVersoUrl,
+        paymentMethod,
         customerSignature: signature,
         termsAcceptedAt: new Date().toISOString(),
         termsLanguage: termsLang,
@@ -401,25 +403,64 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Dégâts existants</label>
+                <label className="block text-sm font-medium mb-2">Dégâts existants (cliquez sur le schéma)</label>
                 <div className="flex gap-2 mb-2 text-sm">
                   <span className="px-2 py-1 bg-red-100 text-red-700 rounded">❌ Clic = Cassé</span>
                   <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">🟠 Shift+Clic = Rayure</span>
                 </div>
-                <div className="relative bg-gray-100 rounded-xl h-48 cursor-crosshair border-2"
+                <div className="relative bg-white rounded-xl border-2 cursor-crosshair overflow-hidden"
                   onClick={handleDamageClick}
-                  style={{ backgroundImage: fleetVehicle?.vehicle?.imageUrl ? 'url(' + fleetVehicle.vehicle.imageUrl + ')' : 'none',
-                           backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+                  style={{ height: '280px' }}>
+                  {/* Vehicle schema SVG - top view with 4 sides */}
+                  <svg viewBox="0 0 400 280" className="w-full h-full">
+                    {/* Background grid */}
+                    <defs>
+                      <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" strokeWidth="0.5"/>
+                      </pattern>
+                    </defs>
+                    <rect width="400" height="280" fill="url(#grid)"/>
+                    
+                    {/* Vehicle body - top view */}
+                    <g transform="translate(200, 140)">
+                      {/* Main body */}
+                      <rect x="-60" y="-90" width="120" height="180" rx="20" fill="#e5e7eb" stroke="#9ca3af" strokeWidth="2"/>
+                      
+                      {/* Windshield */}
+                      <path d="M -45 -70 L 45 -70 L 40 -40 L -40 -40 Z" fill="#bfdbfe" stroke="#9ca3af" strokeWidth="1"/>
+                      
+                      {/* Rear window */}
+                      <path d="M -40 50 L 40 50 L 45 75 L -45 75 Z" fill="#bfdbfe" stroke="#9ca3af" strokeWidth="1"/>
+                      
+                      {/* Side mirrors */}
+                      <ellipse cx="-65" cy="-50" rx="8" ry="5" fill="#9ca3af"/>
+                      <ellipse cx="65" cy="-50" rx="8" ry="5" fill="#9ca3af"/>
+                      
+                      {/* Wheels */}
+                      <rect x="-70" y="-65" width="15" height="30" rx="3" fill="#374151"/>
+                      <rect x="55" y="-65" width="15" height="30" rx="3" fill="#374151"/>
+                      <rect x="-70" y="35" width="15" height="30" rx="3" fill="#374151"/>
+                      <rect x="55" y="35" width="15" height="30" rx="3" fill="#374151"/>
+                    </g>
+                    
+                    {/* Labels */}
+                    <text x="200" y="25" textAnchor="middle" className="text-xs" fill="#6b7280" fontSize="12">AVANT</text>
+                    <text x="200" y="270" textAnchor="middle" className="text-xs" fill="#6b7280" fontSize="12">ARRIÈRE</text>
+                    <text x="30" y="145" textAnchor="middle" className="text-xs" fill="#6b7280" fontSize="12" transform="rotate(-90, 30, 145)">GAUCHE</text>
+                    <text x="370" y="145" textAnchor="middle" className="text-xs" fill="#6b7280" fontSize="12" transform="rotate(90, 370, 145)">DROITE</text>
+                  </svg>
+                  
+                  {/* Damage markers */}
                   {damages.map(d => (
                     <div key={d.id} onClick={e => { e.stopPropagation(); removeDamage(d.id) }}
-                      className={'absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer text-xl ' +
+                      className={'absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer text-lg hover:scale-125 transition-transform ' +
                         (d.type === 'broken' ? 'text-red-500' : 'text-orange-500')}
                       style={{ left: d.x + '%', top: d.y + '%' }}>
                       {d.type === 'broken' ? '❌' : '🟠'}
                     </div>
                   ))}
                 </div>
-                {damages.length > 0 && <p className="text-xs text-gray-500 mt-1">{damages.length} dégât(s) - cliquez dessus pour supprimer</p>}
+                {damages.length > 0 && <p className="text-xs text-gray-500 mt-1">{damages.length} dégât(s) marqué(s) - cliquez dessus pour supprimer</p>}
               </div>
             </div>
           )}
@@ -485,25 +526,46 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   <label className="block text-sm font-medium mb-2">
                     Permis de conduire <span className="text-red-500">*</span>
                   </label>
-                  <label className={'block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ' +
-                    (licenseUrl ? 'border-green-500' : 'border-orange-300 hover:border-orange-400')}>
-                    <input type="file" accept="image/*" capture="environment" className="hidden"
-                      onChange={async e => {
-                        const file = e.target.files?.[0]
-                        if (file) {
-                          const url = await uploadPhoto(file)
-                          if (url) setLicenseUrl(url)
-                        }
-                      }} />
-                    {licenseUrl ? (
-                      <img src={licenseUrl} className="w-full h-full object-contain" />
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                        <span className="text-3xl">🪪</span>
-                        <span>Photographier le permis</span>
-                      </div>
-                    )}
-                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className={'block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ' +
+                      (licenseUrl ? 'border-green-500' : 'border-orange-300 hover:border-orange-400')}>
+                      <input type="file" accept="image/*" capture="environment" className="hidden"
+                        onChange={async e => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            const url = await uploadPhoto(file)
+                            if (url) setLicenseUrl(url)
+                          }
+                        }} />
+                      {licenseUrl ? (
+                        <img src={licenseUrl} className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                          <span className="text-2xl">🪪</span>
+                          <span className="text-sm">Recto</span>
+                        </div>
+                      )}
+                    </label>
+                    <label className={'block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ' +
+                      (licenseVersoUrl ? 'border-green-500' : 'border-orange-300 hover:border-orange-400')}>
+                      <input type="file" accept="image/*" capture="environment" className="hidden"
+                        onChange={async e => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            const url = await uploadPhoto(file)
+                            if (url) setLicenseVersoUrl(url)
+                          }
+                        }} />
+                      {licenseVersoUrl ? (
+                        <img src={licenseVersoUrl} className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                          <span className="text-2xl">🪪</span>
+                          <span className="text-sm">Verso</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
                 </div>
               )}
 
@@ -618,26 +680,33 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   <input type="text" value={discountReason} onChange={e => setDiscountReason(e.target.value)}
                     placeholder="Motif" className="flex-1 border rounded px-2 py-1 text-sm" />
                 </div>
-                <div className="flex justify-between pt-2 border-t">
-                  <span>Sous-total HT</span>
-                  <span>{subtotal.toFixed(2)}€</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-500">
-                  <span>TVA (21%)</span>
-                  <span>{taxAmount.toFixed(2)}€</span>
-                </div>
                 <div className="flex justify-between text-xl font-bold pt-2 border-t">
-                  <span>Reste à payer</span>
+                  <span>Reste à payer (TTC)</span>
                   <span className="text-green-600">{totalToPay.toFixed(2)}€</span>
                 </div>
               </div>
 
-              <label className={'flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ' +
-                (locationPaid ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300')}>
-                <input type="checkbox" checked={locationPaid} onChange={e => setLocationPaid(e.target.checked)}
-                  className="w-6 h-6 accent-green-600" />
-                <span className="font-medium">✅ Location payée</span>
-              </label>
+              <div className="p-4 border-2 rounded-xl mb-4">
+                <div className="font-medium mb-3">Mode de paiement location</div>
+                <div className="flex gap-2 mb-3">
+                  <button onClick={() => setPaymentMethod('CARD')}
+                    className={'flex-1 py-2 rounded-lg border-2 transition-all ' +
+                      (paymentMethod === 'CARD' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300')}>
+                    💳 CB
+                  </button>
+                  <button onClick={() => setPaymentMethod('CASH')}
+                    className={'flex-1 py-2 rounded-lg border-2 transition-all ' +
+                      (paymentMethod === 'CASH' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300')}>
+                    💵 Espèces
+                  </button>
+                </div>
+                <label className={'flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ' +
+                  (locationPaid ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300')}>
+                  <input type="checkbox" checked={locationPaid} onChange={e => setLocationPaid(e.target.checked)}
+                    className="w-5 h-5 accent-green-600" />
+                  <span className="font-medium">✅ Location payée</span>
+                </label>
+              </div>
 
               <div className="p-4 border-2 rounded-xl">
                 <div className="flex justify-between mb-3">

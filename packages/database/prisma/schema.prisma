@@ -1124,3 +1124,24 @@ model BrandSettings {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 }
+
+// Tablet sessions for signature
+model TabletSession {
+  id            String   @id @default(cuid())
+  sessionId     String   @unique
+  bookingId     String?
+  agencyId      String
+  type          String   @default("checkin") // checkin, checkout, contract
+  status        String   @default("pending") // pending, active, signed, expired
+  language      String   @default("fr")
+  customerName  String?
+  cgvText       String?  @db.Text
+  rgpdText      String?  @db.Text
+  signature     String?  @db.Text
+  termsAccepted Boolean  @default(false)
+  rgpdAccepted  Boolean  @default(false)
+  signedAt      DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

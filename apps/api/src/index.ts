@@ -276,6 +276,92 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
 })
 
 const PORT = parseInt(process.env.PORT || '8080', 10)
+
+// ============== TABLET SESSIONS ==============
+
+// Get pending session for agency (tablet polls this)
+app.get('/api/tablet-sessions/agency/:agencyId', async (req, res) => {
+  try {
+    const session = await prisma.tabletSession.findFirst({
+      where: {
+        agencyId: req.params.agencyId,
+        status: 'pending'
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(session)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Get session by ID
+app.get('/api/tablet-sessions/:sessionId', async (req, res) => {
+  try {
+    const session = await prisma.tabletSession.findUnique({
+      where: { sessionId: req.params.sessionId }
+    })
+    res.json(session)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Create new session (from operator app)
+app.post('/api/tablet-sessions', async (req, res) => {
+  try {
+    const session = await prisma.tabletSession.create({
+      data: {
+        sessionId: req.body.sessionId,
+        bookingId: req.body.bookingId,
+        agencyId: req.body.agencyId,
+        type: req.body.type || 'checkin',
+        language: req.body.language || 'fr',
+        customerName: req.body.customerName,
+        cgvText: req.body.cgvText,
+        rgpdText: req.body.rgpdText,
+        status: 'pending',
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000) // 30 min expiry
+      }
+    })
+    res.json(session)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Update session (signature from tablet)
+app.put('/api/tablet-sessions/:sessionId', async (req, res) => {
+  try {
+    const session = await prisma.tabletSession.update({
+      where: { sessionId: req.params.sessionId },
+      data: {
+        signature: req.body.signature,
+        termsAccepted: req.body.termsAccepted,
+        rgpdAccepted: req.body.rgpdAccepted,
+        status: req.body.status || 'signed',
+        signedAt: req.body.status === 'signed' ? new Date() : undefined
+      }
+    })
+    res.json(session)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Delete/cancel session
+app.delete('/api/tablet-sessions/:sessionId', async (req, res) => {
+  try {
+    await prisma.tabletSession.delete({
+      where: { sessionId: req.params.sessionId }
+    })
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })
 
 // ============== VEHICLE NUMBERING CATEGORIES ==============

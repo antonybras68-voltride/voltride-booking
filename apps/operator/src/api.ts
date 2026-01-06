@@ -94,7 +94,7 @@ export const api = {
   uploadImage: async (file, folder) => {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('upload_preset', 'voltride_docs')
+    formData.append('upload_preset', 'voltride')
     formData.append('folder', folder || 'operator')
     const res = await fetch('https://api.cloudinary.com/v1_1/dis5pcnfr/auto/upload', {
       method: 'POST',

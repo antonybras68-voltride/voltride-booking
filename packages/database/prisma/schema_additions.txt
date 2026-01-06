@@ -1,0 +1,31 @@
+// Champs à ajouter dans RentalContract après endMileage:
+  startFuelLevel       String?           // FULL, THREE_QUARTERS, HALF, QUARTER, EMPTY
+  endFuelLevel         String?
+  fuelCharge           Decimal?          @db.Decimal(10, 2) @default(0)
+  
+  // Photos d'inspection au départ
+  photoFront           String?
+  photoLeft            String?
+  photoRight           String?
+  photoRear            String?
+  photoCounter         String?
+  
+  // Schéma des dégâts (JSON: [{x, y, type: 'broken'|'scratch', note}])
+  damageSchema         Json?
+  
+  // Équipements fournis (JSON: [{name, checked, quantity}])
+  equipmentChecklist   Json?
+  
+  // Documents client
+  customerIdCardUrl    String?
+  customerLicenseUrl   String?
+  
+  // Conditions générales acceptées
+  termsAcceptedAt      DateTime?
+  termsLanguage        String?           // FR, ES, EN
+
+// Champs à ajouter dans Vehicle pour tarifs carburant:
+  fuelChargeQuarter    Float    @default(5)   // 1/4 manquant
+  fuelChargeHalf       Float    @default(10)  // 1/2 manquant
+  fuelChargeThreeQ     Float    @default(15)  // 3/4 manquant
+  fuelChargeEmpty      Float    @default(20)  // Vide

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FleetList, FleetDetail, FleetVehicle } from './FleetComponents'
-import { AdvancedPlanning, CheckInModal, CheckOutModal } from './PlanningComponents'
+import { AdvancedPlanning, CheckOutModal } from './PlanningComponents'
+import { CheckInModal } from './CheckInModal'
 import { NewBookingModal, AssignVehicleModal } from './BookingComponents'
 
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'

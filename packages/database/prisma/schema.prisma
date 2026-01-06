@@ -67,6 +67,10 @@ model Vehicle {
   helmetIncluded Boolean       @default(true)
   kmIncluded     Json?         @default("{}")
   licenseType    Json?         @default("{}")
+  fuelChargeQuarter    Float    @default(5)
+  fuelChargeHalf       Float    @default(10)
+  fuelChargeThreeQ     Float    @default(15)
+  fuelChargeEmpty      Float    @default(20)
   bookingItems   BookingItem[]
   inventory      Inventory[]
   pricing        Pricing[]
@@ -665,6 +669,20 @@ model RentalContract {
   documentsSentTo      String?
   startMileage         Int?
   endMileage           Int?
+  startFuelLevel       String?
+  endFuelLevel         String?
+  fuelCharge           Decimal?          @db.Decimal(10, 2)
+  photoFront           String?
+  photoLeft            String?
+  photoRight           String?
+  photoRear            String?
+  photoCounter         String?
+  damageSchema         Json?
+  equipmentChecklist   Json?
+  customerIdCardUrl    String?
+  customerLicenseUrl   String?
+  termsAcceptedAt      DateTime?
+  termsLanguage        String?
   totalMileage         Int?
   status               ContractStatus    @default(DRAFT)
   internalNotes        String?

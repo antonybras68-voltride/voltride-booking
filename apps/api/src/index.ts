@@ -313,7 +313,7 @@ app.get('/api/fleet', async (req, res) => {
     
     const fleet = await prisma.fleet.findMany({
       where,
-      include: { vehicle: { include: { category: true } }, agency: true, documents: true, damages: { where: { isResolved: false } } },
+      include: { vehicle: { include: { category: true, pricing: true } }, agency: true, documents: true, damages: { where: { isResolved: false } } },
       orderBy: { vehicleNumber: 'asc' }
     })
     res.json(fleet)
@@ -854,7 +854,7 @@ app.get('/api/contracts/:id', async (req, res) => {
     const contract = await prisma.rentalContract.findUnique({
       where: { id: req.params.id },
       include: {
-        fleetVehicle: { include: { vehicle: { include: { category: true } }, documents: { where: { sendToCustomer: true } } } },
+        fleetVehicle: { include: { vehicle: { include: { category: true, pricing: true } }, documents: { where: { sendToCustomer: true } } } },
         agency: true,
         customer: true,
         booking: true,
@@ -1256,7 +1256,7 @@ app.post('/api/contracts/:contractId/extensions', async (req, res) => {
   try {
     const contract = await prisma.rentalContract.findUnique({
       where: { id: req.params.contractId },
-      include: { fleetVehicle: { include: { vehicle: { include: { category: true } } } }, agency: true }
+      include: { fleetVehicle: { include: { vehicle: { include: { category: true, pricing: true } } } }, agency: true }
     })
     if (!contract) return res.status(404).json({ error: 'Contract not found' })
     
@@ -1299,7 +1299,7 @@ app.post('/api/extensions/:id/create-payment-link', async (req, res) => {
   try {
     const extension = await prisma.contractExtension.findUnique({
       where: { id: req.params.id },
-      include: { contract: { include: { customer: true, fleetVehicle: { include: { vehicle: { include: { category: true } } } }, agency: true } } }
+      include: { contract: { include: { customer: true, fleetVehicle: { include: { vehicle: { include: { category: true, pricing: true } } } }, agency: true } } }
     })
     if (!extension) return res.status(404).json({ error: 'Extension not found' })
     

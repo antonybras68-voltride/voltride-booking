@@ -493,6 +493,8 @@ function VehicleModal({ vehicle, categories, onSave, onClose }: { vehicle: any; 
                 <input key={h} type="number" placeholder={'H' + h} value={form.pricing['extraHour' + h] || ''} onChange={e => setForm({ ...form, pricing: { ...form.pricing, ['extraHour' + h]: parseFloat(e.target.value) || 0 } })} className="p-1 border rounded text-center text-sm" />
               ))}
             </div>
+            <p className="text-sm font-medium mt-3 mb-2">Prix jour supplémentaire (après 14j) €</p>
+            <input type="number" placeholder="Prix/jour après 14 jours" value={form.pricing.extraDayPrice || ''} onChange={e => setForm({ ...form, pricing: { ...form.pricing, extraDayPrice: parseFloat(e.target.value) || 0 } })} className="w-full p-2 border rounded text-sm" />
           </div>
         </div>
         <div className="flex gap-2 mt-4">
@@ -591,6 +593,8 @@ function OptionModal({ option, categories, onSave, onClose }: { option: any; cat
                 <input key={d} type="number" placeholder={'J' + d} value={form['day' + d as keyof typeof form] || ''} onChange={e => setForm({ ...form, ['day' + d]: parseFloat(e.target.value) || 0 })} className="p-1 border rounded text-center text-sm" />
               ))}
             </div>
+            <p className="text-sm font-medium mt-3 mb-2">Prix jour supplémentaire (après 14j) €</p>
+            <input type="number" placeholder="Prix/jour après 14 jours" value={form.pricing.extraDayPrice || ''} onChange={e => setForm({ ...form, pricing: { ...form.pricing, extraDayPrice: parseFloat(e.target.value) || 0 } })} className="w-full p-2 border rounded text-sm" />
           </div>
         </div>
         <div className="flex gap-2 mt-4">

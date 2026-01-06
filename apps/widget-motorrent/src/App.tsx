@@ -1,7 +1,9 @@
 pkill -f "ts-node" 2>/dev/null
 cd /workspaces/voltride-booking/apps/api && npx ts-node src/index.ts 2>&1 &
 sleep 4
-curl -s "http://localhost:3000/api/agencies" | head -c 100import { useState, useEffect } from 'react'
+curl -s "ht
+
+tp://localhost:3000/api/agencies" | head -c 100import { useState, useEffect } from 'react'
 
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'MOTOR-RENT'

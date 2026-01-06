@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from './api'
+import { CheckInModal } from './CheckInModal'
 import { getName } from './types'
 
 export default function App() {
@@ -33,6 +34,18 @@ export default function App() {
   const [cancelBooking, setCancelBooking] = useState(null)
   const [cancelReason, setCancelReason] = useState('')
   const [contextMenu, setContextMenu] = useState(null)
+  const [settings, setSettings] = useState({
+    cgv: {
+      fr: "CONDITIONS GÉNÉRALES DE LOCATION\n\n1. Le locataire s'engage à utiliser le véhicule de manière responsable.\n2. Le véhicule doit être restitué dans le même état.\n3. Tout dommage sera facturé au locataire.\n4. La caution sera restituée après vérification.",
+      es: "CONDICIONES GENERALES DE ALQUILER\n\n1. El arrendatario se compromete a utilizar el vehículo de manera responsable.\n2. El vehículo debe ser devuelto en el mismo estado.\n3. Cualquier daño será facturado al arrendatario.\n4. La fianza será devuelta tras la verificación.",
+      en: "GENERAL RENTAL CONDITIONS\n\n1. The tenant agrees to use the vehicle responsibly.\n2. The vehicle must be returned in the same condition.\n3. Any damage will be charged to the tenant.\n4. The deposit will be refunded after verification."
+    },
+    rgpd: {
+      fr: "POLITIQUE RGPD\n\nVos données personnelles sont collectées uniquement pour la gestion de votre location. Elles ne seront pas transmises à des tiers sans votre consentement.",
+      es: "POLÍTICA RGPD\n\nSus datos personales se recopilan únicamente para la gestión de su alquiler. No se transmitirán a terceros sin su consentimiento.",
+      en: "GDPR POLICY\n\nYour personal data is collected only for the management of your rental. It will not be transmitted to third parties without your consent."
+    }
+  })
 
   const days = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(weekStart)
@@ -232,6 +245,7 @@ export default function App() {
             { id: 'customers', icon: '👥', label: 'Clients' },
             { id: 'contracts', icon: '📄', label: 'Contrats' },
             { id: 'invoices', icon: '💰', label: 'Factures' },
+            { id: 'settings', icon: '⚙️', label: 'Paramètres' },
           ].map(item => (
             <button key={item.id} onClick={() => setTab(item.id)}
               className={'w-full text-left px-3 py-2 rounded-lg mb-1 flex items-center gap-2 ' +
@@ -500,6 +514,54 @@ export default function App() {
             </div>
           )}
 
+          
+          {/* SETTINGS */}
+          {!loading && tab === 'settings' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold">⚙️ Paramètres</h2>
+              
+              <div className="bg-white rounded-xl shadow p-6">
+                <h3 className="text-lg font-bold mb-4">Conditions Générales de Vente (CGV)</h3>
+                <div className="space-y-4">
+                  {['fr', 'es', 'en'].map(lang => (
+                    <div key={lang}>
+                      <label className="block text-sm font-medium mb-1">
+                        {lang === 'fr' ? '🇫🇷 Français' : lang === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}
+                      </label>
+                      <textarea
+                        value={settings.cgv[lang]}
+                        onChange={e => setSettings({...settings, cgv: {...settings.cgv, [lang]: e.target.value}})}
+                        className="w-full border rounded-lg p-3 h-32"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow p-6">
+                <h3 className="text-lg font-bold mb-4">Politique RGPD</h3>
+                <div className="space-y-4">
+                  {['fr', 'es', 'en'].map(lang => (
+                    <div key={lang}>
+                      <label className="block text-sm font-medium mb-1">
+                        {lang === 'fr' ? '🇫🇷 Français' : lang === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}
+                      </label>
+                      <textarea
+                        value={settings.rgpd[lang]}
+                        onChange={e => setSettings({...settings, rgpd: {...settings.rgpd, [lang]: e.target.value}})}
+                        className="w-full border rounded-lg p-3 h-24"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                💾 Sauvegarder les paramètres
+              </button>
+            </div>
+          )}
+
           {/* Other tabs placeholder */}
           {!loading && ['customers', 'contracts', 'invoices'].includes(tab) && (
             <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
@@ -580,16 +642,15 @@ export default function App() {
         </div>
       )}
 
-      {/* Check-in Modal Placeholder */}
+      {/* Check-in Modal */}
       {showCheckIn && checkInBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCheckIn(false)}>
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold mb-4">✅ Check-in</h3>
-            <p className="text-gray-600">{checkInBooking.reference} - {checkInBooking.customer?.firstName} {checkInBooking.customer?.lastName}</p>
-            <p className="text-center text-gray-500 py-8">Check-in complet à implémenter (6 étapes)</p>
-            <button onClick={() => setShowCheckIn(false)} className="w-full py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Fermer</button>
-          </div>
-        </div>
+        <CheckInModal
+          booking={checkInBooking}
+          fleetVehicle={fleet.find(f => f.id === checkInBooking.fleetVehicleId)}
+          settings={settings}
+          onClose={() => setShowCheckIn(false)}
+          onComplete={() => { setShowCheckIn(false); setCheckInBooking(null); loadData() }}
+        />
       )}
     </div>
   )

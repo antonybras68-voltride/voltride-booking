@@ -290,7 +290,7 @@ app.get('/api/tablet-sessions/agency/:agencyId', async (req, res) => {
       orderBy: { createdAt: 'desc' }
     })
     res.json(session)
-  } catch (e) {
+  } catch (e: any) {
     res.status(500).json({ error: e.message })
   }
 })
@@ -302,7 +302,7 @@ app.get('/api/tablet-sessions/:sessionId', async (req, res) => {
       where: { sessionId: req.params.sessionId }
     })
     res.json(session)
-  } catch (e) {
+  } catch (e: any) {
     res.status(500).json({ error: e.message })
   }
 })
@@ -325,7 +325,7 @@ app.post('/api/tablet-sessions', async (req, res) => {
       }
     })
     res.json(session)
-  } catch (e) {
+  } catch (e: any) {
     res.status(500).json({ error: e.message })
   }
 })
@@ -344,7 +344,7 @@ app.put('/api/tablet-sessions/:sessionId', async (req, res) => {
       }
     })
     res.json(session)
-  } catch (e) {
+  } catch (e: any) {
     res.status(500).json({ error: e.message })
   }
 })
@@ -356,7 +356,7 @@ app.delete('/api/tablet-sessions/:sessionId', async (req, res) => {
       where: { sessionId: req.params.sessionId }
     })
     res.json({ success: true })
-  } catch (e) {
+  } catch (e: any) {
     res.status(500).json({ error: e.message })
   }
 })
@@ -437,7 +437,7 @@ app.get('/api/fleet/available', async (req, res) => {
     
     const conflictingIds = new Set(conflictingBookings.map(b => b.fleetVehicleId))
     res.json(fleetVehicles.filter(f => !conflictingIds.has(f.id)))
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
     res.status(500).json({ error: 'Failed to get available vehicles' })
   }
@@ -1618,7 +1618,7 @@ app.put('/api/bookings/:id/assign', async (req, res) => {
     }
     
     res.json(booking)
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
     res.status(500).json({ error: 'Failed to assign vehicle' })
   }
@@ -1653,7 +1653,7 @@ app.put('/api/bookings/:id', async (req, res) => {
     })
     
     res.json(booking)
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
     res.status(500).json({ error: 'Failed to update booking' })
   }
@@ -1752,7 +1752,7 @@ app.post('/api/bookings/operator', async (req, res) => {
     }
     
     res.json(booking)
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
     res.status(500).json({ error: 'Failed to create booking' })
   }
@@ -1781,7 +1781,7 @@ app.get('/api/customers/search', async (req, res) => {
     })
     
     res.json(customers)
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
     res.status(500).json({ error: 'Failed to search customers' })
   }
@@ -1801,7 +1801,7 @@ app.delete('/api/fleet/:id', async (req, res) => {
     // Then delete the fleet vehicle
     await prisma.fleet.delete({ where: { id: req.params.id } })
     res.json({ success: true })
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
     res.status(500).json({ error: 'Failed to delete fleet vehicle' })
   }
@@ -1812,7 +1812,7 @@ app.delete('/api/fleet/documents/:id', async (req, res) => {
   try {
     await prisma.fleetDocument.delete({ where: { id: req.params.id } })
     res.json({ success: true })
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
     res.status(500).json({ error: 'Failed to delete document' })
   }
@@ -1823,7 +1823,7 @@ app.delete('/api/fleet/spare-parts/:id', async (req, res) => {
   try {
     await prisma.fleetSparePart.delete({ where: { id: req.params.id } })
     res.json({ success: true })
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
     res.status(500).json({ error: 'Failed to delete spare part' })
   }
@@ -1837,7 +1837,7 @@ app.put('/api/fleet/spare-parts/:id', async (req, res) => {
       data: req.body
     })
     res.json(part)
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
     res.status(500).json({ error: 'Failed to update spare part' })
   }

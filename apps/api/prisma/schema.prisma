@@ -67,6 +67,10 @@ model Vehicle {
   helmetIncluded Boolean       @default(true)
   kmIncluded     Json?         @default("{}")
   licenseType    Json?         @default("{}")
+  fuelChargeQuarter    Float    @default(5)
+  fuelChargeHalf       Float    @default(10)
+  fuelChargeThreeQ     Float    @default(15)
+  fuelChargeEmpty      Float    @default(20)
   bookingItems   BookingItem[]
   inventory      Inventory[]
   pricing        Pricing[]
@@ -92,7 +96,8 @@ model Pricing {
   day11      Float    @default(0)
   day12      Float    @default(0)
   day13      Float    @default(0)
-  day14      Float    @default(0)
+  day14         Float    @default(0)
+  extraDayPrice Float    @default(0)
   extraHour1 Float    @default(0)
   extraHour2 Float    @default(0)
   extraHour3 Float    @default(0)
@@ -664,6 +669,20 @@ model RentalContract {
   documentsSentTo      String?
   startMileage         Int?
   endMileage           Int?
+  startFuelLevel       String?
+  endFuelLevel         String?
+  fuelCharge           Decimal?          @db.Decimal(10, 2)
+  photoFront           String?
+  photoLeft            String?
+  photoRight           String?
+  photoRear            String?
+  photoCounter         String?
+  damageSchema         Json?
+  equipmentChecklist   Json?
+  customerIdCardUrl    String?
+  customerLicenseUrl   String?
+  termsAcceptedAt      DateTime?
+  termsLanguage        String?
   totalMileage         Int?
   status               ContractStatus    @default(DRAFT)
   internalNotes        String?
@@ -1104,4 +1123,25 @@ model BrandSettings {
   isActive               Boolean  @default(true)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
+}
+
+// Tablet sessions for signature
+model TabletSession {
+  id            String   @id @default(cuid())
+  sessionId     String   @unique
+  bookingId     String?
+  agencyId      String
+  type          String   @default("checkin") // checkin, checkout, contract
+  status        String   @default("pending") // pending, active, signed, expired
+  language      String   @default("fr")
+  customerName  String?
+  cgvText       String?  @db.Text
+  rgpdText      String?  @db.Text
+  signature     String?  @db.Text
+  termsAccepted Boolean  @default(false)
+  rgpdAccepted  Boolean  @default(false)
+  signedAt      DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

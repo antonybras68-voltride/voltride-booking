@@ -34,6 +34,7 @@ export default function App() {
   const [selectedFleetForEdit, setSelectedFleetForEdit] = useState(null)
   const [fleetModalMode, setFleetModalMode] = useState<'view' | 'edit'>('view')
   const [showNewFleet, setShowNewFleet] = useState(false)
+  const [fleetStatusFilter, setFleetStatusFilter] = useState('ALL')
   const [newBookingData, setNewBookingData] = useState(null)
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [checkInBooking, setCheckInBooking] = useState(null)
@@ -1113,8 +1114,27 @@ export default function App() {
                   + Nouveau véhicule
                 </button>
               </div>
+              
+              <div className="flex gap-2 mb-4">
+                {[
+                  { id: 'ALL', label: 'Tous', color: 'bg-gray-100 text-gray-700' },
+                  { id: 'AVAILABLE', label: 'Disponibles', color: 'bg-green-100 text-green-700' },
+                  { id: 'RENTED', label: 'En location', color: 'bg-blue-100 text-blue-700' },
+                  { id: 'MAINTENANCE', label: 'Maintenance', color: 'bg-orange-100 text-orange-700' },
+                  { id: 'OUT_OF_SERVICE', label: 'Hors service', color: 'bg-red-100 text-red-700' }
+                ].map(s => (
+                  <button key={s.id} onClick={() => setFleetStatusFilter(s.id)}
+                    className={'px-3 py-1.5 rounded-lg text-sm font-medium transition ' + 
+                      (fleetStatusFilter === s.id ? s.color + ' ring-2 ring-offset-1 ring-gray-400' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')}>
+                    {s.label}
+                    <span className="ml-1 text-xs opacity-70">
+                      ({s.id === 'ALL' ? filteredFleet.length : filteredFleet.filter(f => f.status === s.id).length})
+                    </span>
+                  </button>
+                ))}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredFleet.map(f => (
+                {filteredFleet.filter(f => fleetStatusFilter === 'ALL' || f.status === fleetStatusFilter).map(f => (
                   <div key={f.id} className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition cursor-pointer"
                     onClick={() => handleFleetClick(f, 'view')}>
                     <div className="flex items-center gap-3">

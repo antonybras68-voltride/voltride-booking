@@ -825,6 +825,36 @@ app.put('/api/fleet/:id', async (req, res) => {
 })
 
 
+
+// Create new fleet vehicle
+app.post('/api/fleet', async (req, res) => {
+  try {
+    const fleet = await prisma.fleet.create({
+      data: {
+        vehicleNumber: req.body.vehicleNumber,
+        licensePlate: req.body.licensePlate || null,
+        chassisNumber: req.body.chassisNumber,
+        brand: req.body.brand || null,
+        model: req.body.model || null,
+        engineSize: req.body.engineSize || null,
+        year: req.body.year || null,
+        color: req.body.color || null,
+        currentMileage: req.body.currentMileage || 0,
+        vehicleId: req.body.vehicleId,
+        agencyId: req.body.agencyId,
+        status: 'AVAILABLE'
+      },
+      include: {
+        vehicle: { include: { category: true } },
+        agency: true
+      }
+    })
+    res.json(fleet)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // Delete fleet vehicle
 app.delete('/api/fleet/:id', async (req, res) => {
   try {

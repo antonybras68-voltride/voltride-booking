@@ -72,12 +72,26 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
   const [newPart, setNewPart] = useState({ name: '', partNumber: '', price: '', laborCost: '' })
   const [maintenance, setMaintenance] = useState([])
   const [newMaintenance, setNewMaintenance] = useState({ type: 'SERVICE', scheduledDate: '', description: '', cost: '', performedBy: '' })
+  const [categories, setCategories] = useState([])
+  const [vehicles, setVehicles] = useState([])
+  const [selectedCategoryId, setSelectedCategoryId] = useState(fleet?.vehicle?.categoryId || '')
+  const [selectedVehicleId, setSelectedVehicleId] = useState(fleet?.vehicleId || '')
 
   useEffect(() => {
     if (fleet?.id) loadFleetData()
   }, [fleet?.id])
 
   const loadFleetData = async () => {
+    // Load categories and vehicles
+    try {
+      const [catRes, vehRes] = await Promise.all([
+        fetch(API_URL + '/api/categories'),
+        fetch(API_URL + '/api/vehicles')
+      ])
+      setCategories(await catRes.json())
+      setVehicles(await vehRes.json())
+    } catch (e) { console.error(e) }
+
     try {
       const res = await fetch(`${API_URL}/api/fleet/${fleet.id}`)
       const data = await res.json()
@@ -226,7 +240,8 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
           year: parseInt(form.year) || null,
           currentMileage: parseInt(form.currentMileage) || 0,
           maintenanceIntervalKm: parseInt(form.maintenanceIntervalKm) || 1000,
-          maintenanceIntervalDays: parseInt(form.maintenanceIntervalDays) || 30
+          maintenanceIntervalDays: parseInt(form.maintenanceIntervalDays) || 30,
+          vehicleId: selectedVehicleId || undefined
         })
       })
       await fetch(`${API_URL}/api/fleet/${fleet.id}/contract-fields/batch`, {
@@ -381,6 +396,33 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
                       </select>
                     </div>
                   </div>
+                  
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-xs text-blue-700 mb-2">Liaison catalogue (backoffice)</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-700">Catégorie</label>
+                        <select value={selectedCategoryId} onChange={e => { setSelectedCategoryId(e.target.value); setSelectedVehicleId('') }}
+                          className="w-full border rounded-lg p-2 text-sm">
+                          <option value="">-- Catégorie --</option>
+                          {categories.map((cat: any) => (
+                            <option key={cat.id} value={cat.id}>{getName(cat.name)}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-700">Type véhicule</label>
+                        <select value={selectedVehicleId} onChange={e => setSelectedVehicleId(e.target.value)}
+                          className="w-full border rounded-lg p-2 text-sm">
+                          <option value="">-- Type --</option>
+                          {vehicles.filter((v: any) => v.categoryId === selectedCategoryId).map((veh: any) => (
+                            <option key={veh.id} value={veh.id}>{getName(veh.name)}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div className="grid grid-cols-4 gap-4">
                     <Input label="Marque" value={form.brand} onChange={v => updateForm('brand', v)} />
                     <Input label="Modèle" value={form.model} onChange={v => updateForm('model', v)} />

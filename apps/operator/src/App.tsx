@@ -3,6 +3,7 @@ import { api } from './api'
 import { CheckInModal } from './CheckInModal'
 import { NewBookingModal } from './NewBookingModal'
 import { FleetEditModal } from './FleetEditModal'
+import { NewFleetModal } from './NewFleetModal'
 import { getName } from './types'
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
   const [showFleetEdit, setShowFleetEdit] = useState(false)
   const [selectedFleetForEdit, setSelectedFleetForEdit] = useState(null)
   const [fleetModalMode, setFleetModalMode] = useState<'view' | 'edit'>('view')
+  const [showNewFleet, setShowNewFleet] = useState(false)
   const [newBookingData, setNewBookingData] = useState(null)
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [checkInBooking, setCheckInBooking] = useState(null)
@@ -1104,7 +1106,13 @@ export default function App() {
           {/* FLEET */}
           {!loading && tab === 'fleet' && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Flotte</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold">Flotte</h2>
+                <button onClick={() => setShowNewFleet(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                  + Nouveau véhicule
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredFleet.map(f => (
                   <div key={f.id} className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition cursor-pointer"
@@ -1247,6 +1255,15 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* New Fleet Modal */}
+      {showNewFleet && (
+        <NewFleetModal
+          agencyId={selectedAgency || agencies[0]?.id}
+          onClose={() => setShowNewFleet(false)}
+          onSave={() => { setShowNewFleet(false); loadData() }}
+        />
       )}
 
       {/* Fleet Edit Modal */}

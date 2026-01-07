@@ -188,6 +188,37 @@ export default function App() {
     setSending(false)
   }
 
+  // Cancel walkin session (return to waiting)
+  const cancelWalkinSession = async () => {
+    if (walkinSession?.sessionId) {
+      try {
+        await fetch(API_URL + '/api/walkin-sessions/' + walkinSession.sessionId, {
+          method: 'DELETE'
+        })
+      } catch (e) {}
+    }
+    setWalkinSession(null)
+    setWalkinForm({
+      firstName: '', lastName: '', email: '', phone: '',
+      phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES'
+    })
+  }
+
+  // Cancel signature session (return to waiting)
+  const cancelSignatureSession = async () => {
+    if (signatureSession?.sessionId) {
+      try {
+        await fetch(API_URL + '/api/tablet-sessions/' + signatureSession.sessionId, {
+          method: 'DELETE'
+        })
+      } catch (e) {}
+    }
+    setSignatureSession(null)
+    setTermsAccepted(false)
+    setRgpdAccepted(false)
+    setSignature('')
+  }
+
   // Submit walkin form
   const submitWalkin = async () => {
     if (!walkinForm.firstName || !walkinForm.lastName || !walkinForm.email || !walkinForm.phone) {
@@ -456,6 +487,10 @@ export default function App() {
               style={{ backgroundColor: brandStyle.color }}>
               {sending ? '⏳ Envoi...' : '✅ ' + t.submit}
             </button>
+            <button onClick={cancelWalkinSession}
+              className="w-full py-3 text-gray-500 text-sm mt-2">
+              ❌ Annuler
+            </button>
           </div>
         </div>
       </div>
@@ -520,6 +555,10 @@ export default function App() {
               className="w-full py-5 text-white rounded-xl text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: brandStyle.color }}>
               {sending ? '⏳ Envoi...' : '✅ ' + t.submit}
+            </button>
+            <button onClick={cancelSignatureSession}
+              className="w-full py-3 text-gray-500 text-sm mt-2">
+              ❌ Annuler
             </button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { CheckInModal } from './CheckInModal'
 import { NewBookingModal } from './NewBookingModal'
 import { FleetEditModal } from './FleetEditModal'
 import { NewFleetModal } from './NewFleetModal'
+import { CheckOutModal } from './CheckOutModal'
 import { getName } from './types'
 
 export default function App() {
@@ -35,6 +36,8 @@ export default function App() {
   const [fleetModalMode, setFleetModalMode] = useState<'view' | 'edit'>('view')
   const [showNewFleet, setShowNewFleet] = useState(false)
   const [fleetStatusFilter, setFleetStatusFilter] = useState('ALL')
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false)
+  const [selectedCheckoutBooking, setSelectedCheckoutBooking] = useState(null)
   const [newBookingData, setNewBookingData] = useState(null)
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [checkInBooking, setCheckInBooking] = useState(null)
@@ -197,6 +200,12 @@ export default function App() {
   const todayDepartures = bookings.filter(b => b.startDate?.split('T')[0] === today && !b.checkedIn)
   const todayReturns = bookings.filter(b => b.endDate?.split('T')[0] === today && b.checkedIn && !b.checkedOut)
   const filteredFleet = fleet.filter(f => !selectedAgency || f.agencyId === selectedAgency)
+  
+  // Vehicles currently rented (for checkout)
+  const rentedBookings = bookings.filter(b => 
+    b.status === 'CHECKED_IN' && 
+    (!selectedAgency || b.agencyId === selectedAgency)
+  )
 
   // Get bookings for a vehicle, sorted by start date
   const getVehicleBookings = (fleetId) => {
@@ -459,6 +468,7 @@ export default function App() {
             { id: 'planning', icon: '📅', label: 'Planning' },
             { id: 'bookings', icon: '📋', label: 'Réservations' },
             { id: 'fleet', icon: '🚲', label: 'Flotte' },
+            { id: 'checkout', icon: '↩️', label: 'Check-out' },
             { id: 'customers', icon: '👥', label: 'Clients' },
             { id: 'contracts', icon: '📄', label: 'Contrats' },
             { id: 'invoices', icon: '💰', label: 'Factures' },
@@ -1163,6 +1173,50 @@ export default function App() {
           )}
 
           
+
+          {/* CHECKOUT */}
+          {!loading && tab === 'checkout' && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Check-out</h2>
+              <p className="text-gray-600">Véhicules actuellement en location</p>
+              
+              {rentedBookings.length === 0 ? (
+                <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
+                  Aucun véhicule en location actuellement
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {rentedBookings.map(booking => (
+                    <div key={booking.id} className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition cursor-pointer"
+                      onClick={() => { setSelectedCheckoutBooking(booking); setShowCheckoutModal(true) }}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                          {booking.fleetVehicle?.vehicle?.imageUrl ? (
+                            <img src={booking.fleetVehicle.vehicle.imageUrl} className="w-full h-full object-cover" />
+                          ) : <span className="text-2xl">🚲</span>}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-bold">{booking.fleetVehicle?.vehicleNumber}</div>
+                          <div className="text-sm text-gray-600">{getName(booking.fleetVehicle?.vehicle?.name)}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {booking.customer?.firstName} {booking.customer?.lastName}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-gray-500">Depuis</div>
+                          <div className="text-sm font-medium">{booking.startDate?.split('T')[0]}</div>
+                          <div className="text-xs text-blue-600 mt-1">
+                            Retour prévu: {booking.endDate?.split('T')[0]}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* SETTINGS */}
           {!loading && tab === 'settings' && (
             <div className="space-y-6">
@@ -1275,6 +1329,16 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* CheckOut Modal */}
+      {showCheckoutModal && selectedCheckoutBooking && (
+        <CheckOutModal
+          booking={selectedCheckoutBooking}
+          brand={brand}
+          onClose={() => { setShowCheckoutModal(false); setSelectedCheckoutBooking(null) }}
+          onComplete={() => { setShowCheckoutModal(false); setSelectedCheckoutBooking(null); loadData() }}
+        />
       )}
 
       {/* New Fleet Modal */}

@@ -889,6 +889,78 @@ app.get('/api/fleet/:id', async (req, res) => {
 })
 
 
+// ============== CONTRACT DEDUCTIONS ==============
+
+app.post('/api/contracts/:contractId/deductions', async (req, res) => {
+  try {
+    const deduction = await prisma.contractDeduction.create({
+      data: {
+        contractId: req.params.contractId,
+        type: req.body.type || 'OTHER',
+        description: req.body.description,
+        quantity: req.body.quantity || 1,
+        unitPrice: req.body.unitPrice || 0,
+        totalPrice: req.body.totalPrice || 0,
+        sparePartId: req.body.sparePartId || null,
+        equipmentId: req.body.equipmentId || null,
+        photoUrls: req.body.photoUrls || null
+      }
+    })
+    res.json(deduction)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/api/contracts/:contractId/deductions', async (req, res) => {
+  try {
+    const deductions = await prisma.contractDeduction.findMany({
+      where: { contractId: req.params.contractId },
+      include: { sparePart: true, equipment: true }
+    })
+    res.json(deductions)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Get contract by booking ID
+app.get('/api/contracts/booking/:bookingId', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findFirst({
+      where: { bookingId: req.params.bookingId },
+      include: { deductions: true }
+    })
+    if (!contract) {
+      return res.status(404).json({ error: 'Contract not found' })
+    }
+    res.json(contract)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Update contract
+app.put('/api/contracts/:id', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.update({
+      where: { id: req.params.id },
+      data: {
+        status: req.body.status,
+        actualEndDate: req.body.checkoutAt ? new Date(req.body.checkoutAt) : undefined,
+        endMileage: req.body.endMileage,
+        endFuelLevel: req.body.endFuelLevel,
+        finalDepositRefund: req.body.depositRefunded,
+        totalDeductions: req.body.totalDeductions
+      }
+    })
+    res.json(contract)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })
 
 // ============== VEHICLE NUMBERING CATEGORIES ==============

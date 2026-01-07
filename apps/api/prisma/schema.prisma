@@ -293,6 +293,16 @@ model Fleet {
   alternativeForExtensions ContractExtension[] @relation("AlternativeVehicle")
   originalInReallocations  ReservationReallocation[] @relation("OriginalVehicle")
   newInReallocations       ReservationReallocation[] @relation("NewVehicle")
+  
+  // Additional vehicle info
+  brand                    String?
+  model                    String?
+  engineSize               String?   // Cylindrée
+  
+  // Relations to new models
+  equipment                FleetEquipment[]
+  contractFields           FleetContractField[]
+  
   @@index([vehicleId])
   @@index([agencyId])
   @@index([status])
@@ -750,6 +760,8 @@ model ContractDeduction {
   type         DeductionType
   sparePartId  String?
   sparePart    FleetSparePart? @relation(fields: [sparePartId], references: [id])
+  equipmentId  String?
+  equipment    FleetEquipment? @relation(fields: [equipmentId], references: [id])
   description  String
   quantity     Int             @default(1)
   unitPrice    Decimal         @db.Decimal(10, 2)
@@ -1172,4 +1184,36 @@ model WalkinSession {
   expiresAt     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+// Equipment provided with fleet vehicle
+model FleetEquipment {
+  id              String    @id @default(cuid())
+  fleetId         String
+  fleet           Fleet     @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  quantity        Int       @default(1)
+  price           Decimal   @db.Decimal(10, 2)
+  condition       String    @default("GOOD") // GOOD, FAIR, POOR
+  isIncluded      Boolean   @default(true)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deductions      ContractDeduction[]
+  @@index([fleetId])
+}
+
+// Contract display fields configuration per fleet
+model FleetContractField {
+  id              String    @id @default(cuid())
+  fleetId         String
+  fleet           Fleet     @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  fieldName       String    // vehicleNumber, licensePlate, brand, model, etc.
+  displayOrder    Int       @default(0)
+  showInContract  Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  @@unique([fleetId, fieldName])
+  @@index([fleetId])
 }

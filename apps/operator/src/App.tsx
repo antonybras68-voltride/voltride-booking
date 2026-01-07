@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { api } from './api'
 import { CheckInModal } from './CheckInModal'
 import { NewBookingModal } from './NewBookingModal'
+import { FleetEditModal } from './FleetEditModal'
 import { getName } from './types'
 
 export default function App() {
@@ -28,6 +29,8 @@ export default function App() {
   
   // Modals
   const [showNewBooking, setShowNewBooking] = useState(false)
+  const [showFleetEdit, setShowFleetEdit] = useState(false)
+  const [selectedFleetForEdit, setSelectedFleetForEdit] = useState(null)
   const [newBookingData, setNewBookingData] = useState(null)
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [checkInBooking, setCheckInBooking] = useState(null)
@@ -154,6 +157,11 @@ export default function App() {
     setWalkinSessionId(null)
   }
 
+
+  const handleFleetClick = (fleet) => {
+    setSelectedFleetForEdit(fleet)
+    setShowFleetEdit(true)
+  }
 
   return () => window.removeEventListener('click', handleClick)
   }, [])
@@ -407,6 +415,11 @@ export default function App() {
   }
 
 
+  const handleFleetClick = (fleet) => {
+    setSelectedFleetForEdit(fleet)
+    setShowFleetEdit(true)
+  }
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
@@ -603,6 +616,11 @@ export default function App() {
   }
 
 
+  const handleFleetClick = (fleet) => {
+    setSelectedFleetForEdit(fleet)
+    setShowFleetEdit(true)
+  }
+
   return (
                             <th key={i} className={'px-1 py-2 text-center w-24 ' + (isToday ? 'bg-yellow-100' : isWeekend ? 'bg-gray-100' : '')}>
                               <div className="text-xs text-gray-500 uppercase">{day.toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
@@ -703,6 +721,11 @@ export default function App() {
     setWalkinSessionId(null)
   }
 
+
+  const handleFleetClick = (fleet) => {
+    setSelectedFleetForEdit(fleet)
+    setShowFleetEdit(true)
+  }
 
   return (
                           <tr key={f.id} className="border-t hover:bg-gray-50/50">
@@ -826,6 +849,11 @@ export default function App() {
     setWalkinSessionId(null)
   }
 
+
+  const handleFleetClick = (fleet) => {
+    setSelectedFleetForEdit(fleet)
+    setShowFleetEdit(true)
+  }
 
   return (
                                   <td key={dayIndex} className={'relative h-14 ' + (isToday ? 'bg-yellow-50' : isWeekend ? 'bg-gray-50' : '')}
@@ -961,6 +989,11 @@ export default function App() {
   }
 
 
+  const handleFleetClick = (fleet) => {
+    setSelectedFleetForEdit(fleet)
+    setShowFleetEdit(true)
+  }
+
   return (
                                 <td key={dayIndex} 
                                   className={'relative h-14 cursor-pointer transition-colors ' + 
@@ -1031,7 +1064,7 @@ export default function App() {
               <h2 className="text-2xl font-bold">Flotte</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredFleet.map(f => (
-                  <div key={f.id} className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition cursor-pointer">
+                  <div key={f.id} className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
                     <div className="flex items-center gap-3">
                       <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
                         {f.vehicle?.imageUrl ? <img src={f.vehicle.imageUrl} className="w-full h-full object-cover" /> : <span className="text-2xl">🚲</span>}
@@ -1045,6 +1078,10 @@ export default function App() {
                           {f.status === 'AVAILABLE' ? 'Disponible' : f.status === 'RENTED' ? 'En location' : 'Maintenance'}
                         </div>
                       </div>
+                      <button onClick={() => handleFleetClick(f)} 
+                        className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm font-medium">
+                        ✏️ Éditer
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -1165,6 +1202,15 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Fleet Edit Modal */}
+      {showFleetEdit && selectedFleetForEdit && (
+        <FleetEditModal
+          fleet={selectedFleetForEdit}
+          onClose={() => { setShowFleetEdit(false); setSelectedFleetForEdit(null) }}
+          onSave={() => { setShowFleetEdit(false); setSelectedFleetForEdit(null); loadData() }}
+        />
       )}
 
       {/* New Booking Modal */}

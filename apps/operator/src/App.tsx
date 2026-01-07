@@ -34,6 +34,15 @@ export default function App() {
   const [cancelBooking, setCancelBooking] = useState(null)
   const [cancelReason, setCancelReason] = useState('')
   const [contextMenu, setContextMenu] = useState(null)
+  const [showWalkinModal, setShowWalkinModal] = useState(false)
+  const [walkinSessionId, setWalkinSessionId] = useState(null)
+  const [walkinStatus, setWalkinStatus] = useState(null) // null | 'waiting' | 'completed'
+  const [walkinData, setWalkinData] = useState(null)
+  const [walkinForm, setWalkinForm] = useState({
+    firstName: '', lastName: '', email: '', phone: '',
+    phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES'
+  })
+  const [walkinMode, setWalkinMode] = useState('tablet') // 'tablet' | 'manual'
   const [settings, setSettings] = useState({
     cgv: {
       fr: "CONDITIONS GÉNÉRALES DE LOCATION\n\n1. Le locataire s'engage à utiliser le véhicule de manière responsable.\n2. Le véhicule doit être restitué dans le même état.\n3. Tout dommage sera facturé au locataire.\n4. La caution sera restituée après vérification.",
@@ -57,7 +66,95 @@ export default function App() {
   useEffect(() => {
     const handleClick = () => setContextMenu(null)
     window.addEventListener('click', handleClick)
-    return () => window.removeEventListener('click', handleClick)
+  
+  // Send walkin form to tablet
+  const sendWalkinToTablet = async () => {
+    const sessionId = 'walkin_' + Date.now()
+    setWalkinSessionId(sessionId)
+    setWalkinStatus('waiting')
+    
+    const agencyId = selectedAgency || agencies[0]?.id
+    if (!agencyId) {
+      alert('Veuillez sélectionner une agence')
+      return
+    }
+    
+    try {
+      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          agencyId,
+          language: 'fr',
+          brand
+        })
+      })
+      pollWalkinSession(sessionId)
+    } catch (e) {
+      alert('Erreur lors de l\'envoi')
+      setWalkinStatus(null)
+    }
+  }
+
+  const pollWalkinSession = (sessionId) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
+        const data = await res.json()
+        if (data && data.status === 'completed') {
+          setWalkinData(data)
+          setWalkinStatus('completed')
+          clearInterval(interval)
+        }
+      } catch (e) {}
+    }, 2000)
+    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
+  }
+
+  const createWalkinCustomer = async () => {
+    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
+    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
+      alert('Informations client incomplètes')
+      return
+    }
+    
+    try {
+      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: customerData.firstName,
+          lastName: customerData.lastName,
+          email: customerData.email,
+          phone: (customerData.phonePrefix || '+34') + customerData.phone,
+          address: customerData.address,
+          city: customerData.city,
+          postalCode: customerData.postalCode,
+          country: customerData.country
+        })
+      })
+      const newCustomer = await res.json()
+      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      setShowWalkinModal(false)
+      setWalkinStatus(null)
+      setWalkinData(null)
+      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
+      loadData()
+    } catch (e) {
+      alert('Erreur lors de la création')
+    }
+  }
+
+  const cancelWalkin = () => {
+    setShowWalkinModal(false)
+    setWalkinStatus(null)
+    setWalkinData(null)
+    setWalkinSessionId(null)
+  }
+
+
+  return () => window.removeEventListener('click', handleClick)
   }, [])
 
   const loadData = async () => {
@@ -221,6 +318,94 @@ export default function App() {
     }
   }
 
+
+  // Send walkin form to tablet
+  const sendWalkinToTablet = async () => {
+    const sessionId = 'walkin_' + Date.now()
+    setWalkinSessionId(sessionId)
+    setWalkinStatus('waiting')
+    
+    const agencyId = selectedAgency || agencies[0]?.id
+    if (!agencyId) {
+      alert('Veuillez sélectionner une agence')
+      return
+    }
+    
+    try {
+      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          agencyId,
+          language: 'fr',
+          brand
+        })
+      })
+      pollWalkinSession(sessionId)
+    } catch (e) {
+      alert('Erreur lors de l\'envoi')
+      setWalkinStatus(null)
+    }
+  }
+
+  const pollWalkinSession = (sessionId) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
+        const data = await res.json()
+        if (data && data.status === 'completed') {
+          setWalkinData(data)
+          setWalkinStatus('completed')
+          clearInterval(interval)
+        }
+      } catch (e) {}
+    }, 2000)
+    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
+  }
+
+  const createWalkinCustomer = async () => {
+    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
+    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
+      alert('Informations client incomplètes')
+      return
+    }
+    
+    try {
+      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: customerData.firstName,
+          lastName: customerData.lastName,
+          email: customerData.email,
+          phone: (customerData.phonePrefix || '+34') + customerData.phone,
+          address: customerData.address,
+          city: customerData.city,
+          postalCode: customerData.postalCode,
+          country: customerData.country
+        })
+      })
+      const newCustomer = await res.json()
+      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      setShowWalkinModal(false)
+      setWalkinStatus(null)
+      setWalkinData(null)
+      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
+      loadData()
+    } catch (e) {
+      alert('Erreur lors de la création')
+    }
+  }
+
+  const cancelWalkin = () => {
+    setShowWalkinModal(false)
+    setWalkinStatus(null)
+    setWalkinData(null)
+    setWalkinSessionId(null)
+  }
+
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
@@ -275,6 +460,13 @@ export default function App() {
           {!loading && tab === 'dashboard' && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold">Dashboard</h2>
+              <div className="flex gap-4 mb-6">
+                <button onClick={() => setShowWalkinModal(true)}
+                  className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 flex items-center gap-2">
+                  👤 Nouveau client walk-in
+                </button>
+              </div>
+              
               <div className="grid grid-cols-2 gap-6">
                 <div className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-lg">
                   <div className="text-4xl font-bold text-blue-600">{todayDepartures.length}</div>
@@ -329,7 +521,95 @@ export default function App() {
                           const dateStr = formatDate(day)
                           const isToday = dateStr === today
                           const isWeekend = day.getDay() === 0 || day.getDay() === 6
-                          return (
+                        
+  // Send walkin form to tablet
+  const sendWalkinToTablet = async () => {
+    const sessionId = 'walkin_' + Date.now()
+    setWalkinSessionId(sessionId)
+    setWalkinStatus('waiting')
+    
+    const agencyId = selectedAgency || agencies[0]?.id
+    if (!agencyId) {
+      alert('Veuillez sélectionner une agence')
+      return
+    }
+    
+    try {
+      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          agencyId,
+          language: 'fr',
+          brand
+        })
+      })
+      pollWalkinSession(sessionId)
+    } catch (e) {
+      alert('Erreur lors de l\'envoi')
+      setWalkinStatus(null)
+    }
+  }
+
+  const pollWalkinSession = (sessionId) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
+        const data = await res.json()
+        if (data && data.status === 'completed') {
+          setWalkinData(data)
+          setWalkinStatus('completed')
+          clearInterval(interval)
+        }
+      } catch (e) {}
+    }, 2000)
+    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
+  }
+
+  const createWalkinCustomer = async () => {
+    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
+    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
+      alert('Informations client incomplètes')
+      return
+    }
+    
+    try {
+      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: customerData.firstName,
+          lastName: customerData.lastName,
+          email: customerData.email,
+          phone: (customerData.phonePrefix || '+34') + customerData.phone,
+          address: customerData.address,
+          city: customerData.city,
+          postalCode: customerData.postalCode,
+          country: customerData.country
+        })
+      })
+      const newCustomer = await res.json()
+      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      setShowWalkinModal(false)
+      setWalkinStatus(null)
+      setWalkinData(null)
+      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
+      loadData()
+    } catch (e) {
+      alert('Erreur lors de la création')
+    }
+  }
+
+  const cancelWalkin = () => {
+    setShowWalkinModal(false)
+    setWalkinStatus(null)
+    setWalkinData(null)
+    setWalkinSessionId(null)
+  }
+
+
+  return (
                             <th key={i} className={'px-1 py-2 text-center w-24 ' + (isToday ? 'bg-yellow-100' : isWeekend ? 'bg-gray-100' : '')}>
                               <div className="text-xs text-gray-500 uppercase">{day.toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
                               <div className={'text-lg ' + (isToday ? 'font-bold text-yellow-600' : '')}>{day.getDate()}</div>
@@ -342,7 +622,95 @@ export default function App() {
                     <tbody>
                       {filteredFleet.map(f => {
                         const vehicleBookings = getVehicleBookings(f.id)
-                        return (
+                      
+  // Send walkin form to tablet
+  const sendWalkinToTablet = async () => {
+    const sessionId = 'walkin_' + Date.now()
+    setWalkinSessionId(sessionId)
+    setWalkinStatus('waiting')
+    
+    const agencyId = selectedAgency || agencies[0]?.id
+    if (!agencyId) {
+      alert('Veuillez sélectionner une agence')
+      return
+    }
+    
+    try {
+      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          agencyId,
+          language: 'fr',
+          brand
+        })
+      })
+      pollWalkinSession(sessionId)
+    } catch (e) {
+      alert('Erreur lors de l\'envoi')
+      setWalkinStatus(null)
+    }
+  }
+
+  const pollWalkinSession = (sessionId) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
+        const data = await res.json()
+        if (data && data.status === 'completed') {
+          setWalkinData(data)
+          setWalkinStatus('completed')
+          clearInterval(interval)
+        }
+      } catch (e) {}
+    }, 2000)
+    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
+  }
+
+  const createWalkinCustomer = async () => {
+    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
+    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
+      alert('Informations client incomplètes')
+      return
+    }
+    
+    try {
+      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: customerData.firstName,
+          lastName: customerData.lastName,
+          email: customerData.email,
+          phone: (customerData.phonePrefix || '+34') + customerData.phone,
+          address: customerData.address,
+          city: customerData.city,
+          postalCode: customerData.postalCode,
+          country: customerData.country
+        })
+      })
+      const newCustomer = await res.json()
+      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      setShowWalkinModal(false)
+      setWalkinStatus(null)
+      setWalkinData(null)
+      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
+      loadData()
+    } catch (e) {
+      alert('Erreur lors de la création')
+    }
+  }
+
+  const cancelWalkin = () => {
+    setShowWalkinModal(false)
+    setWalkinStatus(null)
+    setWalkinData(null)
+    setWalkinSessionId(null)
+  }
+
+
+  return (
                           <tr key={f.id} className="border-t hover:bg-gray-50/50">
                             <td className="sticky left-0 bg-white px-3 py-2 z-10 border-r">
                               <div className="flex items-center gap-2">
@@ -377,7 +745,95 @@ export default function App() {
                                 const bgColor = cellBooking.checkedIn ? 'bg-green-600' : (colorIdx === 0 ? 'bg-blue-500' : 'bg-violet-500')
                                 const isDragging = draggedBooking?.id === cellBooking.id
 
-                                return (
+                              
+  // Send walkin form to tablet
+  const sendWalkinToTablet = async () => {
+    const sessionId = 'walkin_' + Date.now()
+    setWalkinSessionId(sessionId)
+    setWalkinStatus('waiting')
+    
+    const agencyId = selectedAgency || agencies[0]?.id
+    if (!agencyId) {
+      alert('Veuillez sélectionner une agence')
+      return
+    }
+    
+    try {
+      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          agencyId,
+          language: 'fr',
+          brand
+        })
+      })
+      pollWalkinSession(sessionId)
+    } catch (e) {
+      alert('Erreur lors de l\'envoi')
+      setWalkinStatus(null)
+    }
+  }
+
+  const pollWalkinSession = (sessionId) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
+        const data = await res.json()
+        if (data && data.status === 'completed') {
+          setWalkinData(data)
+          setWalkinStatus('completed')
+          clearInterval(interval)
+        }
+      } catch (e) {}
+    }, 2000)
+    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
+  }
+
+  const createWalkinCustomer = async () => {
+    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
+    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
+      alert('Informations client incomplètes')
+      return
+    }
+    
+    try {
+      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: customerData.firstName,
+          lastName: customerData.lastName,
+          email: customerData.email,
+          phone: (customerData.phonePrefix || '+34') + customerData.phone,
+          address: customerData.address,
+          city: customerData.city,
+          postalCode: customerData.postalCode,
+          country: customerData.country
+        })
+      })
+      const newCustomer = await res.json()
+      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      setShowWalkinModal(false)
+      setWalkinStatus(null)
+      setWalkinData(null)
+      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
+      loadData()
+    } catch (e) {
+      alert('Erreur lors de la création')
+    }
+  }
+
+  const cancelWalkin = () => {
+    setShowWalkinModal(false)
+    setWalkinStatus(null)
+    setWalkinData(null)
+    setWalkinSessionId(null)
+  }
+
+
+  return (
                                   <td key={dayIndex} className={'relative h-14 ' + (isToday ? 'bg-yellow-50' : isWeekend ? 'bg-gray-50' : '')}
                                     onDragOver={(e) => handleDragOver(e, f.id, day)}
                                     onDragLeave={handleDragLeave}
@@ -423,7 +879,95 @@ export default function App() {
                               }
 
                               // Empty cell
-                              return (
+                            
+  // Send walkin form to tablet
+  const sendWalkinToTablet = async () => {
+    const sessionId = 'walkin_' + Date.now()
+    setWalkinSessionId(sessionId)
+    setWalkinStatus('waiting')
+    
+    const agencyId = selectedAgency || agencies[0]?.id
+    if (!agencyId) {
+      alert('Veuillez sélectionner une agence')
+      return
+    }
+    
+    try {
+      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          agencyId,
+          language: 'fr',
+          brand
+        })
+      })
+      pollWalkinSession(sessionId)
+    } catch (e) {
+      alert('Erreur lors de l\'envoi')
+      setWalkinStatus(null)
+    }
+  }
+
+  const pollWalkinSession = (sessionId) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
+        const data = await res.json()
+        if (data && data.status === 'completed') {
+          setWalkinData(data)
+          setWalkinStatus('completed')
+          clearInterval(interval)
+        }
+      } catch (e) {}
+    }, 2000)
+    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
+  }
+
+  const createWalkinCustomer = async () => {
+    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
+    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
+      alert('Informations client incomplètes')
+      return
+    }
+    
+    try {
+      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: customerData.firstName,
+          lastName: customerData.lastName,
+          email: customerData.email,
+          phone: (customerData.phonePrefix || '+34') + customerData.phone,
+          address: customerData.address,
+          city: customerData.city,
+          postalCode: customerData.postalCode,
+          country: customerData.country
+        })
+      })
+      const newCustomer = await res.json()
+      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      setShowWalkinModal(false)
+      setWalkinStatus(null)
+      setWalkinData(null)
+      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
+      loadData()
+    } catch (e) {
+      alert('Erreur lors de la création')
+    }
+  }
+
+  const cancelWalkin = () => {
+    setShowWalkinModal(false)
+    setWalkinStatus(null)
+    setWalkinData(null)
+    setWalkinSessionId(null)
+  }
+
+
+  return (
                                 <td key={dayIndex} 
                                   className={'relative h-14 cursor-pointer transition-colors ' + 
                                     (isToday ? 'bg-yellow-50 hover:bg-yellow-100' : isWeekend ? 'bg-gray-50 hover:bg-gray-100' : 'hover:bg-blue-50') +
@@ -652,6 +1196,158 @@ export default function App() {
           onComplete={() => { setShowCheckIn(false); setCheckInBooking(null); loadData() }}
         />
       )}
+
+      {/* Walkin Modal */}
+      {showWalkinModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={cancelWalkin}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-green-600 text-white p-4 rounded-t-2xl">
+              <h2 className="text-xl font-bold">👤 Nouveau client walk-in</h2>
+            </div>
+            
+            <div className="p-6">
+              {/* Mode selector */}
+              {!walkinStatus && (
+                <div className="flex gap-2 mb-6">
+                  <button onClick={() => setWalkinMode('tablet')}
+                    className={'flex-1 py-3 rounded-xl border-2 font-medium ' + 
+                      (walkinMode === 'tablet' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200')}>
+                    📱 Tablette comptoir
+                  </button>
+                  <button onClick={() => setWalkinMode('manual')}
+                    className={'flex-1 py-3 rounded-xl border-2 font-medium ' + 
+                      (walkinMode === 'manual' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200')}>
+                    ✏️ Saisie manuelle
+                  </button>
+                </div>
+              )}
+
+              {/* Tablet mode */}
+              {walkinMode === 'tablet' && !walkinStatus && (
+                <div className="text-center py-8">
+                  <p className="text-gray-600 mb-4">Le client remplira ses informations sur la tablette comptoir</p>
+                  <button onClick={sendWalkinToTablet}
+                    className="px-8 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700">
+                    📱 Envoyer sur tablette
+                  </button>
+                </div>
+              )}
+
+              {walkinMode === 'tablet' && walkinStatus === 'waiting' && (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-4 animate-pulse">⏳</div>
+                  <p className="text-gray-600">En attente des informations client...</p>
+                  <p className="text-sm text-gray-400 mt-2">Le client remplit le formulaire sur la tablette</p>
+                  <button onClick={cancelWalkin} className="mt-4 text-red-600">Annuler</button>
+                </div>
+              )}
+
+              {walkinMode === 'tablet' && walkinStatus === 'completed' && walkinData && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-green-50 rounded-xl">
+                    <p className="font-bold text-green-700">✅ Informations reçues !</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div><span className="text-gray-500">Prénom:</span> <strong>{walkinData.firstName}</strong></div>
+                    <div><span className="text-gray-500">Nom:</span> <strong>{walkinData.lastName}</strong></div>
+                    <div><span className="text-gray-500">Email:</span> <strong>{walkinData.email}</strong></div>
+                    <div><span className="text-gray-500">Tél:</span> <strong>{walkinData.phonePrefix}{walkinData.phone}</strong></div>
+                    <div className="col-span-2"><span className="text-gray-500">Adresse:</span> <strong>{walkinData.address}, {walkinData.postalCode} {walkinData.city}, {walkinData.country}</strong></div>
+                  </div>
+                  <button onClick={createWalkinCustomer}
+                    className="w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700">
+                    ✅ Créer le client
+                  </button>
+                </div>
+              )}
+
+              {/* Manual mode */}
+              {walkinMode === 'manual' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Prénom *</label>
+                      <input type="text" value={walkinForm.firstName}
+                        onChange={e => setWalkinForm({...walkinForm, firstName: e.target.value})}
+                        className="w-full border-2 rounded-xl p-3" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Nom *</label>
+                      <input type="text" value={walkinForm.lastName}
+                        onChange={e => setWalkinForm({...walkinForm, lastName: e.target.value})}
+                        className="w-full border-2 rounded-xl p-3" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Email *</label>
+                    <input type="email" value={walkinForm.email}
+                      onChange={e => setWalkinForm({...walkinForm, email: e.target.value})}
+                      className="w-full border-2 rounded-xl p-3" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Téléphone *</label>
+                    <div className="flex gap-2">
+                      <select value={walkinForm.phonePrefix}
+                        onChange={e => setWalkinForm({...walkinForm, phonePrefix: e.target.value})}
+                        className="border-2 rounded-xl p-3 w-24">
+                        <option value="+34">🇪🇸 +34</option>
+                        <option value="+33">🇫🇷 +33</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+49">🇩🇪 +49</option>
+                      </select>
+                      <input type="tel" value={walkinForm.phone}
+                        onChange={e => setWalkinForm({...walkinForm, phone: e.target.value})}
+                        className="flex-1 border-2 rounded-xl p-3" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Adresse</label>
+                    <input type="text" value={walkinForm.address}
+                      onChange={e => setWalkinForm({...walkinForm, address: e.target.value})}
+                      className="w-full border-2 rounded-xl p-3" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Ville</label>
+                      <input type="text" value={walkinForm.city}
+                        onChange={e => setWalkinForm({...walkinForm, city: e.target.value})}
+                        className="w-full border-2 rounded-xl p-3" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Code postal</label>
+                      <input type="text" value={walkinForm.postalCode}
+                        onChange={e => setWalkinForm({...walkinForm, postalCode: e.target.value})}
+                        className="w-full border-2 rounded-xl p-3" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Pays</label>
+                    <select value={walkinForm.country}
+                      onChange={e => setWalkinForm({...walkinForm, country: e.target.value})}
+                      className="w-full border-2 rounded-xl p-3">
+                      <option value="ES">🇪🇸 España</option>
+                      <option value="FR">🇫🇷 France</option>
+                      <option value="GB">🇬🇧 United Kingdom</option>
+                      <option value="DE">🇩🇪 Deutschland</option>
+                    </select>
+                  </div>
+                  <button onClick={createWalkinCustomer}
+                    className="w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700">
+                    ✅ Créer le client
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t">
+              <button onClick={cancelWalkin} className="w-full py-2 text-gray-600 hover:text-gray-800">
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

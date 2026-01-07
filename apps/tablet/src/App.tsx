@@ -24,8 +24,8 @@ const COUNTRIES = [
 ]
 
 // Logos URLs
-const VOLTRIDE_LOGO = 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1735555766/Logotipo_Voltride_Color_sin_fondo_z4grbt.png'
-const MOTORRENT_LOGO = 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1735555766/Logotipo_Motor_rent_color_sin_fondo_bvnxyg.png'
+const VOLTRIDE_LOGO = 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1766928342/d5uv1qrfwr86rd1abtd1.png'
+const MOTORRENT_LOGO = 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1766930480/logo-2024-e1699439584325-removebg-preview_sv6yxg.png'
 
 // Floating Logo Component
 function FloatingLogo({ src, initialX, initialY, speed, size }) {

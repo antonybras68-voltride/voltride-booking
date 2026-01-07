@@ -167,7 +167,13 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
     setTabletStatus('waiting')
     
     // Get agencyId from booking or fleetVehicle
-    const agencyId = booking.agency?.id || fleetVehicle?.agency?.id || 'default'
+    const agencyId = booking.agency?.id || fleetVehicle?.agency?.id || fleetVehicle?.agencyId || booking.agencyId
+    
+    if (!agencyId) {
+      alert('Erreur: Aucune agence associée à cette réservation')
+      setTabletStatus(null)
+      return
+    }
     
     // Save session to API (will be polled by tablet)
     try {

@@ -166,22 +166,35 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
     setTabletSessionId(sessionId)
     setTabletStatus('waiting')
     
+    // Get agencyId from booking or fleetVehicle
+    const agencyId = booking.agency?.id || fleetVehicle?.agency?.id || 'default'
+    
     // Save session to API (will be polled by tablet)
     try {
-      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/tablet-sessions', {
+      const response = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/tablet-sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
           bookingId: booking.id,
+          agencyId,
           type: 'checkin',
           language: termsLang,
-          customerName: booking.customer?.firstName + ' ' + booking.customer?.lastName,
+          customerName: (booking.customer?.firstName || '') + ' ' + (booking.customer?.lastName || ''),
+          cgvText: settings?.cgv?.[termsLang] || 'CGV non configurées',
+          rgpdText: settings?.rgpd?.[termsLang] || 'RGPD non configuré',
           status: 'pending'
         })
       })
-    } catch (e) {
+      if (!response.ok) {
+        throw new Error('Erreur API: ' + response.status)
+      }
+      // Start polling for signature
+      pollTabletSignature(sessionId)
+    } catch (e: any) {
       console.error(e)
+      alert('Erreur: ' + e.message)
+      setTabletStatus(null)
     }
     
     // Generate tablet URL

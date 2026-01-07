@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from './api'
 import { CheckInModal } from './CheckInModal'
+import { NewBookingModal } from './NewBookingModal'
 import { getName } from './types'
 
 export default function App() {
@@ -460,13 +461,6 @@ export default function App() {
           {!loading && tab === 'dashboard' && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold">Dashboard</h2>
-              <div className="flex gap-4 mb-6">
-                <button onClick={() => setShowWalkinModal(true)}
-                  className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 flex items-center gap-2">
-                  👤 Nouveau client walk-in
-                </button>
-              </div>
-              
               <div className="grid grid-cols-2 gap-6">
                 <div className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-lg">
                   <div className="text-4xl font-bold text-blue-600">{todayDepartures.length}</div>
@@ -1173,17 +1167,16 @@ export default function App() {
         </div>
       )}
 
-      {/* New Booking Modal Placeholder */}
+      {/* New Booking Modal */}
       {showNewBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowNewBooking(false)}>
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold mb-4">➕ Nouvelle réservation</h3>
-            <p className="text-gray-600">Véhicule: {newBookingData?.fleetVehicle?.vehicleNumber}</p>
-            <p className="text-gray-600 mb-4">Date: {newBookingData?.date}</p>
-            <p className="text-center text-gray-500 py-8">Formulaire à implémenter</p>
-            <button onClick={() => setShowNewBooking(false)} className="w-full py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Fermer</button>
-          </div>
-        </div>
+        <NewBookingModal
+          fleetVehicle={newBookingData?.fleetVehicle}
+          startDate={newBookingData?.date}
+          agencyId={selectedAgency || agencies[0]?.id}
+          brand={brand}
+          onClose={() => { setShowNewBooking(false); setNewBookingData(null) }}
+          onComplete={() => { setShowNewBooking(false); setNewBookingData(null); loadData() }}
+        />
       )}
 
       {/* Check-in Modal */}

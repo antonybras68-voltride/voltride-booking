@@ -824,13 +824,26 @@ app.put('/api/fleet/:id', async (req, res) => {
   }
 })
 
+
+// Delete fleet vehicle
+app.delete('/api/fleet/:id', async (req, res) => {
+  try {
+    await prisma.fleet.delete({
+      where: { id: req.params.id }
+    })
+    res.json({ success: true })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // Get single fleet with all relations
 app.get('/api/fleet/:id', async (req, res) => {
   try {
     const fleet = await prisma.fleet.findUnique({
       where: { id: req.params.id },
       include: {
-        vehicle: true,
+        vehicle: { include: { category: true } },
         agency: true,
         documents: true,
         equipment: { where: { isActive: true } },
@@ -1215,7 +1228,7 @@ app.get('/api/maintenance', async (req, res) => {
     
     const records = await prisma.maintenanceRecord.findMany({
       where,
-      include: { fleet: { include: { vehicle: true, agency: true } } },
+      include: { fleet: { include: { vehicle: { include: { category: true } }, agency: true } } },
       orderBy: [{ priority: 'desc' }, { scheduledDate: 'asc' }]
     })
     res.json(records)

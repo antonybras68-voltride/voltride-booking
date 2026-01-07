@@ -31,6 +31,7 @@ export default function App() {
   const [showNewBooking, setShowNewBooking] = useState(false)
   const [showFleetEdit, setShowFleetEdit] = useState(false)
   const [selectedFleetForEdit, setSelectedFleetForEdit] = useState(null)
+  const [fleetModalMode, setFleetModalMode] = useState<'view' | 'edit'>('view')
   const [newBookingData, setNewBookingData] = useState(null)
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [checkInBooking, setCheckInBooking] = useState(null)
@@ -158,9 +159,16 @@ export default function App() {
   }
 
 
-  const handleFleetClick = (fleet) => {
+  const handleFleetClick = (fleet, mode = 'view') => {
     setSelectedFleetForEdit(fleet)
+    setFleetModalMode(mode)
     setShowFleetEdit(true)
+  }
+
+  const handleFleetDelete = () => {
+    setShowFleetEdit(false)
+    setSelectedFleetForEdit(null)
+    loadData()
   }
 
   return () => window.removeEventListener('click', handleClick)
@@ -415,9 +423,16 @@ export default function App() {
   }
 
 
-  const handleFleetClick = (fleet) => {
+  const handleFleetClick = (fleet, mode = 'view') => {
     setSelectedFleetForEdit(fleet)
+    setFleetModalMode(mode)
     setShowFleetEdit(true)
+  }
+
+  const handleFleetDelete = () => {
+    setShowFleetEdit(false)
+    setSelectedFleetForEdit(null)
+    loadData()
   }
 
   return (
@@ -616,9 +631,16 @@ export default function App() {
   }
 
 
-  const handleFleetClick = (fleet) => {
+  const handleFleetClick = (fleet, mode = 'view') => {
     setSelectedFleetForEdit(fleet)
+    setFleetModalMode(mode)
     setShowFleetEdit(true)
+  }
+
+  const handleFleetDelete = () => {
+    setShowFleetEdit(false)
+    setSelectedFleetForEdit(null)
+    loadData()
   }
 
   return (
@@ -722,9 +744,16 @@ export default function App() {
   }
 
 
-  const handleFleetClick = (fleet) => {
+  const handleFleetClick = (fleet, mode = 'view') => {
     setSelectedFleetForEdit(fleet)
+    setFleetModalMode(mode)
     setShowFleetEdit(true)
+  }
+
+  const handleFleetDelete = () => {
+    setShowFleetEdit(false)
+    setSelectedFleetForEdit(null)
+    loadData()
   }
 
   return (
@@ -850,9 +879,16 @@ export default function App() {
   }
 
 
-  const handleFleetClick = (fleet) => {
+  const handleFleetClick = (fleet, mode = 'view') => {
     setSelectedFleetForEdit(fleet)
+    setFleetModalMode(mode)
     setShowFleetEdit(true)
+  }
+
+  const handleFleetDelete = () => {
+    setShowFleetEdit(false)
+    setSelectedFleetForEdit(null)
+    loadData()
   }
 
   return (
@@ -989,9 +1025,16 @@ export default function App() {
   }
 
 
-  const handleFleetClick = (fleet) => {
+  const handleFleetClick = (fleet, mode = 'view') => {
     setSelectedFleetForEdit(fleet)
+    setFleetModalMode(mode)
     setShowFleetEdit(true)
+  }
+
+  const handleFleetDelete = () => {
+    setShowFleetEdit(false)
+    setSelectedFleetForEdit(null)
+    loadData()
   }
 
   return (
@@ -1064,7 +1107,8 @@ export default function App() {
               <h2 className="text-2xl font-bold">Flotte</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredFleet.map(f => (
-                  <div key={f.id} className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
+                  <div key={f.id} className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition cursor-pointer"
+                    onClick={() => handleFleetClick(f, 'view')}>
                     <div className="flex items-center gap-3">
                       <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
                         {f.vehicle?.imageUrl ? <img src={f.vehicle.imageUrl} className="w-full h-full object-cover" /> : <span className="text-2xl">🚲</span>}
@@ -1072,15 +1116,16 @@ export default function App() {
                       <div className="flex-1">
                         <div className="font-bold">{f.vehicleNumber}</div>
                         <div className="text-sm text-gray-600">{getName(f.vehicle?.name)}</div>
+                        <div className="text-xs text-gray-500">{getName(f.vehicle?.category?.name)}</div>
                         <div className={'text-xs px-2 py-0.5 rounded inline-block mt-1 ' + 
                           (f.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' : 
                            f.status === 'RENTED' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700')}>
                           {f.status === 'AVAILABLE' ? 'Disponible' : f.status === 'RENTED' ? 'En location' : 'Maintenance'}
                         </div>
                       </div>
-                      <button onClick={() => handleFleetClick(f)} 
-                        className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm font-medium">
-                        ✏️ Éditer
+                      <button onClick={(e) => { e.stopPropagation(); handleFleetClick(f, 'edit') }} 
+                        className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
+                        Éditer
                       </button>
                     </div>
                   </div>
@@ -1208,8 +1253,10 @@ export default function App() {
       {showFleetEdit && selectedFleetForEdit && (
         <FleetEditModal
           fleet={selectedFleetForEdit}
+          mode={fleetModalMode}
           onClose={() => { setShowFleetEdit(false); setSelectedFleetForEdit(null) }}
           onSave={() => { setShowFleetEdit(false); setSelectedFleetForEdit(null); loadData() }}
+          onDelete={handleFleetDelete}
         />
       )}
 

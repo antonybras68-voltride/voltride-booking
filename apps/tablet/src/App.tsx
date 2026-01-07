@@ -560,11 +560,17 @@ export default function App() {
     <div className="min-h-screen relative overflow-hidden"
       style={{ background: 'linear-gradient(135deg, #abdee6 0%, #ffaf10 100%)' }}>
       
-      {/* Floating logos */}
-      <FloatingLogo src={VOLTRIDE_LOGO} initialX={100} initialY={100} speed={1.5} size={120} />
-      <FloatingLogo src={MOTORRENT_LOGO} initialX={300} initialY={200} speed={-1.2} size={100} />
-      <FloatingLogo src={VOLTRIDE_LOGO} initialX={500} initialY={150} speed={1} size={80} />
-      <FloatingLogo src={MOTORRENT_LOGO} initialX={200} initialY={300} speed={-0.8} size={90} />
+      {/* Floating logos - 5 Voltride + 5 Motor-Rent */}
+      <FloatingLogo src={VOLTRIDE_LOGO} initialX={50} initialY={80} speed={1.5} size={180} />
+      <FloatingLogo src={VOLTRIDE_LOGO} initialX={400} initialY={150} speed={-1.1} size={160} />
+      <FloatingLogo src={VOLTRIDE_LOGO} initialX={700} initialY={50} speed={0.9} size={200} />
+      <FloatingLogo src={VOLTRIDE_LOGO} initialX={200} initialY={350} speed={-1.3} size={150} />
+      <FloatingLogo src={VOLTRIDE_LOGO} initialX={600} initialY={280} speed={1.2} size={170} />
+      <FloatingLogo src={MOTORRENT_LOGO} initialX={150} initialY={200} speed={-1.4} size={180} />
+      <FloatingLogo src={MOTORRENT_LOGO} initialX={500} initialY={100} speed={1.0} size={160} />
+      <FloatingLogo src={MOTORRENT_LOGO} initialX={350} initialY={320} speed={-0.8} size={200} />
+      <FloatingLogo src={MOTORRENT_LOGO} initialX={750} initialY={220} speed={1.3} size={150} />
+      <FloatingLogo src={MOTORRENT_LOGO} initialX={100} initialY={400} speed={-1.1} size={170} />
       
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen">

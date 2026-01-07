@@ -1145,3 +1145,31 @@ model TabletSession {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+// Walk-in customer data (temporary storage)
+model WalkinSession {
+  id            String   @id @default(cuid())
+  sessionId     String   @unique
+  agencyId      String
+  status        String   @default("pending") // pending, completed, expired
+  language      String   @default("fr")
+  
+  // Customer data filled by client
+  firstName     String?
+  lastName      String?
+  email         String?
+  phone         String?
+  phonePrefix   String?  @default("+34")
+  address       String?
+  city          String?
+  postalCode    String?
+  country       String?  @default("ES")
+  
+  // Brand info
+  brand         String?  // VOLTRIDE or MOTOR-RENT
+  
+  completedAt   DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

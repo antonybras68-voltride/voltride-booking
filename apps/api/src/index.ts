@@ -362,6 +362,128 @@ app.delete('/api/tablet-sessions/:sessionId', async (req, res) => {
 })
 
 
+
+// ============== WALKIN SESSIONS ==============
+
+// Get pending walkin for agency (tablet polls this)
+app.get('/api/walkin-sessions/agency/:agencyId', async (req, res) => {
+  try {
+    const session = await prisma.walkinSession.findFirst({
+      where: {
+        agencyId: req.params.agencyId,
+        status: 'pending'
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Get pending walkin for multiple agencies (tablet polls this)
+app.get('/api/walkin-sessions/agencies', async (req, res) => {
+  try {
+    const agencyIds = (req.query.ids as string)?.split(',') || []
+    const session = await prisma.walkinSession.findFirst({
+      where: {
+        agencyId: { in: agencyIds },
+        status: 'pending'
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Get walkin by sessionId
+app.get('/api/walkin-sessions/:sessionId', async (req, res) => {
+  try {
+    const session = await prisma.walkinSession.findUnique({
+      where: { sessionId: req.params.sessionId }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Create walkin session (from operator app)
+app.post('/api/walkin-sessions', async (req, res) => {
+  try {
+    const session = await prisma.walkinSession.create({
+      data: {
+        sessionId: req.body.sessionId,
+        agencyId: req.body.agencyId,
+        language: req.body.language || 'fr',
+        brand: req.body.brand,
+        status: 'pending',
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000)
+      }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Update walkin session (customer data from tablet)
+app.put('/api/walkin-sessions/:sessionId', async (req, res) => {
+  try {
+    const session = await prisma.walkinSession.update({
+      where: { sessionId: req.params.sessionId },
+      data: {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        phone: req.body.phone,
+        phonePrefix: req.body.phonePrefix,
+        address: req.body.address,
+        city: req.body.city,
+        postalCode: req.body.postalCode,
+        country: req.body.country,
+        status: req.body.status || 'completed',
+        completedAt: req.body.status === 'completed' ? new Date() : undefined
+      }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Delete walkin session
+app.delete('/api/walkin-sessions/:sessionId', async (req, res) => {
+  try {
+    await prisma.walkinSession.delete({
+      where: { sessionId: req.params.sessionId }
+    })
+    res.json({ success: true })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Update tablet-sessions to support multiple agencies
+app.get('/api/tablet-sessions/agencies', async (req, res) => {
+  try {
+    const agencyIds = (req.query.ids as string)?.split(',') || []
+    const session = await prisma.tabletSession.findFirst({
+      where: {
+        agencyId: { in: agencyIds },
+        status: 'pending'
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })
 
 // ============== VEHICLE NUMBERING CATEGORIES ==============

@@ -1233,8 +1233,20 @@ export default function App() {
                 </a>
               </div>
               
+              {/* Sélecteur de marque */}
+              <div className="flex gap-2">
+                <button onClick={() => setSettingsTab('voltride')} 
+                  className={'px-4 py-2 rounded-lg font-medium ' + (settingsTab === 'voltride' ? 'bg-blue-600 text-white' : 'bg-gray-100')}>
+                  Voltride
+                </button>
+                <button onClick={() => setSettingsTab('motorrent')} 
+                  className={'px-4 py-2 rounded-lg font-medium ' + (settingsTab === 'motorrent' ? 'bg-orange-600 text-white' : 'bg-gray-100')}>
+                  Motor-Rent
+                </button>
+              </div>
+
               <div className="bg-white rounded-xl shadow p-6">
-                <h3 className="text-lg font-bold mb-4">Conditions Générales de Vente (CGV)</h3>
+                <h3 className="text-lg font-bold mb-4">Conditions Générales de Vente (CGV) - Résumé</h3>
                 <div className="space-y-4">
                   {['fr', 'es', 'en'].map(lang => (
                     <div key={lang}>
@@ -1242,8 +1254,8 @@ export default function App() {
                         {lang === 'fr' ? '🇫🇷 Français' : lang === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}
                       </label>
                       <textarea
-                        value={settings.cgv[lang]}
-                        onChange={e => setSettings({...settings, cgv: {...settings.cgv, [lang]: e.target.value}})}
+                        value={settings[settingsTab]?.cgvResume?.[lang] || ''}
+                        onChange={e => setSettings({...settings, [settingsTab]: {...settings[settingsTab], cgvResume: {...settings[settingsTab]?.cgvResume, [lang]: e.target.value}}})}
                         className="w-full border rounded-lg p-3 h-32"
                       />
                     </div>
@@ -1260,8 +1272,8 @@ export default function App() {
                         {lang === 'fr' ? '🇫🇷 Français' : lang === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}
                       </label>
                       <textarea
-                        value={settings.rgpd[lang]}
-                        onChange={e => setSettings({...settings, rgpd: {...settings.rgpd, [lang]: e.target.value}})}
+                        value={settings[settingsTab]?.rgpd?.[lang] || ''}
+                        onChange={e => setSettings({...settings, [settingsTab]: {...settings[settingsTab], rgpd: {...settings[settingsTab]?.rgpd, [lang]: e.target.value}}})}
                         className="w-full border rounded-lg p-3 h-24"
                       />
                     </div>

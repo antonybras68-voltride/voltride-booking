@@ -1220,7 +1220,14 @@ export default function App() {
           {/* SETTINGS */}
           {!loading && tab === 'settings' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold">⚙️ Paramètres</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Paramètres</h2>
+                <a href="https://backoffice-vandm-production.up.railway.app/" target="_blank" rel="noopener noreferrer"
+                  className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 text-sm flex items-center gap-2">
+                  Ouvrir le Backoffice
+                  <span>↗</span>
+                </a>
+              </div>
               
               <div className="bg-white rounded-xl shadow p-6">
                 <h3 className="text-lg font-bold mb-4">Conditions Générales de Vente (CGV)</h3>

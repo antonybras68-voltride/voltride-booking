@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from './api'
 import { getName } from './types'
 
@@ -11,113 +11,199 @@ interface CheckOutModalProps {
   onComplete: () => void
 }
 
+interface PhotoValidation {
+  originalUrl: string
+  validated: boolean | null
+  damagePhotoUrl?: string
+  damagedParts: any[]
+}
+
 export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutModalProps) {
-  const [step, setStep] = useState(1)
-  const [loading, setLoading] = useState(false)
-  const [checkInData, setCheckInData] = useState<any>(null)
+  const [step, setStep] = useState(1) // 1: Photos, 2: Fuel, 3: Mileage, 4: Summary, 5: Finalize
+  const [loading, setLoading] = useState(true)
+  const [processing, setProcessing] = useState(false)
   
-  // Step 1: Photos
-  const [photos, setPhotos] = useState<string[]>([])
-  const [uploading, setUploading] = useState(false)
-  
-  // Step 2: Vehicle state
-  const [endMileage, setEndMileage] = useState(booking.fleetVehicle?.currentMileage || 0)
-  const [fuelLevel, setFuelLevel] = useState('FULL') // FULL, THREE_QUARTER, HALF, QUARTER, EMPTY
-  
-  // Step 3: Damages & Deductions
-  const [equipment, setEquipment] = useState<any[]>([])
+  // Data
+  const [contract, setContract] = useState<any>(null)
   const [spareParts, setSpareParts] = useState<any[]>([])
-  const [deductions, setDeductions] = useState<any[]>([])
+  const [checkInPhotos, setCheckInPhotos] = useState<string[]>([])
   
-  // Step 4: Payment
-  const [depositRefund, setDepositRefund] = useState(0)
-  const [totalDeductions, setTotalDeductions] = useState(0)
+  // Photo validation
+  const [photoValidations, setPhotoValidations] = useState<PhotoValidation[]>([])
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
+  const [showDamageForm, setShowDamageForm] = useState(false)
+  const [uploadingDamage, setUploadingDamage] = useState(false)
+  const [selectedParts, setSelectedParts] = useState<string[]>([])
+  const [tempDamagePhoto, setTempDamagePhoto] = useState<string>('')
+  
+  // Vehicle state
+  const [fuelLevel, setFuelLevel] = useState('FULL')
+  const [endMileage, setEndMileage] = useState(0)
+  
+  // Computed
+  const [deductions, setDeductions] = useState<any[]>([])
+  const [fuelCharge, setFuelCharge] = useState(0)
+  
+  const isMotorRent = brand === 'MOTOR-RENT'
 
   useEffect(() => {
     loadData()
   }, [])
 
-  useEffect(() => {
-    const total = deductions.reduce((sum, d) => sum + (d.quantity * d.unitPrice), 0)
-    setTotalDeductions(total)
-    setDepositRefund(Math.max(0, (booking.depositAmount || 0) - total))
-  }, [deductions, booking.depositAmount])
-
   const loadData = async () => {
     try {
-      // Load check-in contract data
+      // Load contract
       const contractRes = await fetch(`${API_URL}/api/contracts/booking/${booking.id}`)
       if (contractRes.ok) {
-        const contract = await contractRes.json()
-        setCheckInData(contract)
-        setEndMileage(contract.startMileage || booking.fleetVehicle?.currentMileage || 0)
+        const contractData = await contractRes.json()
+        setContract(contractData)
+        setEndMileage(contractData.startMileage || booking.fleetVehicle?.currentMileage || 0)
+        
+        // Get check-in photos
+        const photos: string[] = []
+        if (contractData.photoFront) photos.push(contractData.photoFront)
+        if (contractData.photoLeft) photos.push(contractData.photoLeft)
+        if (contractData.photoRight) photos.push(contractData.photoRight)
+        if (contractData.photoRear) photos.push(contractData.photoRear)
+        if (contractData.photoCounter) photos.push(contractData.photoCounter)
+        setCheckInPhotos(photos)
+        
+        // Initialize validations
+        setPhotoValidations(photos.map(url => ({
+          originalUrl: url,
+          validated: null,
+          damagedParts: []
+        })))
       }
 
-      // Load equipment and spare parts for this fleet vehicle
+      // Load spare parts
       if (booking.fleetVehicle?.id) {
-        const [eqRes, partsRes] = await Promise.all([
-          fetch(`${API_URL}/api/fleet/${booking.fleetVehicle.id}/equipment`),
-          fetch(`${API_URL}/api/fleet/${booking.fleetVehicle.id}/spare-parts`)
-        ])
-        setEquipment(await eqRes.json() || [])
-        setSpareParts(await partsRes.json() || [])
+        const partsRes = await fetch(`${API_URL}/api/fleet/${booking.fleetVehicle.id}/spare-parts`)
+        if (partsRes.ok) {
+          setSpareParts(await partsRes.json())
+        }
       }
     } catch (e) {
       console.error(e)
     }
+    setLoading(false)
   }
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files) return
-    
-    setUploading(true)
-    for (const file of Array.from(files)) {
-      try {
-        const url = await api.uploadImage(file, `checkout/${booking.id}`)
-        if (url) setPhotos(prev => [...prev, url])
-      } catch (err) {
-        console.error(err)
-      }
+  // Photo validation handlers
+  const validateCurrentPhoto = (isValid: boolean) => {
+    if (isValid) {
+      // Mark as validated and move to next
+      setPhotoValidations(prev => prev.map((p, i) => 
+        i === currentPhotoIndex ? { ...p, validated: true } : p
+      ))
+      moveToNextPhoto()
+    } else {
+      // Show damage form
+      setShowDamageForm(true)
     }
-    setUploading(false)
   }
 
-  const removePhoto = (index: number) => {
-    setPhotos(prev => prev.filter((_, i) => i !== index))
-  }
-
-  const addDeduction = (item: any, type: 'equipment' | 'part') => {
-    const existing = deductions.find(d => d.itemId === item.id && d.type === type)
-    if (existing) return
-
-    setDeductions(prev => [...prev, {
-      id: Date.now(),
-      itemId: item.id,
-      type,
-      name: item.name,
-      unitPrice: parseFloat(type === 'part' ? item.totalCost : item.price) || 0,
-      quantity: 1,
-      reason: ''
-    }])
-  }
-
-  const updateDeduction = (id: number, field: string, value: any) => {
-    setDeductions(prev => prev.map(d => 
-      d.id === id ? { ...d, [field]: value } : d
-    ))
-  }
-
-  const removeDeduction = (id: number) => {
-    setDeductions(prev => prev.filter(d => d.id !== id))
-  }
-
-  const handleComplete = async () => {
-    setLoading(true)
+  const handleDamagePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    setUploadingDamage(true)
     try {
-      // Update contract with checkout data
-      if (checkInData?.id) {
-        await fetch(`${API_URL}/api/contracts/${checkInData.id}`, {
+      const url = await api.uploadImage(file, `checkout/${booking.id}/damage`)
+      if (url) setTempDamagePhoto(url)
+    } catch (err) {
+      console.error(err)
+    }
+    setUploadingDamage(false)
+  }
+
+  const togglePartSelection = (partId: string) => {
+    setSelectedParts(prev => 
+      prev.includes(partId) ? prev.filter(id => id !== partId) : [...prev, partId]
+    )
+  }
+
+  const confirmDamage = () => {
+    if (!tempDamagePhoto || selectedParts.length === 0) {
+      alert('Veuillez prendre une photo et sélectionner au moins une pièce endommagée')
+      return
+    }
+
+    const damagedParts = spareParts.filter(p => selectedParts.includes(p.id))
+    
+    setPhotoValidations(prev => prev.map((p, i) => 
+      i === currentPhotoIndex ? {
+        ...p,
+        validated: false,
+        damagePhotoUrl: tempDamagePhoto,
+        damagedParts
+      } : p
+    ))
+
+    // Add to deductions
+    damagedParts.forEach(part => {
+      if (!deductions.find(d => d.partId === part.id)) {
+        setDeductions(prev => [...prev, {
+          id: Date.now() + Math.random(),
+          partId: part.id,
+          name: part.name,
+          price: parseFloat(part.totalCost) || 0,
+          photoUrl: tempDamagePhoto
+        }])
+      }
+    })
+
+    // Reset and move to next
+    setShowDamageForm(false)
+    setTempDamagePhoto('')
+    setSelectedParts([])
+    moveToNextPhoto()
+  }
+
+  const cancelDamage = () => {
+    setShowDamageForm(false)
+    setTempDamagePhoto('')
+    setSelectedParts([])
+  }
+
+  const moveToNextPhoto = () => {
+    if (currentPhotoIndex < checkInPhotos.length - 1) {
+      setCurrentPhotoIndex(prev => prev + 1)
+    } else {
+      // All photos validated, move to fuel or mileage
+      setStep(isMotorRent ? 2 : 3)
+    }
+  }
+
+  // Fuel handlers
+  const fuelLevels = [
+    { id: 'FULL', label: 'Plein', icon: '████', charge: 0 },
+    { id: 'THREE_QUARTER', label: '3/4', icon: '███░', charge: booking.fleetVehicle?.vehicle?.fuelChargeQuarter || 5 },
+    { id: 'HALF', label: '1/2', icon: '██░░', charge: booking.fleetVehicle?.vehicle?.fuelChargeHalf || 10 },
+    { id: 'QUARTER', label: '1/4', icon: '█░░░', charge: booking.fleetVehicle?.vehicle?.fuelChargeThreeQ || 15 },
+    { id: 'EMPTY', label: 'Vide', icon: '░░░░', charge: booking.fleetVehicle?.vehicle?.fuelChargeEmpty || 20 }
+  ]
+
+  const selectFuel = (level: string) => {
+    setFuelLevel(level)
+    const selected = fuelLevels.find(f => f.id === level)
+    setFuelCharge(selected?.charge || 0)
+  }
+
+  // Calculate totals
+  const totalDeductions = deductions.reduce((sum, d) => sum + d.price, 0) + fuelCharge
+  const depositAmount = booking.depositAmount || contract?.depositAmount || 0
+  const refundAmount = Math.max(0, depositAmount - totalDeductions)
+  const additionalCharge = totalDeductions > depositAmount ? totalDeductions - depositAmount : 0
+  const paymentMethod = contract?.depositMethod === 'CASH' ? 'Espèces' : 'Carte bancaire'
+
+  // Finalize
+  const handleFinalize = async () => {
+    setProcessing(true)
+    try {
+      // Update contract
+      if (contract?.id) {
+        await fetch(`${API_URL}/api/contracts/${contract.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -125,25 +211,39 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
             checkoutAt: new Date().toISOString(),
             endMileage,
             endFuelLevel: fuelLevel,
-            checkoutPhotoUrls: photos,
-            depositRefunded: depositRefund,
-            totalDeductions
+            totalDeductions,
+            depositRefunded: refundAmount
           })
         })
 
-        // Create deductions
+        // Create deductions in DB
         for (const d of deductions) {
-          await fetch(`${API_URL}/api/contracts/${checkInData.id}/deductions`, {
+          await fetch(`${API_URL}/api/contracts/${contract.id}/deductions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              type: d.type === 'equipment' ? 'EQUIPMENT_DAMAGE' : 'PART_DAMAGE',
-              description: `${d.name}${d.reason ? ' - ' + d.reason : ''}`,
-              quantity: d.quantity,
-              unitPrice: d.unitPrice,
-              totalPrice: d.quantity * d.unitPrice,
-              sparePartId: d.type === 'part' ? d.itemId : null,
-              equipmentId: d.type === 'equipment' ? d.itemId : null
+              type: 'PART_DAMAGE',
+              description: d.name,
+              quantity: 1,
+              unitPrice: d.price,
+              totalPrice: d.price,
+              sparePartId: d.partId,
+              photoUrls: [d.photoUrl]
+            })
+          })
+        }
+
+        // Add fuel charge if any
+        if (fuelCharge > 0) {
+          await fetch(`${API_URL}/api/contracts/${contract.id}/deductions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'FUEL_CHARGE',
+              description: `Supplément carburant (niveau: ${fuelLevel})`,
+              quantity: 1,
+              unitPrice: fuelCharge,
+              totalPrice: fuelCharge
             })
           })
         }
@@ -152,38 +252,41 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
       // Update booking status
       await api.updateBooking(booking.id, { status: 'COMPLETED' })
 
-      // Update fleet vehicle status and mileage
+      // Update fleet vehicle
       await api.updateFleetVehicle(booking.fleetVehicle.id, { 
         status: 'AVAILABLE',
         currentMileage: endMileage
       })
 
-      onComplete()
+      // TODO: Generate PDF report and invoice
+      // TODO: Send email to customer
+
+      setStep(5) // Success step
+      setTimeout(() => onComplete(), 2000)
     } catch (e) {
       console.error(e)
-      alert('Erreur lors du check-out')
+      alert('Erreur lors de la finalisation')
     }
-    setLoading(false)
+    setProcessing(false)
   }
 
-  const paymentMethodLabel = checkInData?.depositPaymentMethod === 'CASH' ? 'Espèces' : 'Carte bancaire'
-  const paymentMethodIcon = checkInData?.depositPaymentMethod === 'CASH' ? '💵' : '💳'
-  const isMotorRent = brand === 'MOTOR-RENT'
+  const removeDeduction = (id: number) => {
+    setDeductions(prev => prev.filter(d => d.id !== id))
+  }
 
-  const fuelLevels = [
-    { id: 'FULL', label: 'Plein', icon: '⬛⬛⬛⬛', charge: 0 },
-    { id: 'THREE_QUARTER', label: '3/4', icon: '⬛⬛⬛⬜', charge: booking.fleetVehicle?.vehicle?.fuelChargeQuarter || 5 },
-    { id: 'HALF', label: '1/2', icon: '⬛⬛⬜⬜', charge: booking.fleetVehicle?.vehicle?.fuelChargeHalf || 10 },
-    { id: 'QUARTER', label: '1/4', icon: '⬛⬜⬜⬜', charge: booking.fleetVehicle?.vehicle?.fuelChargeThreeQ || 15 },
-    { id: 'EMPTY', label: 'Vide', icon: '⬜⬜⬜⬜', charge: booking.fleetVehicle?.vehicle?.fuelChargeEmpty || 20 }
-  ]
-
-  const selectedFuel = fuelLevels.find(f => f.id === fuelLevel)
-  const fuelCharge = selectedFuel?.charge || 0
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl p-8">
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col" 
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[95vh] overflow-hidden flex flex-col" 
         onClick={e => e.stopPropagation()}>
         
         {/* Header */}
@@ -191,7 +294,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {booking.fleetVehicle?.vehicle?.imageUrl && (
-                <img src={booking.fleetVehicle.vehicle.imageUrl} className="w-14 h-14 rounded-lg object-cover" />
+                <img src={booking.fleetVehicle.vehicle.imageUrl} className="w-12 h-12 rounded-lg object-cover" />
               )}
               <div>
                 <h2 className="text-lg font-bold">Check-out: {booking.fleetVehicle?.vehicleNumber}</h2>
@@ -203,276 +306,290 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
         </div>
 
         {/* Progress */}
-        <div className="flex border-b">
-          {['Photos', isMotorRent ? 'État / Carburant' : 'État', 'Déductions', 'Finaliser'].map((label, i) => (
-            <button key={i} onClick={() => i + 1 <= step && setStep(i + 1)}
-              className={'flex-1 py-3 text-center text-sm font-medium border-b-2 ' +
-                (step === i + 1 ? 'border-blue-500 text-blue-600' :
-                 i + 1 < step ? 'border-green-500 text-green-600' : 'border-transparent text-gray-400')}>
-              {i + 1}. {label}
-            </button>
+        <div className="flex border-b text-xs">
+          {[
+            { num: 1, label: 'Photos' },
+            ...(isMotorRent ? [{ num: 2, label: 'Carburant' }] : []),
+            { num: isMotorRent ? 3 : 2, label: 'Kilométrage' },
+            { num: isMotorRent ? 4 : 3, label: 'Récapitulatif' },
+            { num: isMotorRent ? 5 : 4, label: 'Terminé' }
+          ].map((s, i) => (
+            <div key={i} className={'flex-1 py-2 text-center border-b-2 ' +
+              (step >= s.num ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-400')}>
+              {s.label}
+            </div>
           ))}
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-6">
           
-          {/* Step 1: Photos */}
-          {step === 1 && (
+          {/* Step 1: Photo Validation */}
+          {step === 1 && !showDamageForm && (
             <div className="space-y-4">
-              <p className="text-gray-600">Prenez des photos de l'état du véhicule au retour</p>
-              
-              {/* Check-in photos comparison */}
-              {checkInData?.vehiclePhotoUrls?.length > 0 && (
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm font-medium text-blue-800 mb-2">Photos du check-in (référence)</p>
-                  <div className="flex gap-2 overflow-x-auto">
-                    {checkInData.vehiclePhotoUrls.map((url: string, i: number) => (
-                      <img key={i} src={url} className="w-24 h-24 object-cover rounded-lg" />
-                    ))}
+              <div className="text-center">
+                <p className="text-sm text-gray-500 mb-2">
+                  Photo {currentPhotoIndex + 1} / {checkInPhotos.length}
+                </p>
+                <p className="font-medium">Le véhicule est-il dans le même état qu'au départ ?</p>
+              </div>
+
+              {checkInPhotos.length > 0 ? (
+                <div className="flex flex-col items-center">
+                  <img 
+                    src={checkInPhotos[currentPhotoIndex]} 
+                    alt={`Photo check-in ${currentPhotoIndex + 1}`}
+                    className="max-h-80 rounded-xl shadow-lg"
+                  />
+                  
+                  <div className="flex gap-4 mt-6">
+                    <button onClick={() => validateCurrentPhoto(false)}
+                      className="px-8 py-4 bg-red-100 text-red-700 rounded-xl text-lg font-medium hover:bg-red-200 flex items-center gap-2">
+                      <span className="text-2xl">✕</span> Dommage
+                    </button>
+                    <button onClick={() => validateCurrentPhoto(true)}
+                      className="px-8 py-4 bg-green-100 text-green-700 rounded-xl text-lg font-medium hover:bg-green-200 flex items-center gap-2">
+                      <span className="text-2xl">✓</span> OK
+                    </button>
                   </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Aucune photo de check-in disponible</p>
+                  <button onClick={() => setStep(isMotorRent ? 2 : 3)}
+                    className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg">
+                    Continuer
+                  </button>
                 </div>
               )}
 
-              {/* Upload area */}
-              <div className="border-2 border-dashed rounded-xl p-6 text-center">
-                <label className="cursor-pointer">
-                  <div className="text-4xl mb-2">📷</div>
-                  <p className="text-gray-500">Cliquez pour ajouter des photos</p>
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
-                </label>
-                {uploading && <p className="text-blue-600 mt-2">Chargement...</p>}
+              {/* Progress dots */}
+              <div className="flex justify-center gap-2 mt-4">
+                {checkInPhotos.map((_, i) => (
+                  <div key={i} className={`w-3 h-3 rounded-full ${
+                    photoValidations[i]?.validated === true ? 'bg-green-500' :
+                    photoValidations[i]?.validated === false ? 'bg-red-500' :
+                    i === currentPhotoIndex ? 'bg-blue-500' : 'bg-gray-300'
+                  }`} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Damage Form */}
+          {step === 1 && showDamageForm && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <button onClick={cancelDamage} className="text-gray-500 hover:text-gray-700">
+                  ← Retour
+                </button>
+                <h3 className="font-medium">Signaler un dommage</h3>
               </div>
 
-              {/* Uploaded photos */}
-              {photos.length > 0 && (
-                <div className="grid grid-cols-4 gap-3">
-                  {photos.map((url, i) => (
-                    <div key={i} className="relative">
-                      <img src={url} className="w-full h-24 object-cover rounded-lg" />
-                      <button onClick={() => removePhoto(i)}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-sm">
-                        ×
+              {/* Original photo */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500 mb-2">Photo check-in (référence)</p>
+                  <img src={checkInPhotos[currentPhotoIndex]} className="w-full rounded-lg" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-2">Nouvelle photo du dommage</p>
+                  {tempDamagePhoto ? (
+                    <div className="relative">
+                      <img src={tempDamagePhoto} className="w-full rounded-lg" />
+                      <button onClick={() => setTempDamagePhoto('')}
+                        className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full">×</button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
+                      <span className="text-4xl mb-2">📷</span>
+                      <span className="text-sm text-gray-500">Prendre une photo</span>
+                      <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleDamagePhotoUpload} />
+                      {uploadingDamage && <span className="text-blue-600 mt-2">Chargement...</span>}
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Parts selection */}
+              <div>
+                <p className="text-sm font-medium mb-2">Sélectionnez les pièces endommagées :</p>
+                {spareParts.length === 0 ? (
+                  <p className="text-gray-400 text-sm">Aucune pièce configurée pour ce véhicule</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto">
+                    {spareParts.map(part => (
+                      <button key={part.id} onClick={() => togglePartSelection(part.id)}
+                        className={'p-3 border rounded-lg text-left text-sm ' +
+                          (selectedParts.includes(part.id) ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                        <p className="font-medium">{part.name}</p>
+                        <p className="text-gray-500">{parseFloat(part.totalCost).toFixed(2)}€</p>
                       </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button onClick={confirmDamage}
+                disabled={!tempDamagePhoto || selectedParts.length === 0}
+                className="w-full py-3 bg-red-600 text-white rounded-lg disabled:opacity-50">
+                Confirmer le dommage
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: Fuel (Motor-Rent only) */}
+          {step === 2 && isMotorRent && (
+            <div className="space-y-6">
+              <h3 className="font-medium text-center">Niveau de carburant au retour</h3>
+              
+              <div className="grid grid-cols-5 gap-2">
+                {fuelLevels.map(level => (
+                  <button key={level.id} onClick={() => selectFuel(level.id)}
+                    className={'p-4 border-2 rounded-xl text-center transition ' +
+                      (fuelLevel === level.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300')}>
+                    <div className="text-lg font-mono mb-1">{level.icon}</div>
+                    <div className="text-sm font-medium">{level.label}</div>
+                    {level.charge > 0 && (
+                      <div className="text-xs text-red-600 mt-1">+{level.charge}€</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {fuelCharge > 0 && (
+                <div className="p-4 bg-red-50 rounded-lg text-center">
+                  <p className="text-red-700">Supplément carburant: <strong>+{fuelCharge}€</strong></p>
+                </div>
+              )}
+
+              <button onClick={() => setStep(3)}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg">
+                Continuer
+              </button>
+            </div>
+          )}
+
+          {/* Step 3: Mileage */}
+          {step === (isMotorRent ? 3 : 2) && (
+            <div className="space-y-6">
+              <h3 className="font-medium text-center">Kilométrage au retour</h3>
+              
+              <div className="flex items-center justify-center gap-4">
+                <input type="number" value={endMileage} onChange={e => setEndMileage(parseInt(e.target.value) || 0)}
+                  className="w-40 text-center text-2xl font-mono border-2 rounded-xl p-4" />
+                <span className="text-gray-500">km</span>
+              </div>
+
+              {contract?.startMileage && (
+                <div className="text-center text-sm text-gray-500">
+                  Départ: {contract.startMileage} km → <strong>+{endMileage - contract.startMileage} km</strong> parcourus
+                </div>
+              )}
+
+              <button onClick={() => setStep(isMotorRent ? 4 : 3)}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg">
+                Continuer
+              </button>
+            </div>
+          )}
+
+          {/* Step 4: Summary */}
+          {step === (isMotorRent ? 4 : 3) && (
+            <div className="space-y-6">
+              <h3 className="font-medium">Récapitulatif</h3>
+
+              {/* Damages */}
+              {deductions.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-red-700">Dommages constatés :</p>
+                  {deductions.map(d => (
+                    <div key={d.id} className="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
+                      {d.photoUrl && <img src={d.photoUrl} className="w-12 h-12 object-cover rounded" />}
+                      <div className="flex-1">
+                        <p className="font-medium">{d.name}</p>
+                      </div>
+                      <p className="font-bold text-red-600">-{d.price.toFixed(2)}€</p>
+                      <button onClick={() => removeDeduction(d.id)} className="text-gray-400 hover:text-red-500">×</button>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Step 2: Vehicle State */}
-          {step === 2 && (
-            <div className="space-y-6">
-              {/* Mileage */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Kilométrage au retour</label>
-                <div className="flex items-center gap-4">
-                  <input type="number" value={endMileage} onChange={e => setEndMileage(parseInt(e.target.value) || 0)}
-                    className="w-40 border-2 rounded-lg p-3 text-lg font-mono" />
-                  <span className="text-gray-500">km</span>
-                  {checkInData?.startMileage && (
-                    <span className="text-sm text-gray-500">
-                      (Départ: {checkInData.startMileage} km → +{endMileage - checkInData.startMileage} km)
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Fuel level (Motor-Rent only) */}
-              {isMotorRent && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">Niveau de carburant</label>
-                  <div className="grid grid-cols-5 gap-2">
-                    {fuelLevels.map(level => (
-                      <button key={level.id} onClick={() => setFuelLevel(level.id)}
-                        className={'p-3 border-2 rounded-lg text-center transition ' +
-                          (fuelLevel === level.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300')}>
-                        <div className="text-lg mb-1">{level.icon}</div>
-                        <div className="text-sm font-medium">{level.label}</div>
-                        {level.charge > 0 && (
-                          <div className="text-xs text-red-600">+{level.charge}€</div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  {fuelCharge > 0 && (
-                    <p className="mt-2 text-sm text-red-600">
-                      Supplément carburant: +{fuelCharge}€
-                    </p>
-                  )}
+              {/* Fuel charge */}
+              {fuelCharge > 0 && (
+                <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                  <span>Supplément carburant ({fuelLevel})</span>
+                  <span className="font-bold text-orange-600">-{fuelCharge.toFixed(2)}€</span>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Step 3: Deductions */}
-          {step === 3 && (
-            <div className="space-y-6">
-              <p className="text-gray-600">Ajoutez des déductions si équipements ou pièces endommagés</p>
-              
-              {/* Equipment */}
-              <div>
-                <h3 className="font-medium mb-2">Équipements fournis</h3>
-                {equipment.length === 0 ? (
-                  <p className="text-gray-400 text-sm">Aucun équipement configuré</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {equipment.map(eq => (
-                      <button key={eq.id} onClick={() => addDeduction(eq, 'equipment')}
-                        disabled={deductions.some(d => d.itemId === eq.id && d.type === 'equipment')}
-                        className="px-3 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                        {eq.name} <span className="text-gray-500">({parseFloat(eq.price).toFixed(2)}€)</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Spare Parts */}
-              <div>
-                <h3 className="font-medium mb-2">Pièces détachées</h3>
-                {spareParts.length === 0 ? (
-                  <p className="text-gray-400 text-sm">Aucune pièce configurée</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {spareParts.map(part => (
-                      <button key={part.id} onClick={() => addDeduction(part, 'part')}
-                        disabled={deductions.some(d => d.itemId === part.id && d.type === 'part')}
-                        className="px-3 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                        {part.name} <span className="text-gray-500">({parseFloat(part.totalCost).toFixed(2)}€)</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Deductions list */}
-              {deductions.length > 0 && (
-                <div className="border-t pt-4">
-                  <h3 className="font-medium mb-2">Déductions ajoutées</h3>
-                  <div className="space-y-2">
-                    {deductions.map(d => (
-                      <div key={d.id} className="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium">{d.name}</p>
-                          <input type="text" value={d.reason} onChange={e => updateDeduction(d.id, 'reason', e.target.value)}
-                            placeholder="Raison (optionnel)" className="w-full text-sm border rounded p-1 mt-1" />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input type="number" value={d.quantity} min="1"
-                            onChange={e => updateDeduction(d.id, 'quantity', parseInt(e.target.value) || 1)}
-                            className="w-16 border rounded p-1 text-center" />
-                          <span className="text-gray-500">×</span>
-                          <span className="font-medium">{d.unitPrice.toFixed(2)}€</span>
-                          <span className="text-gray-500">=</span>
-                          <span className="font-bold text-red-600">{(d.quantity * d.unitPrice).toFixed(2)}€</span>
-                        </div>
-                        <button onClick={() => removeDeduction(d.id)} className="text-red-500 hover:text-red-700">×</button>
-                      </div>
-                    ))}
-                  </div>
+              {/* No issues */}
+              {deductions.length === 0 && fuelCharge === 0 && (
+                <div className="p-4 bg-green-50 rounded-lg text-center text-green-700">
+                  Aucun dommage constaté
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Step 4: Finalize */}
-          {step === 4 && (
-            <div className="space-y-6">
-              {/* Summary */}
-              <div className="p-4 bg-gray-50 rounded-lg space-y-3">
-                <h3 className="font-medium">Récapitulatif</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Véhicule</p>
-                    <p className="font-medium">{booking.fleetVehicle?.vehicleNumber}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Client</p>
-                    <p className="font-medium">{booking.customer?.firstName} {booking.customer?.lastName}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Kilométrage parcouru</p>
-                    <p className="font-medium">{endMileage - (checkInData?.startMileage || 0)} km</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Photos retour</p>
-                    <p className="font-medium">{photos.length} photo(s)</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Deposit & Deductions */}
+              {/* Deposit calculation */}
               <div className="p-4 border-2 rounded-lg space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Caution versée</span>
-                  <span className="font-medium">{(booking.depositAmount || 0).toFixed(2)}€</span>
+                <div className="flex justify-between">
+                  <span>Caution versée</span>
+                  <span className="font-medium">{depositAmount.toFixed(2)}€</span>
+                </div>
+                {totalDeductions > 0 && (
+                  <div className="flex justify-between text-red-600">
+                    <span>Total déductions</span>
+                    <span>-{totalDeductions.toFixed(2)}€</span>
+                  </div>
+                )}
+                <div className="flex justify-between pt-3 border-t text-lg">
+                  {additionalCharge > 0 ? (
+                    <>
+                      <span className="font-medium">Reste à payer par le client</span>
+                      <span className="font-bold text-red-600">{additionalCharge.toFixed(2)}€</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium">Caution à rembourser</span>
+                      <span className="font-bold text-green-600">{refundAmount.toFixed(2)}€</span>
+                    </>
+                  )}
                 </div>
                 
-                {fuelCharge > 0 && (
-                  <div className="flex justify-between items-center text-red-600">
-                    <span>Supplément carburant</span>
-                    <span>-{fuelCharge.toFixed(2)}€</span>
-                  </div>
-                )}
-
-                {deductions.map(d => (
-                  <div key={d.id} className="flex justify-between items-center text-red-600">
-                    <span>{d.name} (×{d.quantity})</span>
-                    <span>-{(d.quantity * d.unitPrice).toFixed(2)}€</span>
-                  </div>
-                ))}
-
-                {(totalDeductions > 0 || fuelCharge > 0) && (
-                  <div className="flex justify-between items-center pt-2 border-t text-red-600 font-medium">
-                    <span>Total déductions</span>
-                    <span>-{(totalDeductions + fuelCharge).toFixed(2)}€</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center pt-2 border-t text-lg">
-                  <span className="font-medium">Caution à rembourser</span>
-                  <span className="font-bold text-green-600">
-                    {Math.max(0, (booking.depositAmount || 0) - totalDeductions - fuelCharge).toFixed(2)}€
-                  </span>
-                </div>
-
                 <div className="flex items-center gap-2 p-3 bg-yellow-50 rounded-lg mt-4">
-                  <span className="text-2xl">{paymentMethodIcon}</span>
-                  <div>
-                    <p className="font-medium">Mode de remboursement: {paymentMethodLabel}</p>
-                    <p className="text-xs text-gray-500">Même mode que le dépôt de caution au check-in</p>
+                  <span className="text-xl">{contract?.depositMethod === 'CASH' ? '💵' : '💳'}</span>
+                  <div className="text-sm">
+                    <p className="font-medium">Mode de remboursement: {paymentMethod}</p>
+                    <p className="text-gray-500">Identique au dépôt de caution</p>
                   </div>
                 </div>
               </div>
+
+              <button onClick={handleFinalize} disabled={processing}
+                className="w-full py-3 bg-green-600 text-white rounded-lg disabled:opacity-50">
+                {processing ? 'Finalisation...' : 'Finaliser le check-out'}
+              </button>
+            </div>
+          )}
+
+          {/* Step 5: Success */}
+          {step === (isMotorRent ? 5 : 4) && (
+            <div className="text-center py-8">
+              <div className="text-6xl mb-4">✅</div>
+              <h3 className="text-xl font-bold mb-2">Check-out terminé !</h3>
+              <p className="text-gray-600">Le véhicule est maintenant disponible.</p>
+              <p className="text-sm text-gray-500 mt-4">Génération du rapport et de la facture...</p>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t bg-gray-50 flex gap-3">
-          {step > 1 && (
-            <button onClick={() => setStep(step - 1)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm">
-              Retour
-            </button>
-          )}
-          <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm">
-            Annuler
-          </button>
-          <div className="flex-1" />
-          {step < 4 ? (
-            <button onClick={() => setStep(step + 1)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-              Continuer
-            </button>
-          ) : (
-            <button onClick={handleComplete} disabled={loading}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm">
-              {loading ? 'Finalisation...' : 'Terminer le check-out'}
-            </button>
-          )}
-        </div>
+        {/* Footer navigation (for photo step) */}
+        {step === 1 && !showDamageForm && checkInPhotos.length === 0 && (
+          <div className="p-4 border-t bg-gray-50">
+            <button onClick={onClose} className="px-4 py-2 text-gray-600 text-sm">Annuler</button>
+          </div>
+        )}
       </div>
     </div>
   )

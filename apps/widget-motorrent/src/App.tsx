@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-head -200 ./apps/operator/src/App.tsx
 type Lang = 'fr' | 'es' | 'en'
 type Step = 'dates' | 'vehicles' | 'options' | 'customer' | 'payment' | 'confirmation'
 

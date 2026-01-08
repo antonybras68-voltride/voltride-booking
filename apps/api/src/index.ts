@@ -961,6 +961,39 @@ app.put('/api/contracts/:id', async (req, res) => {
 })
 
 
+// ============== SETTINGS ==============
+
+// Get settings
+app.get('/api/settings', async (req, res) => {
+  try {
+    const settings = await prisma.appSettings.findFirst({
+      where: { key: 'legal_texts' }
+    })
+    if (settings) {
+      res.json(settings.value)
+    } else {
+      res.json(null)
+    }
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Save settings
+app.post('/api/settings', async (req, res) => {
+  try {
+    const settings = await prisma.appSettings.upsert({
+      where: { key: 'legal_texts' },
+      update: { value: req.body },
+      create: { key: 'legal_texts', value: req.body }
+    })
+    res.json(settings)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })
 
 // ============== VEHICLE NUMBERING CATEGORIES ==============

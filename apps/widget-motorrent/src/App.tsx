@@ -1,4 +1,12 @@
 import { useState, useEffect } from 'react'
+
+const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
+const BRAND = 'MOTOR-RENT'
+
+interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; openingTime?: string; closingTimeSummer?: string; closingTimeWinter?: string; summerStartDate?: string; summerEndDate?: string }
+interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; helmetIncluded?: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { id: string; name: { fr: string; es: string; en: string }; brand: string }; pricing: any[]; inventory: any[] }
+interface OptionType { id: string; code: string; name: { fr: string; es: string; en: string }; maxQuantity: number; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
+
 type Lang = 'fr' | 'es' | 'en'
 type Step = 'dates' | 'vehicles' | 'options' | 'customer' | 'payment' | 'confirmation'
 
@@ -50,7 +58,7 @@ function App() {
   const [step, setStep] = useState<Step>('dates')
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
-  const [options, setOptions] = useState<Option[]>([])
+  const [options, setOptions] = useState<OptionType[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAgency, setSelectedAgency] = useState<string>('')
   const [startDate, setStartDate] = useState('')
@@ -180,7 +188,7 @@ function App() {
   }
 
   // Filtrer les options pour ne montrer que celles liées aux catégories sélectionnées
-  const getFilteredOptions = (): Option[] => {
+  const getFilteredOptions = (): OptionType[] => {
     const selectedCatIds = getSelectedCategoryIds()
     return options.filter(opt => {
       if (!opt.categories || opt.categories.length === 0) return false

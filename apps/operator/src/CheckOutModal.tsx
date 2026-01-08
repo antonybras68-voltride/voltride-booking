@@ -43,6 +43,8 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
   // Computed
   const [deductions, setDeductions] = useState<any[]>([])
   const [fuelCharge, setFuelCharge] = useState(0)
+  const [extraKmCharge, setExtraKmCharge] = useState(0)
+  const [extraKmCount, setExtraKmCount] = useState(0)
   
   const isMotorRent = brand === 'MOTOR-RENT'
 
@@ -190,8 +192,31 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
     setFuelCharge(selected?.charge || 0)
   }
 
+  // Calculate extra km when mileage changes
+  const calculateExtraKm = (newMileage: number) => {
+    setEndMileage(newMileage)
+    
+    const startMileage = contract?.startMileage || 0
+    const kmDriven = Math.max(0, newMileage - startMileage)
+    
+    // Get vehicle tariff settings
+    const kmIncludedPerDay = booking.fleetVehicle?.vehicle?.kmIncludedPerDay || 100
+    const extraKmPrice = parseFloat(booking.fleetVehicle?.vehicle?.extraKmPrice) || 0.15
+    
+    // Calculate days of rental
+    const startDate = new Date(booking.startDate)
+    const endDate = new Date()
+    const days = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+    
+    const kmIncluded = days * kmIncludedPerDay
+    const extraKm = Math.max(0, kmDriven - kmIncluded)
+    
+    setExtraKmCount(extraKm)
+    setExtraKmCharge(extraKm * extraKmPrice)
+  }
+
   // Calculate totals
-  const totalDeductions = deductions.reduce((sum, d) => sum + d.price, 0) + fuelCharge
+  const totalDeductions = deductions.reduce((sum, d) => sum + d.price, 0) + fuelCharge + extraKmCharge
   const depositAmount = booking.depositAmount || contract?.depositAmount || 0
   const refundAmount = Math.max(0, depositAmount - totalDeductions)
   const additionalCharge = totalDeductions > depositAmount ? totalDeductions - depositAmount : 0
@@ -244,6 +269,21 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
               quantity: 1,
               unitPrice: fuelCharge,
               totalPrice: fuelCharge
+            })
+          })
+        }
+
+        // Add extra km charge if any
+        if (extraKmCharge > 0) {
+          await fetch(`${API_URL}/api/contracts/${contract.id}/deductions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'EXTRA_KM',
+              description: `Km supplémentaires: ${extraKmCount} km × ${booking.fleetVehicle?.vehicle?.extraKmPrice || 0.15}€`,
+              quantity: extraKmCount,
+              unitPrice: booking.fleetVehicle?.vehicle?.extraKmPrice || 0.15,
+              totalPrice: extraKmCharge
             })
           })
         }
@@ -476,7 +516,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
               <h3 className="font-medium text-center">Kilométrage au retour</h3>
               
               <div className="flex items-center justify-center gap-4">
-                <input type="number" value={endMileage} onChange={e => setEndMileage(parseInt(e.target.value) || 0)}
+                <input type="number" value={endMileage} onChange={e => calculateExtraKm(parseInt(e.target.value) || 0)}
                   className="w-40 text-center text-2xl font-mono border-2 rounded-xl p-4" />
                 <span className="text-gray-500">km</span>
               </div>
@@ -486,6 +526,29 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
                   Départ: {contract.startMileage} km → <strong>+{endMileage - contract.startMileage} km</strong> parcourus
                 </div>
               )}
+
+              {/* Extra km info */}
+              <div className="p-4 bg-gray-50 rounded-lg space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Km inclus ({booking.fleetVehicle?.vehicle?.kmIncludedPerDay || 100} km/jour)</span>
+                  <span>{Math.max(1, Math.ceil((new Date().getTime() - new Date(booking.startDate).getTime()) / (1000 * 60 * 60 * 24))) * (booking.fleetVehicle?.vehicle?.kmIncludedPerDay || 100)} km</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Km parcourus</span>
+                  <span>{endMileage - (contract?.startMileage || 0)} km</span>
+                </div>
+                {extraKmCount > 0 && (
+                  <div className="flex justify-between text-red-600 font-medium pt-2 border-t">
+                    <span>Km supplémentaires ({extraKmCount} × {booking.fleetVehicle?.vehicle?.extraKmPrice || 0.15}€)</span>
+                    <span>+{extraKmCharge.toFixed(2)}€</span>
+                  </div>
+                )}
+                {extraKmCount === 0 && (
+                  <div className="text-green-600 text-center pt-2 border-t">
+                    ✓ Dans la limite des km inclus
+                  </div>
+                )}
+              </div>
 
               <button onClick={() => setStep(isMotorRent ? 4 : 3)}
                 className="w-full py-3 bg-blue-600 text-white rounded-lg">
@@ -524,8 +587,16 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
                 </div>
               )}
 
+              {/* Extra km charge */}
+              {extraKmCharge > 0 && (
+                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                  <span>Km supplémentaires ({extraKmCount} km)</span>
+                  <span className="font-bold text-purple-600">-{extraKmCharge.toFixed(2)}€</span>
+                </div>
+              )}
+
               {/* No issues */}
-              {deductions.length === 0 && fuelCharge === 0 && (
+              {deductions.length === 0 && fuelCharge === 0 && extraKmCharge === 0 && (
                 <div className="p-4 bg-green-50 rounded-lg text-center text-green-700">
                   Aucun dommage constaté
                 </div>

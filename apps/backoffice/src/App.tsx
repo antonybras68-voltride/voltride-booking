@@ -6,7 +6,7 @@ type Tab = 'dashboard' | 'bookings' | 'vehicles' | 'inventory' | 'agencies' | 'c
 
 interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean }
 interface Category { id: string; code: string; name: any; brand: string; bookingFee: number; _count?: { vehicles: number }; options?: any[] }
-interface Vehicle { id: string; sku: string; name: any; description: any; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; helmetIncluded?: boolean; imageUrl?: string; categoryId: string; category?: Category; pricing: any[]; inventory: any[] }
+interface Vehicle { id: string; sku: string; name: any; description: any; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; kmIncludedPerDay?: number; extraKmPrice?: number; helmetIncluded?: boolean; imageUrl?: string; categoryId: string; category?: Category; pricing: any[]; inventory: any[] }
 interface Option { id: string; code: string; name: any; maxQuantity: number; includedByDefault: boolean; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
 interface Booking { id: string; reference: string; agency: Agency; customer: any; startDate: string; endDate: string; startTime: string; endTime: string; totalPrice: number; depositAmount: number; status: string; items: any[]; options: any[] }
 interface Customer { id: string; firstName: string; lastName: string; email: string; phone: string; city?: string; country: string }
@@ -402,7 +402,7 @@ function VehicleModal({ vehicle, categories, onSave, onClose }: { vehicle: any; 
   const [form, setForm] = useState({
     sku: vehicle?.sku || '', nameFr: vehicle?.name?.fr || '', nameEs: vehicle?.name?.es || '', nameEn: vehicle?.name?.en || '',
     descFr: vehicle?.description?.fr || '', descEs: vehicle?.description?.es || '', descEn: vehicle?.description?.en || '',
-    deposit: vehicle?.deposit || 0, hasPlate: vehicle?.hasPlate || false, licenseTypeFr: vehicle?.licenseType?.fr || '', licenseTypeEs: vehicle?.licenseType?.es || '', licenseTypeEn: vehicle?.licenseType?.en || '', kmIncludedFr: vehicle?.kmIncluded?.fr || '', kmIncludedEs: vehicle?.kmIncluded?.es || '', kmIncludedEn: vehicle?.kmIncluded?.en || '', helmetIncluded: vehicle?.helmetIncluded ?? true, categoryId: vehicle?.categoryId || '', imageUrl: vehicle?.imageUrl || '',
+    deposit: vehicle?.deposit || 0, hasPlate: vehicle?.hasPlate || false, licenseTypeFr: vehicle?.licenseType?.fr || '', licenseTypeEs: vehicle?.licenseType?.es || '', licenseTypeEn: vehicle?.licenseType?.en || '', kmIncludedFr: vehicle?.kmIncluded?.fr || '', kmIncludedEs: vehicle?.kmIncluded?.es || '', kmIncludedEn: vehicle?.kmIncluded?.en || '', kmIncludedPerDay: vehicle?.kmIncludedPerDay || 100, extraKmPrice: vehicle?.extraKmPrice || 0.15, helmetIncluded: vehicle?.helmetIncluded ?? true, categoryId: vehicle?.categoryId || '', imageUrl: vehicle?.imageUrl || '',
     pricing: vehicle?.pricing?.[0] || {}
   })
   const [uploading, setUploading] = useState(false)
@@ -423,7 +423,7 @@ function VehicleModal({ vehicle, categories, onSave, onClose }: { vehicle: any; 
   const handleSubmit = () => onSave({
     sku: form.sku, name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn },
     description: { fr: form.descFr, es: form.descEs, en: form.descEn },
-    deposit: parseFloat(String(form.deposit)), hasPlate: form.hasPlate, licenseType: { fr: form.licenseTypeFr, es: form.licenseTypeEs, en: form.licenseTypeEn }, kmIncluded: { fr: form.kmIncludedFr, es: form.kmIncludedEs, en: form.kmIncludedEn }, helmetIncluded: form.helmetIncluded, categoryId: form.categoryId, imageUrl: form.imageUrl,
+    deposit: parseFloat(String(form.deposit)), hasPlate: form.hasPlate, licenseType: { fr: form.licenseTypeFr, es: form.licenseTypeEs, en: form.licenseTypeEn }, kmIncluded: { fr: form.kmIncludedFr, es: form.kmIncludedEs, en: form.kmIncludedEn }, kmIncludedPerDay: parseInt(String(form.kmIncludedPerDay)) || 100, extraKmPrice: parseFloat(String(form.extraKmPrice)) || 0.15, helmetIncluded: form.helmetIncluded, categoryId: form.categoryId, imageUrl: form.imageUrl,
     pricing: form.pricing
   })
 
@@ -463,6 +463,16 @@ function VehicleModal({ vehicle, categories, onSave, onClose }: { vehicle: any; 
               <input type="text" placeholder="FR: 100km/jour" value={form.kmIncludedFr} onChange={e => setForm({ ...form, kmIncludedFr: e.target.value })} className="p-2 border rounded text-sm" />
               <input type="text" placeholder="ES: 100km/día" value={form.kmIncludedEs} onChange={e => setForm({ ...form, kmIncludedEs: e.target.value })} className="p-2 border rounded text-sm" />
               <input type="text" placeholder="EN: 100km/day" value={form.kmIncludedEn} onChange={e => setForm({ ...form, kmIncludedEn: e.target.value })} className="p-2 border rounded text-sm" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-gray-500">Km inclus/jour (calcul)</label>
+                <input type="number" value={form.kmIncludedPerDay} onChange={e => setForm({ ...form, kmIncludedPerDay: e.target.value })} className="w-full p-2 border rounded text-sm" placeholder="100" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Prix km suppl. (€)</label>
+                <input type="number" step="0.01" value={form.extraKmPrice} onChange={e => setForm({ ...form, extraKmPrice: e.target.value })} className="w-full p-2 border rounded text-sm" placeholder="0.15" />
+              </div>
             </div>
           </div>
           <label className="flex items-center gap-2 p-2 border rounded">

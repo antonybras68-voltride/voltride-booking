@@ -54,18 +54,22 @@ export default function App() {
     phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES'
   })
   const [walkinMode, setWalkinMode] = useState('tablet') // 'tablet' | 'manual'
-  const [settings, setSettings] = useState({
-    cgv: {
-      fr: "CONDITIONS GÉNÉRALES DE LOCATION\n\n1. Le locataire s'engage à utiliser le véhicule de manière responsable.\n2. Le véhicule doit être restitué dans le même état.\n3. Tout dommage sera facturé au locataire.\n4. La caution sera restituée après vérification.",
-      es: "CONDICIONES GENERALES DE ALQUILER\n\n1. El arrendatario se compromete a utilizar el vehículo de manera responsable.\n2. El vehículo debe ser devuelto en el mismo estado.\n3. Cualquier daño será facturado al arrendatario.\n4. La fianza será devuelta tras la verificación.",
-      en: "GENERAL RENTAL CONDITIONS\n\n1. The tenant agrees to use the vehicle responsibly.\n2. The vehicle must be returned in the same condition.\n3. Any damage will be charged to the tenant.\n4. The deposit will be refunded after verification."
+  const [settings, setSettings] = useState<any>({
+    voltride: {
+      cgvResume: { fr: '', es: '', en: '' },
+      cgvComplete: { fr: '', es: '', en: '' },
+      rgpd: { fr: '', es: '', en: '' },
+      mentionsLegales: { fr: '', es: '', en: '' }
     },
-    rgpd: {
-      fr: "POLITIQUE RGPD\n\nVos données personnelles sont collectées uniquement pour la gestion de votre location. Elles ne seront pas transmises à des tiers sans votre consentement.",
-      es: "POLÍTICA RGPD\n\nSus datos personales se recopilan únicamente para la gestión de su alquiler. No se transmitirán a terceros sin su consentimiento.",
-      en: "GDPR POLICY\n\nYour personal data is collected only for the management of your rental. It will not be transmitted to third parties without your consent."
+    motorrent: {
+      cgvResume: { fr: '', es: '', en: '' },
+      cgvComplete: { fr: '', es: '', en: '' },
+      rgpd: { fr: '', es: '', en: '' },
+      mentionsLegales: { fr: '', es: '', en: '' }
     }
   })
+  const [settingsTab, setSettingsTab] = useState<'voltride' | 'motorrent'>('voltride')
+  const [settingsSection, setSettingsSection] = useState<string>('cgvResume')
 
   const days = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(weekStart)

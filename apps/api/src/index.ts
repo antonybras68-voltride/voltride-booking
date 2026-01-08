@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import { PrismaClient } from '@prisma/client'
 import Stripe from 'stripe'
+import { generateContractPDF, generateInvoicePDF } from './pdfGenerator'
 
 const stripeVoltride = process.env.STRIPE_SECRET_KEY_VOLTRIDE ? new Stripe(process.env.STRIPE_SECRET_KEY_VOLTRIDE, { apiVersion: '2024-12-18.acacia' as any }) : null
 const stripeMotorrent = process.env.STRIPE_SECRET_KEY_MOTORRENT ? new Stripe(process.env.STRIPE_SECRET_KEY_MOTORRENT, { apiVersion: '2024-12-18.acacia' as any }) : null
@@ -993,6 +994,66 @@ app.post('/api/settings', async (req, res) => {
   }
 })
 
+
+
+// ============== PDF GENERATION ==============
+// Générer le PDF du contrat
+app.get('/api/contracts/:id/pdf', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findUnique({
+      where: { id: req.params.id },
+      include: {
+        customer: true,
+        fleetVehicle: { include: { vehicle: { include: { category: true } } } },
+        agency: true
+      }
+    })
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+    
+    const brand = contract.fleetVehicle?.vehicle?.category?.brand || 'VOLTRIDE'
+    const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
+    const lang = (req.query.lang as string) || 'fr'
+    
+    const pdfBuffer = await generateContractPDF(contract, brandSettings, lang)
+    
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="contrat-${contract.contractNumber}.pdf"`)
+    res.send(pdfBuffer)
+  } catch (e: any) {
+    console.error('PDF generation error:', e)
+    res.status(500).json({ error: 'Failed to generate PDF', details: e.message })
+  }
+})
+
+// Générer le PDF de la facture
+app.get('/api/contracts/:id/invoice-pdf', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findUnique({
+      where: { id: req.params.id },
+      include: {
+        customer: true,
+        fleetVehicle: { include: { vehicle: { include: { category: true } } } },
+        agency: true
+      }
+    })
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+    
+    const brand = contract.fleetVehicle?.vehicle?.category?.brand || 'VOLTRIDE'
+    const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
+    const lang = (req.query.lang as string) || 'fr'
+    
+    const pdfBuffer = await generateInvoicePDF(contract, brandSettings, lang)
+    
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="facture-${contract.contractNumber}.pdf"`)
+    res.send(pdfBuffer)
+  } catch (e: any) {
+    console.error('Invoice PDF generation error:', e)
+    res.status(500).json({ error: 'Failed to generate invoice PDF', details: e.message })
+  }
+})
+
+console.log('PDF routes loaded')
 
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })
 

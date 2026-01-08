@@ -78,6 +78,10 @@ export default function App() {
   })
 
   useEffect(() => { loadData() }, [selectedAgency, brand])
+  useEffect(() => { 
+    loadBrandSettings('VOLTRIDE')
+    loadBrandSettings('MOTOR-RENT')
+  }, [])
   useEffect(() => {
     const handleClick = () => setContextMenu(null)
     window.addEventListener('click', handleClick)

@@ -1,5 +1,4 @@
 // ============== API ==============
-
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 
 export const api = {
@@ -15,12 +14,10 @@ export const api = {
     const res = await fetch(API_URL + '/api/fleet' + query)
     return res.json()
   },
-
   getAvailableFleet: async (agencyId) => {
     const res = await fetch(API_URL + '/api/fleet/available?agencyId=' + agencyId)
     return res.json()
   },
-
   updateFleetVehicle: async (id, data) => {
     const res = await fetch(API_URL + '/api/fleet/' + id, {
       method: 'PUT',
@@ -36,7 +33,6 @@ export const api = {
     const res = await fetch(API_URL + '/api/bookings' + query)
     return res.json()
   },
-
   createBooking: async (data) => {
     const res = await fetch(API_URL + '/api/bookings/operator', {
       method: 'POST',
@@ -45,7 +41,6 @@ export const api = {
     })
     return res.json()
   },
-
   updateBooking: async (id, data) => {
     const res = await fetch(API_URL + '/api/bookings/' + id, {
       method: 'PUT',
@@ -54,7 +49,6 @@ export const api = {
     })
     return res.json()
   },
-
   cancelBooking: async (id, reason) => {
     const res = await fetch(API_URL + '/api/bookings/' + id + '/cancel', {
       method: 'PUT',
@@ -69,7 +63,6 @@ export const api = {
     const res = await fetch(API_URL + '/api/customers')
     return res.json()
   },
-
   searchCustomers: async (query) => {
     const res = await fetch(API_URL + '/api/customers/search?q=' + encodeURIComponent(query))
     return res.json()
@@ -80,7 +73,6 @@ export const api = {
     const res = await fetch(API_URL + '/api/contracts')
     return res.json()
   },
-
   createContract: async (data) => {
     const res = await fetch(API_URL + '/api/contracts', {
       method: 'POST',
@@ -102,6 +94,25 @@ export const api = {
     })
     const data = await res.json()
     return data.secure_url
+  },
+
+  // Brand Settings
+  getBrandSettings: async (brand: string) => {
+    const res = await fetch(API_URL + '/api/brand-settings/' + brand)
+    if (!res.ok) return null
+    return res.json()
+  },
+  getAllBrandSettings: async () => {
+    const res = await fetch(API_URL + '/api/brand-settings')
+    return res.json()
+  },
+  saveBrandSettings: async (brand: string, data: any) => {
+    const res = await fetch(API_URL + '/api/brand-settings/' + brand, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    return res.json()
   }
 }
 

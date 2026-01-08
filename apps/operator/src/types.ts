@@ -192,9 +192,17 @@ export interface ContractExtension {
 export type Brand = 'VOLTRIDE' | 'MOTOR-RENT'
 export type Language = 'fr' | 'es' | 'en'
 
-// Helper
+// Helper - CORRIGÉ pour éviter l'erreur "Cannot read properties of undefined"
 export const getName = (obj: any, lang: Language = 'fr'): string => {
+  // Si obj est null, undefined ou vide
   if (!obj) return ''
+  
+  // Si obj est déjà une string, on la retourne directement
   if (typeof obj === 'string') return obj
+  
+  // Si obj n'est pas un objet (nombre, tableau, etc.), on retourne une string vide
+  if (typeof obj !== 'object' || Array.isArray(obj)) return ''
+  
+  // Maintenant on peut accéder aux propriétés en toute sécurité
   return obj[lang] || obj.fr || obj.es || obj.en || ''
 }

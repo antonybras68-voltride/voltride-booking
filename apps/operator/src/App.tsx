@@ -199,6 +199,45 @@ export default function App() {
     setLoading(false)
   }
 
+  // Charger les paramètres d'une marque
+  const loadBrandSettings = async (brandName: string) => {
+    try {
+      const data = await api.getBrandSettings(brandName)
+      if (data) {
+        const tab = brandName === 'VOLTRIDE' ? 'voltride' : 'motorrent'
+        setSettings(prev => ({
+          ...prev,
+          [tab]: {
+            ...data,
+            cgvResume: data.cgvResume || { fr: '', es: '', en: '' },
+            cgvComplete: data.cgvComplete || { fr: '', es: '', en: '' },
+            rgpd: data.rgpd || { fr: '', es: '', en: '' },
+            mentionsLegales: data.mentionsLegales || { fr: '', es: '', en: '' }
+          }
+        }))
+      }
+    } catch (e) { console.error('Erreur chargement settings:', e) }
+  }
+
+  // Sauvegarder les paramètres
+  const handleSaveSettings = async () => {
+    try {
+      const brandName = settingsTab === 'voltride' ? 'VOLTRIDE' : 'MOTOR-RENT'
+      const data = settings[settingsTab]
+      await api.saveBrandSettings(brandName, {
+        name: data?.name || brandName,
+        cgvResume: data?.cgvResume,
+        cgvComplete: data?.cgvComplete,
+        rgpd: data?.rgpd,
+        mentionsLegales: data?.mentionsLegales
+      })
+      alert('✅ Paramètres sauvegardés avec succès !')
+    } catch (e) {
+      console.error('Erreur sauvegarde:', e)
+      alert('❌ Erreur lors de la sauvegarde')
+    }
+  }
+
   const formatDate = (d) => d.toISOString().split('T')[0]
   const today = formatDate(new Date())
   const todayDepartures = bookings.filter(b => b.startDate?.split('T')[0] === today && !b.checkedIn)

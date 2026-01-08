@@ -1234,19 +1234,48 @@ export default function App() {
               </div>
               
               {/* Sélecteur de marque */}
-              <div className="flex gap-2">
-                <button onClick={() => setSettingsTab('voltride')} 
-                  className={'px-4 py-2 rounded-lg font-medium ' + (settingsTab === 'voltride' ? 'bg-blue-600 text-white' : 'bg-gray-100')}>
+              <div className="flex gap-2 mb-4">
+                <button onClick={() => { setSettingsTab('voltride'); loadBrandSettings('VOLTRIDE') }} 
+                  className={'px-4 py-2 rounded-lg font-medium flex items-center gap-2 ' + (settingsTab === 'voltride' ? 'bg-blue-600 text-white' : 'bg-gray-100')}>
+                  <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766928342/d5uv1qrfwr86rd1abtd1.png" className="h-6" alt="Voltride" />
                   Voltride
                 </button>
-                <button onClick={() => setSettingsTab('motorrent')} 
-                  className={'px-4 py-2 rounded-lg font-medium ' + (settingsTab === 'motorrent' ? 'bg-orange-600 text-white' : 'bg-gray-100')}>
+                <button onClick={() => { setSettingsTab('motorrent'); loadBrandSettings('MOTOR-RENT') }} 
+                  className={'px-4 py-2 rounded-lg font-medium flex items-center gap-2 ' + (settingsTab === 'motorrent' ? 'bg-orange-600 text-white' : 'bg-gray-100')}>
+                  <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766930480/logo-2024-e1699439584325-removebg-preview_sv6yxg.png" className="h-6" alt="Motor-Rent" />
                   Motor-Rent
                 </button>
               </div>
 
+              {/* Sélecteur de section */}
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { id: 'cgvResume', label: '📄 CGV Résumé', desc: 'Version courte pour le contrat' },
+                  { id: 'cgvComplete', label: '📋 CGV Complètes', desc: 'Version complète (verso)' },
+                  { id: 'rgpd', label: '🔒 RGPD', desc: 'Politique de confidentialité' },
+                  { id: 'mentionsLegales', label: '⚖️ Mentions Légales', desc: 'Pour les factures' }
+                ].map(s => (
+                  <button key={s.id} onClick={() => setSettingsSection(s.id)}
+                    className={'px-3 py-2 rounded-lg text-sm ' + (settingsSection === s.id ? 'bg-gray-800 text-white' : 'bg-gray-100 hover:bg-gray-200')}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Zone d'édition */}
               <div className="bg-white rounded-xl shadow p-6">
-                <h3 className="text-lg font-bold mb-4">Conditions Générales de Vente (CGV) - Résumé</h3>
+                <h3 className="text-lg font-bold mb-2">
+                  {settingsSection === 'cgvResume' && '📄 Conditions Générales de Vente - Résumé'}
+                  {settingsSection === 'cgvComplete' && '📋 Conditions Générales de Vente - Complètes'}
+                  {settingsSection === 'rgpd' && '🔒 Politique RGPD'}
+                  {settingsSection === 'mentionsLegales' && '⚖️ Mentions Légales'}
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  {settingsSection === 'cgvResume' && 'Version courte affichée sur le recto du contrat de location'}
+                  {settingsSection === 'cgvComplete' && 'Version complète affichée au verso du contrat'}
+                  {settingsSection === 'rgpd' && 'Politique de protection des données personnelles'}
+                  {settingsSection === 'mentionsLegales' && 'Mentions légales pour les factures et documents officiels'}
+                </p>
                 <div className="space-y-4">
                   {['fr', 'es', 'en'].map(lang => (
                     <div key={lang}>
@@ -1254,36 +1283,35 @@ export default function App() {
                         {lang === 'fr' ? '🇫🇷 Français' : lang === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}
                       </label>
                       <textarea
-                        value={settings[settingsTab]?.cgvResume?.[lang] || ''}
-                        onChange={e => setSettings({...settings, [settingsTab]: {...settings[settingsTab], cgvResume: {...settings[settingsTab]?.cgvResume, [lang]: e.target.value}}})}
-                        className="w-full border rounded-lg p-3 h-32"
+                        value={settings[settingsTab]?.[settingsSection]?.[lang] || ''}
+                        onChange={e => setSettings({
+                          ...settings, 
+                          [settingsTab]: {
+                            ...settings[settingsTab], 
+                            [settingsSection]: {
+                              ...settings[settingsTab]?.[settingsSection], 
+                              [lang]: e.target.value
+                            }
+                          }
+                        })}
+                        className="w-full border rounded-lg p-3 h-40 font-mono text-sm"
+                        placeholder={`Entrez le texte en ${lang === 'fr' ? 'français' : lang === 'es' ? 'espagnol' : 'anglais'}...`}
                       />
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow p-6">
-                <h3 className="text-lg font-bold mb-4">Politique RGPD</h3>
-                <div className="space-y-4">
-                  {['fr', 'es', 'en'].map(lang => (
-                    <div key={lang}>
-                      <label className="block text-sm font-medium mb-1">
-                        {lang === 'fr' ? '🇫🇷 Français' : lang === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}
-                      </label>
-                      <textarea
-                        value={settings[settingsTab]?.rgpd?.[lang] || ''}
-                        onChange={e => setSettings({...settings, [settingsTab]: {...settings[settingsTab], rgpd: {...settings[settingsTab]?.rgpd, [lang]: e.target.value}}})}
-                        className="w-full border rounded-lg p-3 h-24"
-                      />
-                    </div>
-                  ))}
-                </div>
+              {/* Boutons d'action */}
+              <div className="flex gap-3">
+                <button onClick={handleSaveSettings} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+                  💾 Sauvegarder les paramètres
+                </button>
+                <button onClick={() => loadBrandSettings(settingsTab === 'voltride' ? 'VOLTRIDE' : 'MOTOR-RENT')} 
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                  🔄 Recharger
+                </button>
               </div>
-
-              <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                💾 Sauvegarder les paramètres
-              </button>
             </div>
           )}
 

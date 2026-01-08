@@ -2153,7 +2153,11 @@ app.post('/api/brand-settings', async (req, res) => {
         termsAndConditionsUrl: req.body.termsAndConditionsUrl,
         privacyPolicyUrl: req.body.privacyPolicyUrl,
         emailFromName: req.body.emailFromName,
-        emailFromAddress: req.body.emailFromAddress
+        emailFromAddress: req.body.emailFromAddress,
+        cgvResume: req.body.cgvResume,
+        cgvComplete: req.body.cgvComplete,
+        rgpd: req.body.rgpd,
+        mentionsLegales: req.body.mentionsLegales
       }
     })
     res.json(settings)
@@ -2188,7 +2192,11 @@ app.put('/api/brand-settings/:brand', async (req, res) => {
         privacyPolicyUrl: req.body.privacyPolicyUrl,
         emailFromName: req.body.emailFromName,
         emailFromAddress: req.body.emailFromAddress,
-        isActive: req.body.isActive
+        isActive: req.body.isActive,
+        cgvResume: req.body.cgvResume,
+        cgvComplete: req.body.cgvComplete,
+        rgpd: req.body.rgpd,
+        mentionsLegales: req.body.mentionsLegales
       }
     })
     res.json(settings)

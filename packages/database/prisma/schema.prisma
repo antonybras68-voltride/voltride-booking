@@ -1132,6 +1132,13 @@ model BrandSettings {
   privacyPolicyUrl       String?
   emailFromName          String?
   emailFromAddress       String?
+  
+  // CGV et documents légaux (JSON avec fr/es/en)
+  cgvResume              Json?    // { fr: "...", es: "...", en: "..." }
+  cgvComplete            Json?    // { fr: "...", es: "...", en: "..." }
+  rgpd                   Json?    // { fr: "...", es: "...", en: "..." }
+  mentionsLegales        Json?    // { fr: "...", es: "...", en: "..." }
+  
   isActive               Boolean  @default(true)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt

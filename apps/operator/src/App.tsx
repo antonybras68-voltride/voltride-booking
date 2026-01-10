@@ -270,6 +270,22 @@ export default function App() {
     } catch (e) { console.error('Erreur chargement utilisateurs:', e) }
   }
 
+  // Vérifier si l'utilisateur a accès à une permission
+  const hasPermission = (permissionId: string): boolean => {
+    if (!user) return false
+    // Admin a toujours accès à tout
+    if (user.role === 'ADMIN') return true
+    // Chercher dans les permissions chargées
+    const perm = permissions.find(p => p.role === user.role && p.permission === permissionId)
+    if (perm) return perm.allowed
+    // Permissions par défaut si pas trouvé
+    const defaults: Record<string, string[]> = {
+      MANAGER: ['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices'],
+      OPERATOR: ['dashboard', 'planning', 'bookings', 'checkout']
+    }
+    return defaults[user.role]?.includes(permissionId) ?? false
+  }
+
   useEffect(() => { 
     loadBrandSettings('VOLTRIDE')
     loadBrandSettings('MOTOR-RENT')
@@ -733,7 +749,7 @@ export default function App() {
             { id: 'contracts', label: t[lang].contracts },
             { id: 'invoices', label: t[lang].invoices },
             { id: 'settings', label: t[lang].settings },
-          ].map(item => (
+          ].filter(item => hasPermission(item.id)).map(item => (
             <button key={item.id} onClick={() => setTab(item.id)}
               className={'w-full text-left px-4 py-2.5 rounded-xl mb-1 transition-all ' +
                 (tab === item.id ? 'bg-white/90 text-gray-800 font-semibold shadow-md' : 'text-white/90 hover:bg-white/20')}>
@@ -1770,6 +1786,13 @@ export default function App() {
                   <option value="ADMIN">Admin</option>
                   <option value="MANAGER">Manager</option>
                   <option value="OPERATOR">Opérateur</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{t[lang].language}</label>
+                <select name="language" defaultValue={editingUser?.language || 'es'} className="w-full border rounded-lg px-3 py-2">
+                  <option value="es">🇪🇸 Español</option>
+                  <option value="fr">🇫🇷 Français</option>
                 </select>
               </div>
               <div>

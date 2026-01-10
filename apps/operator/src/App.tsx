@@ -564,7 +564,11 @@ export default function App() {
           <div className="bg-white/20 rounded-xl p-3">
             <div className="text-white font-medium text-sm">{user?.firstName} {user?.lastName}</div>
             <div className="text-white/70 text-xs">{user?.role}</div>
-            <button onClick={handleLogout} className="mt-2 w-full py-1.5 bg-white/30 hover:bg-white/50 text-white text-sm rounded-lg transition">
+            <button 
+              type="button"
+              onClick={() => { console.log('Logout clicked'); handleLogout(); }}
+              className="mt-2 w-full py-2 bg-red-500/80 hover:bg-red-600 text-white text-sm rounded-lg transition font-medium"
+            >
               🚪 Déconnexion
             </button>
           </div>

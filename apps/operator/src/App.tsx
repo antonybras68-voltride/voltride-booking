@@ -35,6 +35,7 @@ export default function App() {
     localStorage.removeItem('user')
     setUser(null)
     setToken(null)
+    window.location.reload()
   }
 
   const [tab, setTab] = useState('planning')

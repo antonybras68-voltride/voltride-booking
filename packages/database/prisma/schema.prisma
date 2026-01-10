@@ -1243,6 +1243,7 @@ model User {
   role          UserRole @default(OPERATOR)
   brands        String[] // ['VOLTRIDE', 'MOTOR-RENT']
   agencyIds     String[] // IDs des agences autorisées
+  language      String   @default("es") // fr, es
   isActive      Boolean  @default(true)
   lastLoginAt   DateTime?
   createdAt     DateTime @default(now())

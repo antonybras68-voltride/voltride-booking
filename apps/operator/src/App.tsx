@@ -13,7 +13,7 @@ export default function App() {
   const [user, setUser] = useState<any>(null)
   const [token, setToken] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
-  const [lang, setLang] = useState<'fr' | 'es'>(() => (localStorage.getItem('lang') as 'fr' | 'es') || 'fr')
+  const [lang, setLang] = useState<'fr' | 'es'>(() => (localStorage.getItem('lang') as 'fr' | 'es') || 'es')
   
   // Traductions
   const t: Record<string, Record<string, string>> = {
@@ -52,7 +52,36 @@ export default function App() {
       status: 'Statut',
       actions: 'Actions',
       active: 'Actif',
-      inactive: 'Inactif'
+      inactive: 'Inactif',
+      vehicle: 'Véhicule',
+      today: "Aujourd'hui",
+      previous: 'Précédent',
+      next: 'Suivant',
+      confirmed: 'Confirmé',
+      confirmedAlt: 'Confirmé (alt)',
+      checkedIn: 'Check-in fait',
+      dragTip: 'Glissez-déposez pour déplacer • Tirez les bords pour étendre • Double-clic pour check-in • Clic droit pour options',
+      openBackoffice: 'Ouvrir le Backoffice',
+      cgvResume: 'CGV Résumé',
+      cgvComplete: 'CGV Complètes',
+      rgpd: 'RGPD',
+      legalMentions: 'Mentions Légales',
+      french: 'Français',
+      spanish: 'Español',
+      english: 'English',
+      enterText: 'Entrez le texte en',
+      saveSettings: 'Sauvegarder les paramètres',
+      reload: 'Recharger',
+      editUser: 'Modifier utilisateur',
+      newPassword: 'Nouveau mot de passe (laisser vide pour ne pas changer)',
+      authorizedBrands: 'Marques autorisées',
+      activeUser: 'Utilisateur actif',
+      confirmDelete: 'Supprimer cet utilisateur ?',
+      module: 'Module',
+      toDevelop: 'À développer',
+      walkin: 'Walk-in',
+      checkin: 'Check-in',
+      language: 'Langue'
     },
     es: {
       dashboard: 'Panel',
@@ -89,7 +118,36 @@ export default function App() {
       status: 'Estado',
       actions: 'Acciones',
       active: 'Activo',
-      inactive: 'Inactivo'
+      inactive: 'Inactivo',
+      vehicle: 'Vehículo',
+      today: 'Hoy',
+      previous: 'Anterior',
+      next: 'Siguiente',
+      confirmed: 'Confirmado',
+      confirmedAlt: 'Confirmado (alt)',
+      checkedIn: 'Check-in hecho',
+      dragTip: 'Arrastre para mover • Tire los bordes para extender • Doble clic para check-in • Clic derecho para opciones',
+      openBackoffice: 'Abrir Backoffice',
+      cgvResume: 'CGV Resumen',
+      cgvComplete: 'CGV Completas',
+      rgpd: 'RGPD',
+      legalMentions: 'Menciones Legales',
+      french: 'Français',
+      spanish: 'Español',
+      english: 'English',
+      enterText: 'Ingrese el texto en',
+      saveSettings: 'Guardar ajustes',
+      reload: 'Recargar',
+      editUser: 'Editar usuario',
+      newPassword: 'Nueva contraseña (dejar vacío para no cambiar)',
+      authorizedBrands: 'Marcas autorizadas',
+      activeUser: 'Usuario activo',
+      confirmDelete: '¿Eliminar este usuario?',
+      module: 'Módulo',
+      toDevelop: 'Por desarrollar',
+      walkin: 'Walk-in',
+      checkin: 'Check-in',
+      language: 'Idioma'
     }
   }
 
@@ -107,6 +165,10 @@ export default function App() {
   const handleLogin = (userData: any, userToken: string) => {
     setUser(userData)
     setToken(userToken)
+    if (userData.language) {
+      setLang(userData.language as 'fr' | 'es')
+      localStorage.setItem('lang', userData.language)
+    }
   }
 
   const handleLogout = () => {

@@ -1038,7 +1038,8 @@ app.post('/api/auth/login', async (req, res) => {
         lastName: user.lastName,
         role: user.role,
         brands: user.brands,
-        agencyIds: user.agencyIds
+        agencyIds: user.agencyIds,
+        language: user.language
       }
     })
   } catch (e: any) {
@@ -1089,7 +1090,8 @@ app.post('/api/users', async (req, res) => {
         lastName: req.body.lastName,
         role: req.body.role || 'OPERATOR',
         brands: req.body.brands || ['VOLTRIDE', 'MOTOR-RENT'],
-        agencyIds: req.body.agencyIds || []
+        agencyIds: req.body.agencyIds || [],
+        language: req.body.language || 'es'
       }
     })
     res.json({ ...user, password: undefined })
@@ -1103,7 +1105,7 @@ app.post('/api/users', async (req, res) => {
 app.get('/api/users', async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      select: { id: true, email: true, firstName: true, lastName: true, role: true, brands: true, agencyIds: true, isActive: true, lastLoginAt: true, createdAt: true }
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, brands: true, agencyIds: true, language: true, isActive: true, lastLoginAt: true, createdAt: true }
     })
     res.json(users)
   } catch (e) {

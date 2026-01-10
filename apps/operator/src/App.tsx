@@ -526,13 +526,13 @@ export default function App() {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="w-56 bg-white shadow-lg flex flex-col">
-        <div className="p-4 border-b">
-          <h1 className="text-xl font-bold" style={{ color: brand === 'VOLTRIDE' ? '#abdee6' : '#ffaf10' }}>
+      <div className="w-56 flex flex-col shadow-xl" style={{ background: 'linear-gradient(180deg, #abdee6 0%, #ffaf10 100%)' }}>
+        <div className="p-4 border-b border-white/20">
+          <h1 className="text-xl font-bold text-white drop-shadow-sm">
             {brand === 'VOLTRIDE' ? '⚡ VOLTRIDE' : '🏍️ MOTOR-RENT'}
           </h1>
           <select value={brand} onChange={e => { setBrand(e.target.value); setSelectedAgency('') }}
-            className="mt-2 w-full text-sm border rounded p-1">
+            className="mt-2 w-full text-sm bg-white/90 border-0 rounded-lg p-2 font-medium">
             <option value="VOLTRIDE">Voltride</option>
             <option value="MOTOR-RENT">Motor-Rent</option>
           </select>

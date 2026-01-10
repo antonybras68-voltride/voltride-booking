@@ -446,7 +446,7 @@ export default function App() {
         rgpd: data?.rgpd,
         mentionsLegales: data?.mentionsLegales
       })
-      alert('✅ Paramètres sauvegardés avec succès !')
+      alert(lang === 'fr' ? '✅ Paramètres sauvegardés avec succès !' : '✅ Ajustes guardados con éxito!')
     } catch (e) {
       console.error('Erreur sauvegarde:', e)
       alert('❌ Erreur lors de la sauvegarde')
@@ -788,7 +788,7 @@ export default function App() {
       <div className="flex-1 overflow-auto bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="bg-white/95 backdrop-blur shadow-sm px-6 py-4 flex items-center gap-4 border-b border-gray-100">
           <select value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)} className="border rounded-lg px-3 py-2">
-            <option value="">Toutes les agences</option>
+            <option value="">{t[lang].allAgencies}</option>
             {agencies.map(a => <option key={a.id} value={a.id}>{a.city}</option>)}
           </select>
           <div className="flex-1" />
@@ -796,16 +796,16 @@ export default function App() {
         </div>
 
         <div className="p-6">
-          {loading && <div className="text-center py-10">⏳ Chargement...</div>}
+          {loading && <div className="text-center py-10">⏳ {t[lang].loading}</div>}
 
           {/* DASHBOARD */}
           {!loading && tab === 'dashboard' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Dashboard</h2>
+              <h2 className="text-2xl font-bold">{t[lang].dashboard}</h2>
               <div className="grid grid-cols-2 gap-6">
                 <div className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-lg">
                   <div className="text-4xl font-bold text-blue-600">{todayDepartures.length}</div>
-                  <div className="text-gray-600 mb-4">Départs du jour</div>
+                  <div className="text-gray-600 mb-4">{t[lang].todayDepartures}</div>
                   {todayDepartures.slice(0, 5).map(b => (
                     <div key={b.id} className="flex justify-between py-1 text-sm border-t">
                       <span>{b.startTime} - {b.customer?.lastName}</span>
@@ -815,7 +815,7 @@ export default function App() {
                 </div>
                 <div className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-lg">
                   <div className="text-4xl font-bold text-green-600">{todayReturns.length}</div>
-                  <div className="text-gray-600 mb-4">Retours du jour</div>
+                  <div className="text-gray-600 mb-4">{t[lang].todayReturns}</div>
                   {todayReturns.slice(0, 5).map(b => (
                     <div key={b.id} className="flex justify-between py-1 text-sm border-t">
                       <span>{b.endTime} - {b.customer?.lastName}</span>
@@ -833,17 +833,17 @@ export default function App() {
               <div className="flex items-center gap-4 flex-wrap">
                 <h2 className="text-2xl font-bold">Planning</h2>
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="w-4 h-4 rounded bg-blue-500"></span> Confirmé
-                  <span className="w-4 h-4 rounded bg-violet-500 ml-2"></span> Confirmé (alt)
-                  <span className="w-4 h-4 rounded bg-green-600 ml-2"></span> Check-in fait
+                  <span className="w-4 h-4 rounded bg-blue-500"></span> {t[lang].confirmed}
+                  <span className="w-4 h-4 rounded bg-violet-500 ml-2"></span> {t[lang].confirmedAlt}
+                  <span className="w-4 h-4 rounded bg-green-600 ml-2"></span> {t[lang].checkedIn}
                 </div>
                 <div className="flex-1" />
                 <button onClick={() => setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n })} 
-                  className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">← Précédent</button>
+                  className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">← {t[lang].previous}</button>
                 <button onClick={() => setWeekStart(() => { const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1); return d })} 
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Aujourd'hui</button>
+                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">{t[lang].today}</button>
                 <button onClick={() => setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n })} 
-                  className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Suivant →</button>
+                  className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">{t[lang].next} →</button>
               </div>
 
               <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -851,7 +851,7 @@ export default function App() {
                   <table className="w-full border-collapse" style={{ minWidth: '1000px' }}>
                     <thead>
                       <tr className="bg-gray-50">
-                        <th className="sticky left-0 bg-gray-50 px-3 py-3 text-left font-medium w-44 z-20 border-r">Véhicule</th>
+                        <th className="sticky left-0 bg-gray-50 px-3 py-3 text-left font-medium w-44 z-20 border-r">{t[lang].vehicle}</th>
                         {days.map((day, i) => {
                           const dateStr = formatDate(day)
                           const isToday = dateStr === today
@@ -960,7 +960,7 @@ export default function App() {
                             <th key={i} className={'px-1 py-2 text-center w-24 ' + (isToday ? 'bg-yellow-100' : isWeekend ? 'bg-gray-100' : '')}>
                               <div className="text-xs text-gray-500 uppercase">{day.toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
                               <div className={'text-lg ' + (isToday ? 'font-bold text-yellow-600' : '')}>{day.getDate()}</div>
-                              {isToday && <div className="text-xs text-yellow-600">Aujourd'hui</div>}
+                              {isToday && <div className="text-xs text-yellow-600">{t[lang].today}</div>}
                             </th>
                           )
                         })}
@@ -1374,7 +1374,7 @@ export default function App() {
               </div>
               
               <p className="text-sm text-gray-500">
-                💡 Glissez-déposez pour déplacer • Tirez les bords pour étendre • Double-clic pour check-in • Clic droit pour options
+                {t[lang].dragTip}
               </p>
             </div>
           )}
@@ -1382,7 +1382,7 @@ export default function App() {
           {/* BOOKINGS */}
           {!loading && tab === 'bookings' && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Réservations à assigner</h2>
+              <h2 className="text-2xl font-bold">{lang === "fr" ? "Réservations à assigner" : "Reservas por asignar"}</h2>
               <div className="bg-white rounded-xl shadow">
                 {bookings.filter(b => !b.fleetVehicleId && b.status !== 'CANCELLED').length === 0 ? (
                   <div className="p-8 text-center text-gray-500">✓ Toutes les réservations sont assignées</div>
@@ -1393,8 +1393,8 @@ export default function App() {
                         <th className="px-4 py-3 text-left">Référence</th>
                         <th className="px-4 py-3 text-left">Client</th>
                         <th className="px-4 py-3 text-left">Dates</th>
-                        <th className="px-4 py-3 text-left">Véhicule</th>
-                        <th className="px-4 py-3 text-left">Actions</th>
+                        <th className="px-4 py-3 text-left">{t[lang].vehicle}</th>
+                        <th className="px-4 py-3 text-left">{t[lang].actions}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1478,7 +1478,7 @@ export default function App() {
           {!loading && tab === 'checkout' && (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Check-out</h2>
-              <p className="text-gray-600">Véhicules actuellement en location</p>
+              <p className="text-gray-600">{lang === "fr" ? "Véhicules actuellement en location" : "Vehículos actualmente en alquiler"}</p>
               
               {rentedBookings.length === 0 ? (
                 <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
@@ -1521,7 +1521,7 @@ export default function App() {
           {!loading && tab === 'settings' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Paramètres</h2>
+                <h2 className="text-2xl font-bold">{t[lang].settings}</h2>
                 <a href="https://backoffice-vandm-production.up.railway.app/" target="_blank" rel="noopener noreferrer"
                   className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 text-sm flex items-center gap-2">
                   Ouvrir le Backoffice
@@ -1632,7 +1632,7 @@ export default function App() {
                   {/* Gestion des permissions par rôle */}
                   <div className="bg-white rounded-xl shadow p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-bold">🔐 Permissions par rôle</h3>
+                      <h3 className="text-lg font-bold">🔐 {t[lang].permissions}</h3>
                       <button onClick={async () => { await api.initPermissions(); loadPermissions(); }} 
                         className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm">
                         🔄 Réinitialiser
@@ -1642,7 +1642,7 @@ export default function App() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b">
-                            <th className="text-left py-2 px-3">Permission</th>
+                            <th className="text-left py-2 px-3">{lang === "fr" ? "Permission" : "Permiso"}</th>
                             <th className="text-center py-2 px-3">ADMIN</th>
                             <th className="text-center py-2 px-3">MANAGER</th>
                             <th className="text-center py-2 px-3">OPERATOR</th>
@@ -1651,7 +1651,7 @@ export default function App() {
                         <tbody>
                           {['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices', 'settings', 'users'].map(perm => (
                             <tr key={perm} className="border-b hover:bg-gray-50">
-                              <td className="py-2 px-3 font-medium capitalize">{perm === 'bookings' ? 'Réservations' : perm === 'fleet' ? 'Flotte' : perm === 'checkout' ? 'Check-out' : perm === 'customers' ? 'Clients' : perm === 'contracts' ? 'Contrats' : perm === 'invoices' ? 'Factures' : perm === 'settings' ? 'Paramètres' : perm === 'users' ? 'Utilisateurs' : perm}</td>
+                              <td className="py-2 px-3 font-medium capitalize">{t[lang][perm] || perm}</td>
                               {['ADMIN', 'MANAGER', 'OPERATOR'].map(role => (
                                 <td key={role} className="text-center py-2 px-3">
                                   <input 
@@ -1675,7 +1675,7 @@ export default function App() {
                   {/* Liste des utilisateurs */}
                   <div className="bg-white rounded-xl shadow p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-bold">👥 Utilisateurs</h3>
+                      <h3 className="text-lg font-bold">👥 {t[lang].users}</h3>
                       <button onClick={() => setShowNewUserModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
                         + Nouvel utilisateur
                       </button>
@@ -1684,12 +1684,12 @@ export default function App() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b bg-gray-50">
-                            <th className="text-left py-3 px-3">Nom</th>
-                            <th className="text-left py-3 px-3">Email</th>
-                            <th className="text-left py-3 px-3">Rôle</th>
-                            <th className="text-left py-3 px-3">Marques</th>
-                            <th className="text-left py-3 px-3">Statut</th>
-                            <th className="text-center py-3 px-3">Actions</th>
+                            <th className="text-left py-3 px-3">{t[lang].lastName}</th>
+                            <th className="text-left py-3 px-3">{t[lang].email}</th>
+                            <th className="text-left py-3 px-3">{t[lang].role}</th>
+                            <th className="text-left py-3 px-3">{t[lang].brands}</th>
+                            <th className="text-left py-3 px-3">{t[lang].status}</th>
+                            <th className="text-center py-3 px-3">{t[lang].actions}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1706,12 +1706,12 @@ export default function App() {
                               <td className="py-3 px-3 text-gray-600 text-xs">{u.brands?.join(', ')}</td>
                               <td className="py-3 px-3">
                                 <span className={'px-2 py-1 rounded text-xs ' + (u.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
-                                  {u.isActive ? 'Actif' : 'Inactif'}
+                                  {u.isActive ? t[lang].active : t[lang].inactive}
                                 </span>
                               </td>
                               <td className="py-3 px-3 text-center">
-                                <button onClick={() => { setEditingUser(u); setShowNewUserModal(true) }} className="text-blue-600 hover:underline mr-2">Modifier</button>
-                                {u.id !== user?.id && <button onClick={async () => { if(confirm('Supprimer cet utilisateur ?')) { await api.deleteUser(u.id); loadUsers() }}} className="text-red-600 hover:underline">Supprimer</button>}
+                                <button onClick={() => { setEditingUser(u); setShowNewUserModal(true) }} className="text-blue-600 hover:underline mr-2">{t[lang].edit}</button>
+                                {u.id !== user?.id && <button onClick={async () => { if(confirm(t[lang].confirmDelete)) { await api.deleteUser(u.id); loadUsers() }}} className="text-red-600 hover:underline">{t[lang].delete}</button>}
                               </td>
                             </tr>
                           ))}
@@ -1727,7 +1727,7 @@ export default function App() {
           {/* Other tabs placeholder */}
           {!loading && ['customers', 'contracts', 'invoices'].includes(tab) && (
             <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
-              Module {tab} - À développer
+              {t[lang].module} {tab} - {t[lang].toDevelop}
             </div>
           )}
         </div>
@@ -1737,7 +1737,7 @@ export default function App() {
       {showNewUserModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-xl font-bold mb-4">{editingUser ? '✏️ Modifier utilisateur' : '➕ Nouvel utilisateur'}</h3>
+            <h3 className="text-xl font-bold mb-4">{editingUser ? '✏️ ' + t[lang].editUser : '➕ ' + t[lang].newUser}</h3>
             <form onSubmit={async (e) => {
               e.preventDefault()
               const form = e.target as HTMLFormElement
@@ -1764,28 +1764,28 @@ export default function App() {
             }} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Prénom</label>
+                  <label className="block text-sm font-medium mb-1">{t[lang].firstName}</label>
                   <input name="firstName" defaultValue={editingUser?.firstName || ''} required className="w-full border rounded-lg px-3 py-2" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Nom</label>
+                  <label className="block text-sm font-medium mb-1">{t[lang].lastName}</label>
                   <input name="lastName" defaultValue={editingUser?.lastName || ''} required className="w-full border rounded-lg px-3 py-2" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
+                <label className="block text-sm font-medium mb-1">{t[lang].email}</label>
                 <input name="email" type="email" defaultValue={editingUser?.email || ''} required className="w-full border rounded-lg px-3 py-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{editingUser ? 'Nouveau mot de passe (laisser vide pour ne pas changer)' : 'Mot de passe'}</label>
+                <label className="block text-sm font-medium mb-1">{editingUser ? t[lang].newPassword : t[lang].password}</label>
                 <input name="password" type="password" required={!editingUser} className="w-full border rounded-lg px-3 py-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Rôle</label>
+                <label className="block text-sm font-medium mb-1">{t[lang].role}</label>
                 <select name="role" defaultValue={editingUser?.role || 'OPERATOR'} className="w-full border rounded-lg px-3 py-2">
                   <option value="ADMIN">Admin</option>
                   <option value="MANAGER">Manager</option>
-                  <option value="OPERATOR">Opérateur</option>
+                  <option value="OPERATOR">{lang === "fr" ? "Opérateur" : "Operador"}</option>
                 </select>
               </div>
               <div>
@@ -1796,7 +1796,7 @@ export default function App() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Marques autorisées</label>
+                <label className="block text-sm font-medium mb-2">{t[lang].authorizedBrands}</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2">
                     <input type="checkbox" name="brands" value="VOLTRIDE" defaultChecked={editingUser?.brands?.includes('VOLTRIDE') ?? true} className="w-4 h-4" />
@@ -1816,7 +1816,7 @@ export default function App() {
               </div>
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  {editingUser ? 'Enregistrer' : 'Créer'}
+                  {editingUser ? t[lang].save : t[lang].create}
                 </button>
                 <button type="button" onClick={() => { setShowNewUserModal(false); setEditingUser(null) }} className="flex-1 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
                   Annuler
@@ -1863,7 +1863,7 @@ export default function App() {
           <div className="text-gray-300">{tooltip.booking.reference}</div>
           <div className="text-gray-300">{tooltip.booking.startDate?.split('T')[0]} → {tooltip.booking.endDate?.split('T')[0]}</div>
           <div className="text-gray-300">{tooltip.booking.startTime} - {tooltip.booking.endTime}</div>
-          {tooltip.booking.checkedIn && <div className="text-green-400">✓ Check-in effectué</div>}
+          {tooltip.booking.checkedIn && <div className="text-green-400">✓ {t[lang].checkedIn}</div>}
         </div>
       )}
 
@@ -1871,8 +1871,8 @@ export default function App() {
       {showCancelModal && cancelBooking && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCancelModal(false)}>
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold mb-4">❌ Annuler la réservation</h3>
-            <p className="text-gray-600 mb-4">Réservation {cancelBooking.reference} - {cancelBooking.customer?.lastName}</p>
+            <h3 className="text-xl font-bold mb-4">❌ {lang === "fr" ? "Annuler la réservation" : "Cancelar la reserva"}</h3>
+            <p className="text-gray-600 mb-4">{lang === "fr" ? "Réservation" : "Reserva"} {cancelBooking.reference} - {cancelBooking.customer?.lastName}</p>
             <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)}
               placeholder="Motif d'annulation (obligatoire)"
               className="w-full border rounded-lg p-3 h-24 mb-4" />
@@ -1979,7 +1979,7 @@ export default function App() {
                   <div className="text-4xl mb-4 animate-pulse">⏳</div>
                   <p className="text-gray-600">En attente des informations client...</p>
                   <p className="text-sm text-gray-400 mt-2">Le client remplit le formulaire sur la tablette</p>
-                  <button onClick={cancelWalkin} className="mt-4 text-red-600">Annuler</button>
+                  <button onClick={cancelWalkin} className="mt-4 text-red-600">{t[lang].cancel}</button>
                 </div>
               )}
 

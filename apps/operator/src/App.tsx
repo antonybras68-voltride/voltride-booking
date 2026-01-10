@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from './api'
+import { Login } from './Login'
 import { CheckInModal } from './CheckInModal'
 import { NewBookingModal } from './NewBookingModal'
 import { FleetEditModal } from './FleetEditModal'
@@ -8,6 +9,49 @@ import { CheckOutModal } from './CheckOutModal'
 import { getName } from './types'
 
 export default function App() {
+  // Authentication state
+  const [user, setUser] = useState<any>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem('token')
+    const savedUser = localStorage.getItem('user')
+    if (savedToken && savedUser) {
+      setToken(savedToken)
+      setUser(JSON.parse(savedUser))
+    }
+    setAuthLoading(false)
+  }, [])
+
+  const handleLogin = (userData: any, userToken: string) => {
+    setUser(userData)
+    setToken(userToken)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setUser(null)
+    setToken(null)
+  }
+
+  // Show login if not authenticated
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{
+        background: 'linear-gradient(135deg, #abdee6 0%, #ffaf10 100%)'
+      }}>
+        <div className="animate-spin w-12 h-12 border-4 border-white border-t-transparent rounded-full"></div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Login onLogin={handleLogin} />
+  }
+
   const [tab, setTab] = useState('planning')
   const [brand, setBrand] = useState('VOLTRIDE')
   const [agencies, setAgencies] = useState([])
@@ -522,18 +566,29 @@ export default function App() {
             { id: 'settings', icon: '⚙️', label: 'Paramètres' },
           ].map(item => (
             <button key={item.id} onClick={() => setTab(item.id)}
-              className={'w-full text-left px-3 py-2 rounded-lg mb-1 flex items-center gap-2 ' +
-                (tab === item.id ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100')}>
-              <span>{item.icon}</span>
+              className={'w-full text-left px-3 py-2.5 rounded-xl mb-1 flex items-center gap-3 transition-all ' +
+                (tab === item.id ? 'bg-white/90 text-gray-800 font-semibold shadow-md' : 'text-white/90 hover:bg-white/20')}>
+              <span className="text-lg">{item.icon}</span>
               <span>{item.label}</span>
             </button>
           ))}
         </nav>
+        
+        {/* User info & Logout */}
+        <div className="p-3 border-t border-white/20">
+          <div className="bg-white/20 rounded-xl p-3">
+            <div className="text-white font-medium text-sm">{user?.firstName} {user?.lastName}</div>
+            <div className="text-white/70 text-xs">{user?.role}</div>
+            <button onClick={handleLogout} className="mt-2 w-full py-1.5 bg-white/30 hover:bg-white/50 text-white text-sm rounded-lg transition">
+              🚪 Déconnexion
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
-        <div className="bg-white shadow px-6 py-4 flex items-center gap-4">
+      <div className="flex-1 overflow-auto bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="bg-white/95 backdrop-blur shadow-sm px-6 py-4 flex items-center gap-4 border-b border-gray-100">
           <select value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)} className="border rounded-lg px-3 py-2">
             <option value="">Toutes les agences</option>
             {agencies.map(a => <option key={a.id} value={a.id}>{a.city}</option>)}

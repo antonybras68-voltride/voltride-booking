@@ -1232,3 +1232,26 @@ model AppSettings {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ============== USERS & AUTHENTICATION ==============
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String   // Hashed password
+  firstName     String
+  lastName      String
+  role          UserRole @default(OPERATOR)
+  brands        String[] // ['VOLTRIDE', 'MOTOR-RENT']
+  agencyIds     String[] // IDs des agences autorisées
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum UserRole {
+  ADMIN       // Accès total
+  MANAGER     // Gestion agences assignées
+  OPERATOR    // Check-in/out, réservations
+  ACCOUNTANT  // Lecture seule, factures
+}

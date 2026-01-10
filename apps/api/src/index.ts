@@ -2,6 +2,10 @@ import express from 'express'
 import cors from 'cors'
 import { PrismaClient } from '@prisma/client'
 import Stripe from 'stripe'
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
+
+const JWT_SECRET = process.env.JWT_SECRET || 'voltride-secret-key-2024'
 import { generateContractPDF, generateInvoicePDF } from './pdfGenerator'
 
 const stripeVoltride = process.env.STRIPE_SECRET_KEY_VOLTRIDE ? new Stripe(process.env.STRIPE_SECRET_KEY_VOLTRIDE, { apiVersion: '2024-12-18.acacia' as any }) : null
@@ -995,6 +999,144 @@ app.post('/api/settings', async (req, res) => {
 })
 
 
+
+
+// ============== AUTHENTICATION ==============
+// Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body
+    const user = await prisma.user.findUnique({ where: { email } })
+    
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect' })
+    }
+    
+    const validPassword = await bcrypt.compare(password, user.password)
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect' })
+    }
+    
+    // Update last login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() }
+    })
+    
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role, brands: user.brands, agencyIds: user.agencyIds },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    )
+    
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        brands: user.brands,
+        agencyIds: user.agencyIds
+      }
+    })
+  } catch (e: any) {
+    console.error('Login error:', e)
+    res.status(500).json({ error: 'Erreur de connexion' })
+  }
+})
+
+// Verify token
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token manquant' })
+    }
+    
+    const token = authHeader.split(' ')[1]
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+    
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } })
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: 'Utilisateur non trouvé' })
+    }
+    
+    res.json({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      brands: user.brands,
+      agencyIds: user.agencyIds
+    })
+  } catch (e) {
+    res.status(401).json({ error: 'Token invalide' })
+  }
+})
+
+// Create user (admin only)
+app.post('/api/users', async (req, res) => {
+  try {
+    const hashedPassword = await bcrypt.hash(req.body.password, 10)
+    const user = await prisma.user.create({
+      data: {
+        email: req.body.email,
+        password: hashedPassword,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        role: req.body.role || 'OPERATOR',
+        brands: req.body.brands || ['VOLTRIDE', 'MOTOR-RENT'],
+        agencyIds: req.body.agencyIds || []
+      }
+    })
+    res.json({ ...user, password: undefined })
+  } catch (e: any) {
+    console.error('Create user error:', e)
+    res.status(500).json({ error: 'Erreur création utilisateur' })
+  }
+})
+
+// Get all users
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, brands: true, agencyIds: true, isActive: true, lastLoginAt: true, createdAt: true }
+    })
+    res.json(users)
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur récupération utilisateurs' })
+  }
+})
+
+// Update user
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const data: any = { ...req.body }
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10)
+    }
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data
+    })
+    res.json({ ...user, password: undefined })
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur mise à jour utilisateur' })
+  }
+})
+
+// Delete user
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    await prisma.user.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur suppression utilisateur' })
+  }
+})
 
 // ============== PDF GENERATION ==============
 // Générer le PDF du contrat

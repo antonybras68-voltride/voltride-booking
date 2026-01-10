@@ -1216,7 +1216,7 @@ app.post('/api/permissions/init', async (req, res) => {
       for (const perm of perms) {
         const result = await prisma.rolePermission.upsert({
           where: { role_permission: { role: role as any, permission: perm } },
-          update: {},
+          update: { allowed: defaults[role][perm] },
           create: { role: role as any, permission: perm, allowed: defaults[role][perm] }
         })
         results.push(result)

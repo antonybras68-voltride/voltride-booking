@@ -1732,6 +1732,7 @@ export default function App() {
                 email: formData.get('email'),
                 password: formData.get('password') || undefined,
                 role: formData.get('role'),
+                language: formData.get('language'),
                 brands: Array.from(form.querySelectorAll('input[name="brands"]:checked')).map((el: any) => el.value),
                 isActive: (form.querySelector('input[name="isActive"]') as HTMLInputElement)?.checked ?? true
               }

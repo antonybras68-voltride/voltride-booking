@@ -1255,3 +1255,15 @@ enum UserRole {
   OPERATOR    // Check-in/out, réservations
   ACCOUNTANT  // Lecture seule, factures
 }
+
+// ============== ROLE PERMISSIONS ==============
+model RolePermission {
+  id          String   @id @default(cuid())
+  role        UserRole
+  permission  String   // ex: 'dashboard', 'planning', 'fleet', etc.
+  allowed     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([role, permission])
+}

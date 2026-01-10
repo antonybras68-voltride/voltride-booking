@@ -114,6 +114,49 @@ export const api = {
     })
     return res.json()
   }
+,
+
+  // Permissions
+  getPermissions: async () => {
+    const res = await fetch(API_URL + '/api/permissions')
+    return res.json()
+  },
+  updatePermission: async (role: string, permission: string, allowed: boolean) => {
+    const res = await fetch(API_URL + '/api/permissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role, permission, allowed })
+    })
+    return res.json()
+  },
+  initPermissions: async () => {
+    const res = await fetch(API_URL + '/api/permissions/init', { method: 'POST' })
+    return res.json()
+  },
+  getUsers: async () => {
+    const res = await fetch(API_URL + '/api/users')
+    return res.json()
+  },
+  createUser: async (data: any) => {
+    const res = await fetch(API_URL + '/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    return res.json()
+  },
+  updateUser: async (id: string, data: any) => {
+    const res = await fetch(API_URL + '/api/users/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    return res.json()
+  },
+  deleteUser: async (id: string) => {
+    const res = await fetch(API_URL + '/api/users/' + id, { method: 'DELETE' })
+    return res.json()
+  }
 }
 
 export default api

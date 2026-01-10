@@ -100,6 +100,11 @@ export default function App() {
   })
   const [settingsTab, setSettingsTab] = useState<'voltride' | 'motorrent'>('voltride')
   const [settingsSection, setSettingsSection] = useState<string>('cgvResume')
+  const [settingsMainTab, setSettingsMainTab] = useState<'documents' | 'users'>('documents')
+  const [permissions, setPermissions] = useState<any[]>([])
+  const [usersList, setUsersList] = useState<any[]>([])
+  const [showNewUserModal, setShowNewUserModal] = useState(false)
+  const [editingUser, setEditingUser] = useState<any>(null)
 
   const days = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(weekStart)
@@ -1335,19 +1340,34 @@ export default function App() {
                 </a>
               </div>
               
-              {/* Sélecteur de marque */}
-              <div className="flex gap-2 mb-4">
-                <button onClick={() => { setSettingsTab('voltride'); loadBrandSettings('VOLTRIDE') }} 
-                  className={'px-4 py-2 rounded-lg font-medium flex items-center gap-2 ' + (settingsTab === 'voltride' ? 'bg-blue-600 text-white' : 'bg-gray-100')}>
-                  <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766928342/d5uv1qrfwr86rd1abtd1.png" className="h-6" alt="Voltride" />
-                  Voltride
+              {/* Onglets principaux */}
+              <div className="flex gap-2 border-b pb-4">
+                <button onClick={() => setSettingsMainTab('documents')}
+                  className={'px-4 py-2 rounded-lg font-medium ' + (settingsMainTab === 'documents' ? 'bg-gradient-to-r from-cyan-500 to-orange-400 text-white' : 'bg-gray-100 hover:bg-gray-200')}>
+                  📄 Documents légaux
                 </button>
-                <button onClick={() => { setSettingsTab('motorrent'); loadBrandSettings('MOTOR-RENT') }} 
-                  className={'px-4 py-2 rounded-lg font-medium flex items-center gap-2 ' + (settingsTab === 'motorrent' ? 'bg-orange-600 text-white' : 'bg-gray-100')}>
-                  <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766930480/logo-2024-e1699439584325-removebg-preview_sv6yxg.png" className="h-6" alt="Motor-Rent" />
-                  Motor-Rent
+                <button onClick={() => setSettingsMainTab('users')}
+                  className={'px-4 py-2 rounded-lg font-medium ' + (settingsMainTab === 'users' ? 'bg-gradient-to-r from-cyan-500 to-orange-400 text-white' : 'bg-gray-100 hover:bg-gray-200')}>
+                  👥 Utilisateurs & Rôles
                 </button>
               </div>
+
+              {/* ===== ONGLET DOCUMENTS LÉGAUX ===== */}
+              {settingsMainTab === 'documents' && (
+                <>
+                  {/* Sélecteur de marque */}
+                  <div className="flex gap-2 mb-4">
+                    <button onClick={() => { setSettingsTab('voltride'); loadBrandSettings('VOLTRIDE') }} 
+                      className={'px-4 py-2 rounded-lg font-medium flex items-center gap-2 ' + (settingsTab === 'voltride' ? 'bg-blue-600 text-white' : 'bg-gray-100')}>
+                      <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766928342/d5uv1qrfwr86rd1abtd1.png" className="h-6" alt="Voltride" />
+                      Voltride
+                    </button>
+                    <button onClick={() => { setSettingsTab('motorrent'); loadBrandSettings('MOTOR-RENT') }} 
+                      className={'px-4 py-2 rounded-lg font-medium flex items-center gap-2 ' + (settingsTab === 'motorrent' ? 'bg-orange-600 text-white' : 'bg-gray-100')}>
+                      <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766930480/logo-2024-e1699439584325-removebg-preview_sv6yxg.png" className="h-6" alt="Motor-Rent" />
+                      Motor-Rent
+                    </button>
+                  </div>
 
               {/* Sélecteur de section */}
               <div className="flex gap-2 flex-wrap">
@@ -1414,6 +1434,104 @@ export default function App() {
                   🔄 Recharger
                 </button>
               </div>
+                </>
+              )}
+
+              {/* ===== ONGLET UTILISATEURS & RÔLES ===== */}
+              {settingsMainTab === 'users' && (
+                <div className="space-y-6">
+                  {/* Gestion des permissions par rôle */}
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold">🔐 Permissions par rôle</h3>
+                      <button onClick={async () => { await api.initPermissions(); loadPermissions(); }} 
+                        className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm">
+                        🔄 Réinitialiser
+                      </button>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2 px-3">Permission</th>
+                            <th className="text-center py-2 px-3">ADMIN</th>
+                            <th className="text-center py-2 px-3">MANAGER</th>
+                            <th className="text-center py-2 px-3">OPERATOR</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices', 'settings', 'users'].map(perm => (
+                            <tr key={perm} className="border-b hover:bg-gray-50">
+                              <td className="py-2 px-3 font-medium capitalize">{perm === 'bookings' ? 'Réservations' : perm === 'fleet' ? 'Flotte' : perm === 'checkout' ? 'Check-out' : perm === 'customers' ? 'Clients' : perm === 'contracts' ? 'Contrats' : perm === 'invoices' ? 'Factures' : perm === 'settings' ? 'Paramètres' : perm === 'users' ? 'Utilisateurs' : perm}</td>
+                              {['ADMIN', 'MANAGER', 'OPERATOR'].map(role => (
+                                <td key={role} className="text-center py-2 px-3">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={permissions.find(p => p.role === role && p.permission === perm)?.allowed ?? (role === 'ADMIN')}
+                                    onChange={async (e) => {
+                                      await api.updatePermission(role, perm, e.target.checked)
+                                      loadPermissions()
+                                    }}
+                                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Liste des utilisateurs */}
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold">👥 Utilisateurs</h3>
+                      <button onClick={() => setShowNewUserModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                        + Nouvel utilisateur
+                      </button>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-gray-50">
+                            <th className="text-left py-3 px-3">Nom</th>
+                            <th className="text-left py-3 px-3">Email</th>
+                            <th className="text-left py-3 px-3">Rôle</th>
+                            <th className="text-left py-3 px-3">Marques</th>
+                            <th className="text-left py-3 px-3">Statut</th>
+                            <th className="text-center py-3 px-3">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {usersList.map(u => (
+                            <tr key={u.id} className="border-b hover:bg-gray-50">
+                              <td className="py-3 px-3 font-medium">{u.firstName} {u.lastName}</td>
+                              <td className="py-3 px-3 text-gray-600">{u.email}</td>
+                              <td className="py-3 px-3">
+                                <span className={'px-2 py-1 rounded text-xs font-medium ' + 
+                                  (u.role === 'ADMIN' ? 'bg-red-100 text-red-700' : u.role === 'MANAGER' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700')}>
+                                  {u.role}
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 text-gray-600 text-xs">{u.brands?.join(', ')}</td>
+                              <td className="py-3 px-3">
+                                <span className={'px-2 py-1 rounded text-xs ' + (u.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
+                                  {u.isActive ? 'Actif' : 'Inactif'}
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 text-center">
+                                <button onClick={() => { setEditingUser(u); setShowNewUserModal(true) }} className="text-blue-600 hover:underline mr-2">Modifier</button>
+                                {u.id !== user?.id && <button onClick={async () => { if(confirm('Supprimer cet utilisateur ?')) { await api.deleteUser(u.id); loadUsers() }}} className="text-red-600 hover:underline">Supprimer</button>}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

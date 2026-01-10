@@ -1138,6 +1138,97 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 })
 
+
+// ============== ROLE PERMISSIONS ==============
+// Get all permissions
+app.get('/api/permissions', async (req, res) => {
+  try {
+    const permissions = await prisma.rolePermission.findMany({
+      orderBy: [{ role: 'asc' }, { permission: 'asc' }]
+    })
+    res.json(permissions)
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch permissions' })
+  }
+})
+
+// Get permissions by role
+app.get('/api/permissions/:role', async (req, res) => {
+  try {
+    const permissions = await prisma.rolePermission.findMany({
+      where: { role: req.params.role as any }
+    })
+    res.json(permissions)
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch permissions' })
+  }
+})
+
+// Update or create permission
+app.post('/api/permissions', async (req, res) => {
+  try {
+    const { role, permission, allowed } = req.body
+    const result = await prisma.rolePermission.upsert({
+      where: { role_permission: { role, permission } },
+      update: { allowed },
+      create: { role, permission, allowed }
+    })
+    res.json(result)
+  } catch (e: any) {
+    console.error('Permission error:', e)
+    res.status(500).json({ error: 'Failed to update permission' })
+  }
+})
+
+// Bulk update permissions
+app.post('/api/permissions/bulk', async (req, res) => {
+  try {
+    const { permissions } = req.body // Array of { role, permission, allowed }
+    const results = await Promise.all(
+      permissions.map((p: any) =>
+        prisma.rolePermission.upsert({
+          where: { role_permission: { role: p.role, permission: p.permission } },
+          update: { allowed: p.allowed },
+          create: { role: p.role, permission: p.permission, allowed: p.allowed }
+        })
+      )
+    )
+    res.json(results)
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to update permissions' })
+  }
+})
+
+// Initialize default permissions
+app.post('/api/permissions/init', async (req, res) => {
+  try {
+    const roles = ['ADMIN', 'MANAGER', 'OPERATOR']
+    const perms = ['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices', 'settings', 'users']
+    
+    const defaults: Record<string, Record<string, boolean>> = {
+      ADMIN: { dashboard: true, planning: true, bookings: true, fleet: true, checkout: true, customers: true, contracts: true, invoices: true, settings: true, users: true },
+      MANAGER: { dashboard: true, planning: true, bookings: true, fleet: true, checkout: true, customers: true, contracts: true, invoices: true, settings: false, users: false },
+      OPERATOR: { dashboard: true, planning: true, bookings: true, fleet: false, checkout: true, customers: false, contracts: false, invoices: false, settings: false, users: false }
+    }
+    
+    const results = []
+    for (const role of roles) {
+      for (const perm of perms) {
+        const result = await prisma.rolePermission.upsert({
+          where: { role_permission: { role: role as any, permission: perm } },
+          update: {},
+          create: { role: role as any, permission: perm, allowed: defaults[role][perm] }
+        })
+        results.push(result)
+      }
+    }
+    res.json({ message: 'Permissions initialized', count: results.length })
+  } catch (e: any) {
+    console.error('Init permissions error:', e)
+    res.status(500).json({ error: 'Failed to initialize permissions' })
+  }
+})
+
 // ============== PDF GENERATION ==============
 // Générer le PDF du contrat
 app.get('/api/contracts/:id/pdf', async (req, res) => {

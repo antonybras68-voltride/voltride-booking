@@ -13,6 +13,85 @@ export default function App() {
   const [user, setUser] = useState<any>(null)
   const [token, setToken] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [lang, setLang] = useState<'fr' | 'es'>(() => (localStorage.getItem('lang') as 'fr' | 'es') || 'fr')
+  
+  // Traductions
+  const t: Record<string, Record<string, string>> = {
+    fr: {
+      dashboard: 'Dashboard',
+      planning: 'Planning',
+      bookings: 'Réservations',
+      fleet: 'Flotte',
+      checkout: 'Check-out',
+      customers: 'Clients',
+      contracts: 'Contrats',
+      invoices: 'Factures',
+      settings: 'Paramètres',
+      logout: 'Déconnexion',
+      allAgencies: 'Toutes les agences',
+      loading: 'Chargement...',
+      todayDepartures: 'Départs du jour',
+      todayReturns: 'Retours du jour',
+      newBooking: 'Nouvelle réservation',
+      newUser: 'Nouvel utilisateur',
+      save: 'Sauvegarder',
+      cancel: 'Annuler',
+      delete: 'Supprimer',
+      edit: 'Modifier',
+      create: 'Créer',
+      permissions: 'Permissions par rôle',
+      users: 'Utilisateurs',
+      legalDocs: 'Documents légaux',
+      usersRoles: 'Utilisateurs & Rôles',
+      firstName: 'Prénom',
+      lastName: 'Nom',
+      email: 'Email',
+      password: 'Mot de passe',
+      role: 'Rôle',
+      brands: 'Marques',
+      status: 'Statut',
+      actions: 'Actions',
+      active: 'Actif',
+      inactive: 'Inactif'
+    },
+    es: {
+      dashboard: 'Panel',
+      planning: 'Planificación',
+      bookings: 'Reservas',
+      fleet: 'Flota',
+      checkout: 'Devolución',
+      customers: 'Clientes',
+      contracts: 'Contratos',
+      invoices: 'Facturas',
+      settings: 'Ajustes',
+      logout: 'Cerrar sesión',
+      allAgencies: 'Todas las agencias',
+      loading: 'Cargando...',
+      todayDepartures: 'Salidas del día',
+      todayReturns: 'Devoluciones del día',
+      newBooking: 'Nueva reserva',
+      newUser: 'Nuevo usuario',
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      delete: 'Eliminar',
+      edit: 'Editar',
+      create: 'Crear',
+      permissions: 'Permisos por rol',
+      users: 'Usuarios',
+      legalDocs: 'Documentos legales',
+      usersRoles: 'Usuarios y Roles',
+      firstName: 'Nombre',
+      lastName: 'Apellido',
+      email: 'Email',
+      password: 'Contraseña',
+      role: 'Rol',
+      brands: 'Marcas',
+      status: 'Estado',
+      actions: 'Acciones',
+      active: 'Activo',
+      inactive: 'Inactivo'
+    }
+  }
 
   // Check for existing session on mount
   useEffect(() => {
@@ -567,11 +646,15 @@ export default function App() {
       {/* Sidebar */}
       <div className="w-56 flex flex-col shadow-xl" style={{ background: 'linear-gradient(180deg, #abdee6 0%, #ffaf10 100%)' }}>
         <div className="p-4 border-b border-white/20">
-          <h1 className="text-xl font-bold text-white drop-shadow-sm">
-            {brand === 'VOLTRIDE' ? '⚡ VOLTRIDE' : '🏍️ MOTOR-RENT'}
-          </h1>
+          <div className="flex justify-center mb-3">
+            {brand === 'VOLTRIDE' ? (
+              <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766928342/d5uv1qrfwr86rd1abtd1.png" className="h-12" alt="Voltride" />
+            ) : (
+              <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766930480/logo-2024-e1699439584325-removebg-preview_sv6yxg.png" className="h-12" alt="Motor-Rent" />
+            )}
+          </div>
           <select value={brand} onChange={e => { setBrand(e.target.value); setSelectedAgency('') }}
-            className="mt-2 w-full text-sm bg-white/90 border-0 rounded-lg p-2 font-medium">
+            className="w-full text-sm bg-white/90 border-0 rounded-lg p-2 font-medium">
             <option value="VOLTRIDE">Voltride</option>
             <option value="MOTOR-RENT">Motor-Rent</option>
           </select>
@@ -579,21 +662,20 @@ export default function App() {
         
         <nav className="flex-1 p-2">
           {[
-            { id: 'dashboard', icon: '📊', label: 'Dashboard' },
-            { id: 'planning', icon: '📅', label: 'Planning' },
-            { id: 'bookings', icon: '📋', label: 'Réservations' },
-            { id: 'fleet', icon: '🚲', label: 'Flotte' },
-            { id: 'checkout', icon: '↩️', label: 'Check-out' },
-            { id: 'customers', icon: '👥', label: 'Clients' },
-            { id: 'contracts', icon: '📄', label: 'Contrats' },
-            { id: 'invoices', icon: '💰', label: 'Factures' },
-            { id: 'settings', icon: '⚙️', label: 'Paramètres' },
+            { id: 'dashboard', label: t[lang].dashboard },
+            { id: 'planning', label: t[lang].planning },
+            { id: 'bookings', label: t[lang].bookings },
+            { id: 'fleet', label: t[lang].fleet },
+            { id: 'checkout', label: t[lang].checkout },
+            { id: 'customers', label: t[lang].customers },
+            { id: 'contracts', label: t[lang].contracts },
+            { id: 'invoices', label: t[lang].invoices },
+            { id: 'settings', label: t[lang].settings },
           ].map(item => (
             <button key={item.id} onClick={() => setTab(item.id)}
-              className={'w-full text-left px-3 py-2.5 rounded-xl mb-1 flex items-center gap-3 transition-all ' +
+              className={'w-full text-left px-4 py-2.5 rounded-xl mb-1 transition-all ' +
                 (tab === item.id ? 'bg-white/90 text-gray-800 font-semibold shadow-md' : 'text-white/90 hover:bg-white/20')}>
-              <span className="text-lg">{item.icon}</span>
-              <span>{item.label}</span>
+              {item.label}
             </button>
           ))}
         </nav>
@@ -603,12 +685,22 @@ export default function App() {
           <div className="bg-white/20 rounded-xl p-3">
             <div className="text-white font-medium text-sm">{user?.firstName} {user?.lastName}</div>
             <div className="text-white/70 text-xs">{user?.role}</div>
+            <div className="flex gap-1 mt-2">
+              <button onClick={() => { setLang('fr'); localStorage.setItem('lang', 'fr') }}
+                className={'flex-1 py-1 text-xs rounded transition ' + (lang === 'fr' ? 'bg-white text-gray-800 font-bold' : 'bg-white/30 text-white')}>
+                🇫🇷 FR
+              </button>
+              <button onClick={() => { setLang('es'); localStorage.setItem('lang', 'es') }}
+                className={'flex-1 py-1 text-xs rounded transition ' + (lang === 'es' ? 'bg-white text-gray-800 font-bold' : 'bg-white/30 text-white')}>
+                🇪🇸 ES
+              </button>
+            </div>
             <button 
               type="button"
-              onClick={() => { console.log('Logout clicked'); handleLogout(); }}
+              onClick={() => { handleLogout(); }}
               className="mt-2 w-full py-2 bg-red-500/80 hover:bg-red-600 text-white text-sm rounded-lg transition font-medium"
             >
-              🚪 Déconnexion
+              {t[lang].logout}
             </button>
           </div>
         </div>

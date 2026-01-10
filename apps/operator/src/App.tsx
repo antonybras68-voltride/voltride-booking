@@ -37,21 +37,6 @@ export default function App() {
     setToken(null)
   }
 
-  // Show login if not authenticated
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{
-        background: 'linear-gradient(135deg, #abdee6 0%, #ffaf10 100%)'
-      }}>
-        <div className="animate-spin w-12 h-12 border-4 border-white border-t-transparent rounded-full"></div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return <Login onLogin={handleLogin} />
-  }
-
   const [tab, setTab] = useState('planning')
   const [brand, setBrand] = useState('VOLTRIDE')
   const [agencies, setAgencies] = useState([])

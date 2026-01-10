@@ -113,10 +113,29 @@ export default function App() {
   })
 
   useEffect(() => { loadData() }, [selectedAgency, brand])
+  // Charger les permissions
+  const loadPermissions = async () => {
+    try {
+      const data = await api.getPermissions()
+      setPermissions(Array.isArray(data) ? data : [])
+    } catch (e) { console.error('Erreur chargement permissions:', e) }
+  }
+
+  // Charger les utilisateurs
+  const loadUsers = async () => {
+    try {
+      const data = await api.getUsers()
+      setUsersList(Array.isArray(data) ? data : [])
+    } catch (e) { console.error('Erreur chargement utilisateurs:', e) }
+  }
+
   useEffect(() => { 
     loadBrandSettings('VOLTRIDE')
     loadBrandSettings('MOTOR-RENT')
+    loadPermissions()
+    loadUsers()
   }, [])
+
   useEffect(() => {
     const handleClick = () => setContextMenu(null)
     window.addEventListener('click', handleClick)

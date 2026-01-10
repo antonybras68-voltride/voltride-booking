@@ -1633,10 +1633,6 @@ export default function App() {
                   <div className="bg-white rounded-xl shadow p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-bold">🔐 {t[lang].permissions}</h3>
-                      <button onClick={async () => { await api.initPermissions(); loadPermissions(); }} 
-                        className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm">
-                        🔄 Réinitialiser
-                      </button>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">

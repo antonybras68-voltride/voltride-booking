@@ -1544,6 +1544,92 @@ export default function App() {
         </div>
       </div>
 
+      {/* Modal Nouvel Utilisateur */}
+      {showNewUserModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-xl font-bold mb-4">{editingUser ? '✏️ Modifier utilisateur' : '➕ Nouvel utilisateur'}</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              const form = e.target as HTMLFormElement
+              const formData = new FormData(form)
+              const data = {
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                email: formData.get('email'),
+                password: formData.get('password') || undefined,
+                role: formData.get('role'),
+                brands: Array.from(form.querySelectorAll('input[name="brands"]:checked')).map((el: any) => el.value),
+                isActive: (form.querySelector('input[name="isActive"]') as HTMLInputElement)?.checked ?? true
+              }
+              if (editingUser) {
+                if (!data.password) delete data.password
+                await api.updateUser(editingUser.id, data)
+              } else {
+                await api.createUser(data)
+              }
+              setShowNewUserModal(false)
+              setEditingUser(null)
+              loadUsers()
+            }} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Prénom</label>
+                  <input name="firstName" defaultValue={editingUser?.firstName || ''} required className="w-full border rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nom</label>
+                  <input name="lastName" defaultValue={editingUser?.lastName || ''} required className="w-full border rounded-lg px-3 py-2" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input name="email" type="email" defaultValue={editingUser?.email || ''} required className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{editingUser ? 'Nouveau mot de passe (laisser vide pour ne pas changer)' : 'Mot de passe'}</label>
+                <input name="password" type="password" required={!editingUser} className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Rôle</label>
+                <select name="role" defaultValue={editingUser?.role || 'OPERATOR'} className="w-full border rounded-lg px-3 py-2">
+                  <option value="ADMIN">Admin</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="OPERATOR">Opérateur</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Marques autorisées</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" name="brands" value="VOLTRIDE" defaultChecked={editingUser?.brands?.includes('VOLTRIDE') ?? true} className="w-4 h-4" />
+                    <span>Voltride</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" name="brands" value="MOTOR-RENT" defaultChecked={editingUser?.brands?.includes('MOTOR-RENT') ?? true} className="w-4 h-4" />
+                    <span>Motor-Rent</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" name="isActive" defaultChecked={editingUser?.isActive ?? true} className="w-4 h-4" />
+                  <span className="text-sm font-medium">Utilisateur actif</span>
+                </label>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  {editingUser ? 'Enregistrer' : 'Créer'}
+                </button>
+                <button type="button" onClick={() => { setShowNewUserModal(false); setEditingUser(null) }} className="flex-1 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Context Menu */}
       {contextMenu && (
         <div className="fixed bg-white rounded-lg shadow-xl border py-2 z-50" style={{ left: contextMenu.x, top: contextMenu.y }}>

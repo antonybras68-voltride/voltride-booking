@@ -1530,7 +1530,7 @@ app.post('/api/numbering-categories', async (req, res) => {
 
 app.put('/api/numbering-categories/:id', async (req, res) => {
   try {
-    const category = await prisma.vehicleNumberingCategory.update({ where: { id: req.params.id }, data: { code: req.body.code, prefix: req.body.prefix, name: req.body.name, description: req.body.description, numberPadding: req.body.numberPadding, inspectionType: req.body.inspectionType, isActive: req.body.isActive, closedOnSunday: req.body.closedOnSunday } })
+    const category = await prisma.vehicleNumberingCategory.update({ where: { id: req.params.id }, data: { code: req.body.code, prefix: req.body.prefix, name: req.body.name, description: req.body.description, numberPadding: req.body.numberPadding, inspectionType: req.body.inspectionType, isActive: req.body.isActive } })
     res.json(category)
   } catch (error) { res.status(500).json({ error: 'Failed to update numbering category' }) }
 })

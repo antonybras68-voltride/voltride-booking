@@ -63,7 +63,6 @@ function App() {
           </div>
         <nav className="space-y-2">
           {[
-            { id: 'dashboard', icon: '📊', label: 'Dashboard' },
             { id: 'vehicles', icon: '🚲', label: 'Véhicules' },
             { id: 'categories', icon: '🏷️', label: 'Catégories' },
             { id: 'agencies', icon: '🏢', label: 'Agences' },

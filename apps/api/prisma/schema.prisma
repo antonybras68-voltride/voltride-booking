@@ -167,6 +167,11 @@ model Customer {
   city       String?
   country    String    @default("ES")
   language   String    @default("es")
+  idDocumentUrl       String?   // URL photo pièce d'identité
+  idDocumentExpiry    DateTime? // Date d'expiration
+  licenseDocumentUrl  String?   // URL photo permis de conduire
+  licenseDocumentExpiry DateTime? // Date d'expiration permis
+  documentsVerified   Boolean   @default(false)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   bookings   Booking[]

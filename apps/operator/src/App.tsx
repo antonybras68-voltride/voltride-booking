@@ -206,6 +206,13 @@ export default function App() {
   const [selectedFleetForEdit, setSelectedFleetForEdit] = useState(null)
   const [fleetModalMode, setFleetModalMode] = useState<'view' | 'edit'>('view')
   const [showNewFleet, setShowNewFleet] = useState(false)
+  const [assigningBooking, setAssigningBooking] = useState<any>(null)
+  const [availableFleetForAssign, setAvailableFleetForAssign] = useState<any[]>([])
+  const [customers, setCustomers] = useState<any[]>([])
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
+  const [showCustomerModal, setShowCustomerModal] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<any>(null)
+  const [customerSearch, setCustomerSearch] = useState('')
   const [fleetStatusFilter, setFleetStatusFilter] = useState('ALL')
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
   const [selectedCheckoutBooking, setSelectedCheckoutBooking] = useState(null)
@@ -262,6 +269,81 @@ export default function App() {
     } catch (e) { console.error('Erreur chargement permissions:', e) }
   }
 
+  // Ouvrir le modal d'assignation
+  const openAssignModal = async (booking: any) => {
+    setAssigningBooking(booking)
+    // Charger les véhicules Fleet disponibles pour ce type de véhicule et ces dates
+    try {
+      const vehicleTypeId = booking.items?.[0]?.vehicleId
+      const res = await fetch(API_URL + '/api/fleet?agencyId=' + booking.agencyId)
+      const allFleet = await res.json()
+      // Filtrer par type de véhicule et disponibilité
+      const available = allFleet.filter((f: any) => 
+        f.vehicleId === vehicleTypeId && 
+        (f.status === 'AVAILABLE' || f.status === 'RESERVED')
+      )
+      setAvailableFleetForAssign(available)
+    } catch (e) { console.error(e) }
+  }
+
+  // Assigner un véhicule à une réservation
+  const assignVehicle = async (fleetId: string) => {
+    if (!assigningBooking) return
+    try {
+      await fetch(API_URL + '/api/bookings/' + assigningBooking.id + '/assign', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fleetVehicleId: fleetId })
+      })
+      setAssigningBooking(null)
+      loadData()
+    } catch (e) { console.error(e) }
+  }
+
+  // Charger les clients
+  const loadCustomers = async () => {
+    try {
+      const res = await fetch(API_URL + '/api/customers')
+      const data = await res.json()
+      setCustomers(Array.isArray(data) ? data : [])
+    } catch (e) { console.error('Erreur chargement clients:', e) }
+  }
+
+  // Supprimer un client
+  const deleteCustomer = async (customerId: string) => {
+    if (!confirm(lang === 'fr' ? 'Supprimer ce client et toutes ses données ?' : '¿Eliminar este cliente y todos sus datos?')) return
+    try {
+      await fetch(API_URL + '/api/customers/' + customerId, { method: 'DELETE' })
+      loadCustomers()
+      setSelectedCustomer(null)
+    } catch (e) { console.error(e) }
+  }
+
+  // Sauvegarder un client
+  const saveCustomer = async (customerData: any) => {
+    try {
+      const method = editingCustomer ? 'PUT' : 'POST'
+      const url = editingCustomer ? API_URL + '/api/customers/' + editingCustomer.id : API_URL + '/api/customers'
+      await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customerData)
+      })
+      loadCustomers()
+      setShowCustomerModal(false)
+      setEditingCustomer(null)
+    } catch (e) { console.error(e) }
+  }
+
+  // Supprimer une réservation
+  const deleteBooking = async (bookingId: string) => {
+    if (!confirm(lang === 'fr' ? 'Supprimer cette réservation ?' : '¿Eliminar esta reserva?')) return
+    try {
+      await fetch(API_URL + '/api/bookings/' + bookingId, { method: 'DELETE' })
+      loadData()
+    } catch (e) { console.error(e) }
+  }
+
   // Charger les utilisateurs
   const loadUsers = async () => {
     try {
@@ -291,6 +373,7 @@ export default function App() {
     loadBrandSettings('MOTOR-RENT')
     loadPermissions()
     loadUsers()
+    loadCustomers()
   }, [])
 
   useEffect(() => {
@@ -1404,7 +1487,10 @@ export default function App() {
                           <td className="px-4 py-3">{b.customer?.firstName} {b.customer?.lastName}</td>
                           <td className="px-4 py-3 text-sm">{new Date(b.startDate).toLocaleDateString('fr-FR')} → {new Date(b.endDate).toLocaleDateString('fr-FR')}</td>
                           <td className="px-4 py-3">{getName(b.items?.[0]?.vehicle?.name)}</td>
-                          <td className="px-4 py-3"><button className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">Assigner</button></td>
+                          <td className="px-4 py-3 flex gap-2">
+                            <button onClick={(e) => { e.stopPropagation(); openAssignModal(b) }} className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">{lang === 'fr' ? 'Assigner' : 'Asignar'}</button>
+                            <button onClick={(e) => { e.stopPropagation(); deleteBooking(b.id) }} className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600">{t[lang].delete}</button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -1721,7 +1807,180 @@ export default function App() {
           )}
 
           {/* Other tabs placeholder */}
-          {!loading && ['customers', 'contracts', 'invoices'].includes(tab) && (
+          {/* CUSTOMERS */}
+          {!loading && tab === 'customers' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">{t[lang].customers}</h2>
+                <button onClick={() => { setEditingCustomer(null); setShowCustomerModal(true) }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                  + {lang === 'fr' ? 'Nouveau client' : 'Nuevo cliente'}
+                </button>
+              </div>
+              
+              {/* Barre de recherche */}
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder={lang === 'fr' ? 'Rechercher un client...' : 'Buscar un cliente...'}
+                  value={customerSearch}
+                  onChange={e => setCustomerSearch(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg pl-10"
+                />
+                <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Liste des clients */}
+                <div className="lg:col-span-1 bg-white rounded-xl shadow overflow-hidden">
+                  <div className="max-h-[600px] overflow-auto">
+                    {customers
+                      .filter(c => 
+                        !customerSearch || 
+                        (c.firstName + ' ' + c.lastName + ' ' + c.email).toLowerCase().includes(customerSearch.toLowerCase())
+                      )
+                      .map(c => (
+                        <div 
+                          key={c.id} 
+                          onClick={() => setSelectedCustomer(c)}
+                          className={'p-4 border-b cursor-pointer hover:bg-gray-50 ' + (selectedCustomer?.id === c.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : '')}
+                        >
+                          <div className="font-medium">{c.firstName} {c.lastName}</div>
+                          <div className="text-sm text-gray-500">{c.email}</div>
+                          <div className="text-xs text-gray-400">{c.phone}</div>
+                        </div>
+                      ))
+                    }
+                    {customers.length === 0 && (
+                      <div className="p-8 text-center text-gray-500">{lang === 'fr' ? 'Aucun client' : 'Sin clientes'}</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Fiche client */}
+                <div className="lg:col-span-2">
+                  {selectedCustomer ? (
+                    <div className="bg-white rounded-xl shadow p-6">
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <h3 className="text-2xl font-bold">{selectedCustomer.firstName} {selectedCustomer.lastName}</h3>
+                          <p className="text-gray-500">{selectedCustomer.email}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => { setEditingCustomer(selectedCustomer); setShowCustomerModal(true) }}
+                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-sm">
+                            {t[lang].edit}
+                          </button>
+                          <button onClick={() => deleteCustomer(selectedCustomer.id)}
+                            className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm">
+                            {t[lang].delete}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Coordonnées */}
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div>
+                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Téléphone' : 'Teléfono'}</label>
+                          <p className="font-medium">{selectedCustomer.phone || '-'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Langue' : 'Idioma'}</label>
+                          <p className="font-medium">{selectedCustomer.language === 'fr' ? '🇫🇷 Français' : selectedCustomer.language === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Adresse' : 'Dirección'}</label>
+                          <p className="font-medium">{selectedCustomer.address || '-'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Ville' : 'Ciudad'}</label>
+                          <p className="font-medium">{selectedCustomer.city || '-'} {selectedCustomer.postalCode}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Pays' : 'País'}</label>
+                          <p className="font-medium">{selectedCustomer.country || '-'}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Créé le' : 'Creado el'}</label>
+                          <p className="font-medium">{selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : '-'}</p>
+                        </div>
+                      </div>
+
+                      {/* Documents */}
+                      <div className="border-t pt-4">
+                        <h4 className="font-bold mb-3">{lang === 'fr' ? 'Documents' : 'Documentos'}</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 border rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium">{lang === 'fr' ? 'Pièce d'identité' : 'Documento de identidad'}</span>
+                              {selectedCustomer.idDocumentUrl ? (
+                                <span className="text-green-600 text-sm">✓ {lang === 'fr' ? 'Vérifié' : 'Verificado'}</span>
+                              ) : (
+                                <span className="text-orange-600 text-sm">⚠ {lang === 'fr' ? 'Manquant' : 'Faltante'}</span>
+                              )}
+                            </div>
+                            {selectedCustomer.idDocumentUrl && (
+                              <a href={selectedCustomer.idDocumentUrl} target="_blank" className="text-blue-600 text-sm hover:underline">
+                                {lang === 'fr' ? 'Voir le document' : 'Ver documento'}
+                              </a>
+                            )}
+                          </div>
+                          <div className="p-4 border rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium">{lang === 'fr' ? 'Permis de conduire' : 'Permiso de conducir'}</span>
+                              {selectedCustomer.licenseDocumentUrl ? (
+                                <span className="text-green-600 text-sm">✓ {lang === 'fr' ? 'Vérifié' : 'Verificado'}</span>
+                              ) : (
+                                <span className="text-orange-600 text-sm">⚠ {lang === 'fr' ? 'Manquant' : 'Faltante'}</span>
+                              )}
+                            </div>
+                            {selectedCustomer.licenseDocumentUrl && (
+                              <a href={selectedCustomer.licenseDocumentUrl} target="_blank" className="text-blue-600 text-sm hover:underline">
+                                {lang === 'fr' ? 'Voir le document' : 'Ver documento'}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Historique des réservations */}
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="font-bold mb-3">{lang === 'fr' ? 'Historique des réservations' : 'Historial de reservas'}</h4>
+                        <div className="space-y-2">
+                          {bookings.filter(b => b.customerId === selectedCustomer.id).length === 0 ? (
+                            <p className="text-gray-500 text-sm">{lang === 'fr' ? 'Aucune réservation' : 'Sin reservas'}</p>
+                          ) : (
+                            bookings.filter(b => b.customerId === selectedCustomer.id).map(b => (
+                              <div key={b.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                  <span className="font-mono text-sm">{b.reference}</span>
+                                  <span className="ml-2 text-sm text-gray-500">
+                                    {new Date(b.startDate).toLocaleDateString()} → {new Date(b.endDate).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <span className={'px-2 py-1 rounded text-xs ' + 
+                                  (b.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 
+                                   b.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700')}>
+                                  {b.status}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
+                      {lang === 'fr' ? 'Sélectionnez un client pour voir sa fiche' : 'Seleccione un cliente para ver su ficha'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CONTRACTS & INVOICES - À développer */}
+          {!loading && ['contracts', 'invoices'].includes(tab) && (
             <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
               {t[lang].module} {tab} - {t[lang].toDevelop}
             </div>
@@ -1921,6 +2180,137 @@ export default function App() {
           onClose={() => { setShowNewBooking(false); setNewBookingData(null) }}
           onComplete={() => { setShowNewBooking(false); setNewBookingData(null); loadData() }}
         />
+      )}
+
+      {/* Modal Assignation */}
+      {assigningBooking && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setAssigningBooking(null)}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-4">{lang === 'fr' ? 'Assigner un véhicule' : 'Asignar un vehículo'}</h3>
+            <p className="text-gray-600 mb-4">{lang === 'fr' ? 'Réservation' : 'Reserva'}: {assigningBooking.reference}</p>
+            <p className="text-gray-600 mb-4">{lang === 'fr' ? 'Type' : 'Tipo'}: {getName(assigningBooking.items?.[0]?.vehicle?.name)}</p>
+            <div className="space-y-2 max-h-60 overflow-auto">
+              {availableFleetForAssign.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">{lang === 'fr' ? 'Aucun véhicule disponible' : 'No hay vehículos disponibles'}</p>
+              ) : (
+                availableFleetForAssign.map(f => (
+                  <div key={f.id} onClick={() => assignVehicle(f.id)}
+                    className="p-3 border rounded-lg hover:bg-blue-50 cursor-pointer flex justify-between items-center">
+                    <div>
+                      <span className="font-bold">{f.vehicleNumber}</span>
+                      {f.locationCode && <span className="ml-2 text-gray-500">({f.locationCode})</span>}
+                      {f.licensePlate && <span className="ml-2 text-gray-400">{f.licensePlate}</span>}
+                    </div>
+                    <span className={'px-2 py-1 rounded text-xs ' + (f.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700')}>{f.status}</span>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button onClick={() => setAssigningBooking(null)} className="px-4 py-2 bg-gray-200 rounded-lg">{t[lang].cancel}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Client */}
+      {showCustomerModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCustomerModal(false)}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-4">
+              {editingCustomer ? (lang === 'fr' ? 'Modifier le client' : 'Editar cliente') : (lang === 'fr' ? 'Nouveau client' : 'Nuevo cliente')}
+            </h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              const form = e.target as HTMLFormElement
+              const formData = new FormData(form)
+              const data = {
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                address: formData.get('address'),
+                postalCode: formData.get('postalCode'),
+                city: formData.get('city'),
+                country: formData.get('country'),
+                language: formData.get('language'),
+                idDocumentUrl: formData.get('idDocumentUrl') || editingCustomer?.idDocumentUrl,
+                licenseDocumentUrl: formData.get('licenseDocumentUrl') || editingCustomer?.licenseDocumentUrl
+              }
+              await saveCustomer(data)
+            }} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t[lang].firstName}</label>
+                  <input name="firstName" defaultValue={editingCustomer?.firstName || ''} required className="w-full border rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t[lang].lastName}</label>
+                  <input name="lastName" defaultValue={editingCustomer?.lastName || ''} required className="w-full border rounded-lg px-3 py-2" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{t[lang].email}</label>
+                <input name="email" type="email" defaultValue={editingCustomer?.email || ''} required className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Téléphone' : 'Teléfono'}</label>
+                <input name="phone" defaultValue={editingCustomer?.phone || ''} className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Adresse' : 'Dirección'}</label>
+                <input name="address" defaultValue={editingCustomer?.address || ''} className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Code postal' : 'Código postal'}</label>
+                  <input name="postalCode" defaultValue={editingCustomer?.postalCode || ''} className="w-full border rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Ville' : 'Ciudad'}</label>
+                  <input name="city" defaultValue={editingCustomer?.city || ''} className="w-full border rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Pays' : 'País'}</label>
+                  <input name="country" defaultValue={editingCustomer?.country || 'ES'} className="w-full border rounded-lg px-3 py-2" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{t[lang].language}</label>
+                <select name="language" defaultValue={editingCustomer?.language || 'es'} className="w-full border rounded-lg px-3 py-2">
+                  <option value="es">🇪🇸 Español</option>
+                  <option value="fr">🇫🇷 Français</option>
+                  <option value="en">🇬🇧 English</option>
+                </select>
+              </div>
+              
+              {editingCustomer && (
+                <>
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium mb-3">{lang === 'fr' ? 'Documents' : 'Documentos'}</h4>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'URL Pièce d'identité' : 'URL Documento identidad'}</label>
+                      <input name="idDocumentUrl" defaultValue={editingCustomer?.idDocumentUrl || ''} className="w-full border rounded-lg px-3 py-2" placeholder="https://..." />
+                    </div>
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'URL Permis de conduire' : 'URL Permiso conducir'}</label>
+                      <input name="licenseDocumentUrl" defaultValue={editingCustomer?.licenseDocumentUrl || ''} className="w-full border rounded-lg px-3 py-2" placeholder="https://..." />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  {editingCustomer ? t[lang].save : t[lang].create}
+                </button>
+                <button type="button" onClick={() => setShowCustomerModal(false)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                  {t[lang].cancel}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Check-in Modal */}

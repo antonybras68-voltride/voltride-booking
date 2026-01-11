@@ -317,6 +317,21 @@ app.put('/api/bookings/:id/status', async (req, res) => {
   catch (error) { res.status(500).json({ error: 'Failed to update booking status' }) }
 })
 
+// Delete booking
+app.delete('/api/bookings/:id', async (req, res) => {
+  try {
+    // Supprimer d'abord les items et options liés
+    await prisma.bookingItem.deleteMany({ where: { bookingId: req.params.id } })
+    await prisma.bookingOption.deleteMany({ where: { bookingId: req.params.id } })
+    // Supprimer la réservation
+    await prisma.booking.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error) {
+    console.error('Delete booking error:', error)
+    res.status(500).json({ error: 'Failed to delete booking' })
+  }
+})
+
 // ============== STRIPE CHECKOUT ==============
 app.post('/api/create-checkout-session', async (req, res) => {
   try {

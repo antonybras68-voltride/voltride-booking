@@ -250,6 +250,19 @@ app.get('/api/customers', async (req, res) => {
   catch (error) { res.status(500).json({ error: 'Failed to fetch customers' }) }
 })
 
+// Supprimer un client
+app.delete("/api/customers/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.booking.deleteMany({ where: { customerId: id } });
+    await prisma.customer.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to delete customer" });
+  }
+});
+
 // ============== BOOKINGS ==============
 app.get('/api/bookings', async (req, res) => {
   try {

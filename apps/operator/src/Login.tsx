@@ -49,7 +49,7 @@ export function Login({ onLogin }: LoginProps) {
             <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1768119263/IMG-20260111-WA0001-removebg-preview_lpc7xh.png" className="h-16" alt="Voltride" />
             <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766930480/logo-2024-e1699439584325-removebg-preview_sv6yxg.png" className="h-16" alt="Motor-Rent" />
           </div>
-          <p className="text-gray-500 mt-2">Connectez-vous pour continuer</p>
+          
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -60,7 +60,7 @@ export function Login({ onLogin }: LoginProps) {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Correo</label>
             <input
               type="email"
               value={email}
@@ -72,7 +72,7 @@ export function Login({ onLogin }: LoginProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Mot de passe</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
             <input
               type="password"
               value={password}
@@ -100,7 +100,7 @@ export function Login({ onLogin }: LoginProps) {
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Voltride Group © 2024</p>
+          <p>Trivium Family © 2026</p>
         </div>
       </div>
     </div>

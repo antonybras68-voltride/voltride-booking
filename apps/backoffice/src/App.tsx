@@ -69,7 +69,7 @@ function App() {
             { id: 'options', label: 'Options' },
           ].map(item => (
             <button key={item.id} onClick={() => setTab(item.id as Tab)} className={'w-full text-left px-4 py-2 rounded-lg flex items-center gap-3 ' + (tab === item.id ? 'bg-blue-600' : 'hover:bg-gray-800')}>
-              <span>{item.icon}</span> {item.label}
+              {item.label}
             </button>
           ))}
         </nav>

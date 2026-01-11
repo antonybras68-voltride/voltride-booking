@@ -63,10 +63,10 @@ function App() {
           </div>
         <nav className="space-y-2">
           {[
-            { id: 'vehicles', icon: '🚲', label: 'Véhicules' },
-            { id: 'categories', icon: '🏷️', label: 'Catégories' },
-            { id: 'agencies', icon: '🏢', label: 'Agences' },
-            { id: 'options', icon: '🎒', label: 'Options' },
+            { id: 'vehicles', label: 'Véhicules' },
+            { id: 'categories', label: 'Catégories' },
+            { id: 'agencies', label: 'Agences' },
+            { id: 'options', label: 'Options' },
           ].map(item => (
             <button key={item.id} onClick={() => setTab(item.id as Tab)} className={'w-full text-left px-4 py-2 rounded-lg flex items-center gap-3 ' + (tab === item.id ? 'bg-blue-600' : 'hover:bg-gray-800')}>
               <span>{item.icon}</span> {item.label}

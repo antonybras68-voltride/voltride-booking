@@ -4,7 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-produc
 
 type Tab = 'vehicles' | 'agencies' | 'categories' | 'options'
 
-interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean }
+interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean; closedOnSunday: boolean }
 interface Category { id: string; code: string; name: any; brand: string; bookingFee: number; _count?: { vehicles: number }; options?: any[] }
 interface Vehicle { id: string; sku: string; name: any; description: any; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; kmIncludedPerDay?: number; extraKmPrice?: number; helmetIncluded?: boolean; imageUrl?: string; categoryId: string; category?: Category; pricing: any[] }
 interface Option { id: string; code: string; name: any; maxQuantity: number; includedByDefault: boolean; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
@@ -215,7 +215,7 @@ function App() {
 }
 
 function AgencyModal({ agency, onSave, onClose }: { agency: any; onSave: (data: any) => void; onClose: () => void }) {
-  const [form, setForm] = useState({ code: agency?.code || '', nameFr: agency?.name?.fr || '', nameEs: agency?.name?.es || '', nameEn: agency?.name?.en || '', address: agency?.address || '', city: agency?.city || '', postalCode: agency?.postalCode || '', country: agency?.country || 'ES', phone: agency?.phone || '', email: agency?.email || '', brand: agency?.brand || 'VOLTRIDE', openingTime: agency?.openingTime || '10:00', closingTimeSummer: agency?.closingTimeSummer || '19:00', closingTimeWinter: agency?.closingTimeWinter || '16:00', summerStartDate: agency?.summerStartDate || "04-01", summerEndDate: agency?.summerEndDate || "09-30", isActive: agency?.isActive ?? true })
+  const [form, setForm] = useState({ code: agency?.code || '', nameFr: agency?.name?.fr || '', nameEs: agency?.name?.es || '', nameEn: agency?.name?.en || '', address: agency?.address || '', city: agency?.city || '', postalCode: agency?.postalCode || '', country: agency?.country || 'ES', phone: agency?.phone || '', email: agency?.email || '', brand: agency?.brand || 'VOLTRIDE', openingTime: agency?.openingTime || '10:00', closingTimeSummer: agency?.closingTimeSummer || '19:00', closingTimeWinter: agency?.closingTimeWinter || '16:00', summerStartDate: agency?.summerStartDate || "04-01", summerEndDate: agency?.summerEndDate || "09-30", isActive: agency?.isActive ?? true, closedOnSunday: agency?.closedOnSunday ?? false })
   const handleSubmit = () => onSave({ ...form, name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn } })
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -263,6 +263,7 @@ function AgencyModal({ agency, onSave, onClose }: { agency: any; onSave: (data: 
               <input type="text" placeholder="09-30" value={form.summerEndDate} onChange={e => setForm({ ...form, summerEndDate: e.target.value })} className="w-full p-2 border rounded" />
             </div>
           </div>
+          <label className="flex items-center gap-2 mt-3"><input type="checkbox" checked={form.closedOnSunday} onChange={e => setForm({ ...form, closedOnSunday: e.target.checked })} className="w-4 h-4" /><span className="text-sm">Fermé le dimanche (pas de prise en charge ni retour)</span></label>
         </div>
         <div className="flex gap-2 mt-4">
           <button onClick={onClose} className="flex-1 py-2 bg-gray-200 rounded">Annuler</button>

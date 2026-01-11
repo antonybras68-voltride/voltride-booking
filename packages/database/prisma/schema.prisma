@@ -26,6 +26,7 @@ model Agency {
   openingTime       String      @default("10:00")
   summerEndDate     String      @default("09-30")
   summerStartDate   String      @default("04-01")
+  closedOnSunday    Boolean     @default(false)
   bookings          Booking[]
   inventory         Inventory[]
   fleetVehicles     Fleet[]

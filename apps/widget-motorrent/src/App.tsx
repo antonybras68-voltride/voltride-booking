@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'MOTOR-RENT'
 
-interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; openingTime?: string; closingTimeSummer?: string; closingTimeWinter?: string; summerStartDate?: string; summerEndDate?: string }
+interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; openingTime?: string; closingTimeSummer?: string; closingTimeWinter?: string; summerStartDate?: string; summerEndDate?: string; closedOnSunday?: boolean }
 interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; helmetIncluded?: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { id: string; name: { fr: string; es: string; en: string }; brand: string; bookingFee?: number }; pricing: any[]; inventory: any[] }
 interface OptionType { id: string; code: string; name: { fr: string; es: string; en: string }; maxQuantity: number; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[]; includedByDefault?: boolean }
 
@@ -119,6 +119,13 @@ function App() {
   }
 
   const getName = (obj: any) => obj?.[lang] || obj?.es || obj?.fr || ''
+  const isSundayBlocked = (date: string): boolean => {
+    if (!date) return false
+    const agency = agencies.find(a => a.id === selectedAgency)
+    if (!agency?.closedOnSunday) return false
+    const d = new Date(date)
+    return d.getDay() === 0
+  }
   
   const calculateTotalHours = (): number => {
     if (!startDate || !endDate || !startTime || !endTime) return 0
@@ -376,7 +383,8 @@ function App() {
                 </div>
               </div>
               {!isMinimum24h() && startDate && endDate && <p className="text-red-500 text-sm text-center mb-2">⚠️ {lang === 'fr' ? 'Location minimum 24h' : lang === 'es' ? 'Alquiler mínimo 24h' : 'Minimum rental 24h'}</p>}
-              <button onClick={() => setStep('vehicles')} disabled={!startDate || !endDate || !isMinimum24h()} className="w-full py-3 bg-gradient-to-r from-[#fcb900] to-[#ff9500] text-white font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
+              {(isSundayBlocked(startDate) || isSundayBlocked(endDate)) && <p className="text-red-500 text-sm text-center mb-2">⚠️ {lang === "fr" ? "Cette agence est fermée le dimanche" : lang === "es" ? "Esta agencia está cerrada los domingos" : "This agency is closed on Sundays"}</p>}
+              <button onClick={() => setStep('vehicles')} disabled={!startDate || !endDate || !isMinimum24h() || isSundayBlocked(startDate) || isSundayBlocked(endDate)} className="w-full py-3 bg-gradient-to-r from-[#fcb900] to-[#ff9500] text-white font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
                 {t.continue}
               </button>
             </div>

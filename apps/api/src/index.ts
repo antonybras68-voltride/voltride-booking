@@ -895,6 +895,7 @@ app.put('/api/fleet/:id', async (req, res) => {
       data: {
         vehicleNumber: req.body.vehicleNumber,
         licensePlate: req.body.licensePlate,
+        locationCode: req.body.locationCode,
         chassisNumber: req.body.chassisNumber,
         brand: req.body.brand,
         model: req.body.model,
@@ -935,6 +936,7 @@ app.post('/api/fleet', async (req, res) => {
       data: {
         vehicleNumber: req.body.vehicleNumber,
         licensePlate: req.body.licensePlate || null,
+        locationCode: req.body.locationCode || null,
         chassisNumber: req.body.chassisNumber,
         brand: req.body.brand || null,
         model: req.body.model || null,
@@ -1594,6 +1596,7 @@ app.post('/api/fleet', async (req, res) => {
       data: {
         vehicleNumber,
         licensePlate: req.body.licensePlate,
+        locationCode: req.body.locationCode,
         chassisNumber: req.body.chassisNumber,
         vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,

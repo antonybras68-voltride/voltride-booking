@@ -26,7 +26,8 @@ export function NewFleetModal({ agencyId, onClose, onSave }: NewFleetModalProps)
     color: '',
     categoryId: '',
     vehicleId: '',
-    currentMileage: 0
+    currentMileage: 0,
+    locationCode: ''
   })
 
   useEffect(() => {
@@ -138,11 +139,16 @@ export function NewFleetModal({ agencyId, onClose, onSave }: NewFleetModalProps)
           </div>
 
           {/* Vehicle Info */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Numéro véhicule *</label>
               <input type="text" value={form.vehicleNumber} onChange={e => updateForm('vehicleNumber', e.target.value)}
-                className="w-full border rounded-lg p-2 text-sm" placeholder="V01-001" />
+                className="w-full border rounded-lg p-2 text-sm" placeholder="S50-001" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Localisation</label>
+              <input type="text" value={form.locationCode} onChange={e => updateForm('locationCode', e.target.value)}
+                className="w-full border rounded-lg p-2 text-sm" placeholder="V01, M01, M02..." />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Immatriculation</label>

@@ -258,6 +258,7 @@ model Fleet {
   vehicle                 Vehicle   @relation(fields: [vehicleId], references: [id])
   agencyId                String
   agency                  Agency    @relation(fields: [agencyId], references: [id])
+  locationCode            String?   // Code de localisation physique (V01, V02, M01, M02, etc.)
   year                    Int?
   color                   String?
   purchaseDate            DateTime?

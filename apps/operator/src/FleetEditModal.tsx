@@ -14,6 +14,7 @@ interface FleetModalProps {
 
 const CONTRACT_FIELDS = [
   { id: 'vehicleNumber', label: 'Numéro véhicule' },
+  { id: 'locationCode', label: 'Localisation' },
   { id: 'licensePlate', label: 'Immatriculation' },
   { id: 'brand', label: 'Marque' },
   { id: 'model', label: 'Modèle' },
@@ -43,6 +44,7 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
   const [form, setForm] = useState({
     vehicleNumber: fleet?.vehicleNumber || '',
     licensePlate: fleet?.licensePlate || '',
+    locationCode: fleet?.locationCode || '',
     brand: fleet?.brand || '',
     model: fleet?.model || '',
     chassisNumber: fleet?.chassisNumber || '',

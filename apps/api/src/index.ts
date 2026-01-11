@@ -330,6 +330,20 @@ app.put('/api/bookings/:id/status', async (req, res) => {
   try { const booking = await prisma.booking.update({ where: { id: req.params.id }, data: { status: req.body.status } }); res.json(booking) }
   catch (error) { res.status(500).json({ error: 'Failed to update booking status' }) }
 })
+// Cancel booking
+app.put("/api/bookings/:id/cancel", async (req, res) => {
+  try {
+    const booking = await prisma.booking.update({
+      where: { id: req.params.id },
+      data: { status: "CANCELLED" }
+    });
+    res.json(booking);
+  } catch (error) {
+    console.error("Cancel booking error:", error);
+    res.status(500).json({ error: "Failed to cancel booking" });
+  }
+
+})
 
 // Delete booking
 app.delete('/api/bookings/:id', async (req, res) => {

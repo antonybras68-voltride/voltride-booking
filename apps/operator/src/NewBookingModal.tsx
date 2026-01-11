@@ -23,7 +23,9 @@ interface NewBookingModalProps {
 }
 
 export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onClose, onComplete }: NewBookingModalProps) {
-  const [step, setStep] = useState(1) // 1: Vehicle/Dates, 2: Customer, 3: Summary
+  const [step, setStep] = useState(1) // 1: Vehicle/Dates, 2: Options, 3: Customer, 4: Summary
+  const [options, setOptions] = useState([])
+  const [selectedOptions, setSelectedOptions] = useState({})
   const [loading, setLoading] = useState(false)
   
   // Vehicle & dates
@@ -61,6 +63,19 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
       })
     }
   }, [agencyId])
+  // Load options for category
+  useEffect(() => {
+    if (selectedFleet?.vehicle?.categoryId) {
+      fetch("https://api-voltrideandmotorrent-production.up.railway.app/api/options")
+        .then(res => res.json())
+        .then(data => {
+          const categoryOptions = data.filter((opt: any) => 
+            opt.categories?.some((c: any) => c.categoryId === selectedFleet.vehicle.categoryId)
+          )
+          setOptions(categoryOptions.length > 0 ? categoryOptions : data)
+        })
+    }
+  }, [selectedFleet])
 
   // Search customers
   useEffect(() => {
@@ -74,6 +89,27 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
   }, [searchQuery])
 
   // Calculate price when dates change
+  // Calculate option price based on days
+  const getOptionPrice = (option: any, days: number): number => {
+    if (days <= 14) {
+      return option["day" + days] || option.day14 || 0
+    }
+    return option.day14 || 0
+  }
+
+  // Calculate total options price
+  const calculateOptionsTotal = (): number => {
+    const start = new Date(bookingStartDate)
+    const end = new Date(bookingEndDate)
+    const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+    return Object.entries(selectedOptions).reduce((total, [optId, qty]) => {
+      const opt = options.find((o: any) => o.id === optId)
+      if (opt && qty > 0) {
+        return total + (getOptionPrice(opt, days) * (qty as number))
+      }
+      return total
+    }, 0)
+  }
   useEffect(() => {
     if (selectedFleet && bookingStartDate && bookingEndDate) {
       const start = new Date(bookingStartDate)
@@ -154,12 +190,13 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
   const canProceed = () => {
     switch (step) {
       case 1: return selectedFleet && bookingStartDate && bookingEndDate
-      case 2: 
+      case 2: return true // Options step - always can proceed
+      case 3: 
         if (customerMode === 'search') return selectedCustomer
         if (customerMode === 'tablet') return walkinStatus === 'completed'
         if (customerMode === 'manual') return customerForm.firstName && customerForm.lastName && customerForm.email && customerForm.phone
         return false
-      case 3: return true
+      case 4: return true
       default: return false
     }
   }
@@ -237,7 +274,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
 
         {/* Progress */}
         <div className="flex border-b">
-          {['Véhicule & Dates', 'Client', 'Récapitulatif'].map((label, i) => (
+          {['Véhicule & Dates', 'Options', 'Client', 'Récapitulatif'].map((label, i) => (
             <button key={i} onClick={() => i + 1 <= step && setStep(i + 1)}
               className={'flex-1 py-3 text-center text-sm font-medium ' +
                 (step === i + 1 ? 'bg-white border-b-2 border-blue-500 text-blue-600' :
@@ -333,9 +370,57 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
               )}
             </div>
           )}
-
-          {/* Step 2: Customer */}
+          {/* Step 2: Options */}
           {step === 2 && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-700">Options & Accessoires</h3>
+              {options.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">Aucune option disponible</p>
+              ) : (
+                <div className="space-y-3">
+                  {options.map((option: any) => {
+                    const start = new Date(bookingStartDate)
+                    const end = new Date(bookingEndDate)
+                    const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                    const price = getOptionPrice(option, days)
+                    return (
+                      <div key={option.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={!!selectedOptions[option.id]}
+                            onChange={(e) => setSelectedOptions({...selectedOptions, [option.id]: e.target.checked ? 1 : 0})}
+                            className="w-5 h-5 rounded"
+                          />
+                          <div>
+                            <p className="font-medium">{getName(option.name)}</p>
+                            <p className="text-sm text-gray-500">{price}€ pour {days} jour(s)</p>
+                          </div>
+                        </div>
+                        {selectedOptions[option.id] > 0 && option.maxQuantity > 1 && (
+                          <select
+                            value={selectedOptions[option.id] || 1}
+                            onChange={(e) => setSelectedOptions({...selectedOptions, [option.id]: parseInt(e.target.value)})}
+                            className="p-2 border rounded-lg"
+                          >
+                            {Array.from({length: option.maxQuantity}, (_, i) => i + 1).map(n => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-600">Total options: <span className="font-bold">{calculateOptionsTotal()}€</span></p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Customer */}
+          {step === 3 && (
             <div className="space-y-6">
               {/* Mode selector */}
               <div className="flex gap-2">
@@ -502,8 +587,8 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
             </div>
           )}
 
-          {/* Step 3: Summary */}
-          {step === 3 && (
+          {/* Step 4: Summary */}
+          {step === 4 && (
             <div className="space-y-6">
               <div className="p-4 bg-gray-50 rounded-xl">
                 <h3 className="font-bold mb-3">🚲 Véhicule</h3>

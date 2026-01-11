@@ -116,6 +116,68 @@ app.delete('/api/vehicles/:id', async (req, res) => {
   catch (error) { res.status(500).json({ error: 'Failed to delete vehicle' }) }
 })
 
+// ============== FLEET AVAILABILITY FOR WIDGET ==============
+// Retourne le nombre de véhicules Fleet disponibles par type de véhicule pour une agence et des dates
+app.get('/api/fleet-availability', async (req, res) => {
+  try {
+    const { agencyId, startDate, endDate } = req.query
+    
+    if (!agencyId) {
+      return res.status(400).json({ error: 'agencyId required' })
+    }
+
+    // Récupérer tous les véhicules Fleet de cette agence qui sont AVAILABLE
+    const fleetVehicles = await prisma.fleet.findMany({
+      where: {
+        agencyId: agencyId as string,
+        status: { in: ['AVAILABLE', 'RESERVED'] } // RESERVED peut être dispo pour d'autres dates
+      },
+      include: {
+        vehicle: true,
+        bookings: {
+          where: {
+            status: { in: ['CONFIRMED', 'PENDING', 'ACTIVE'] }
+          }
+        }
+      }
+    })
+
+    // Si des dates sont fournies, filtrer par disponibilité
+    const start = startDate ? new Date(startDate as string) : null
+    const end = endDate ? new Date(endDate as string) : null
+
+    // Compter les véhicules disponibles par type (vehicleId)
+    const availabilityMap: Record<string, number> = {}
+
+    fleetVehicles.forEach(fleet => {
+      const vehicleId = fleet.vehicleId
+      
+      // Vérifier si ce véhicule Fleet est disponible pour les dates demandées
+      let isAvailable = true
+      
+      if (start && end) {
+        isAvailable = !fleet.bookings.some(booking => {
+          const bookingStart = new Date(booking.startDate)
+          const bookingEnd = new Date(booking.endDate)
+          // Conflit si les périodes se chevauchent
+          return !(end <= bookingStart || start >= bookingEnd)
+        })
+      }
+
+      if (isAvailable) {
+        availabilityMap[vehicleId] = (availabilityMap[vehicleId] || 0) + 1
+      }
+    })
+
+    res.json(availabilityMap)
+  } catch (error) {
+    console.error('Fleet availability error:', error)
+    res.status(500).json({ error: 'Failed to get fleet availability' })
+  }
+})
+
+
+
 // ============== OPTIONS ==============
 app.get('/api/options', async (req, res) => {
   try {

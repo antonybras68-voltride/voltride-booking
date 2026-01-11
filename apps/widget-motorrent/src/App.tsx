@@ -58,6 +58,7 @@ function App() {
   const [step, setStep] = useState<Step>('dates')
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [fleetAvailability, setFleetAvailability] = useState<Record<string, number>>({})
   const [options, setOptions] = useState<OptionType[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAgency, setSelectedAgency] = useState<string>('')
@@ -77,6 +78,7 @@ function App() {
 
   useEffect(() => { loadData() }, [])
   useEffect(() => { if (selectedAgency) loadVehicles() }, [selectedAgency])
+  useEffect(() => { if (selectedAgency && startDate && endDate) loadFleetAvailability() }, [startDate, endDate])
   useEffect(() => { if (startDate && !startTimeSlots.includes(startTime)) setStartTime(startTimeSlots[0] || '10:00') }, [startDate, startTimeSlots])
   useEffect(() => { if (endDate && !endTimeSlots.includes(endTime)) setEndTime(endTimeSlots[0] || '10:00') }, [endDate, endTimeSlots])
 
@@ -155,8 +157,8 @@ function App() {
   }
   
   const getAvailableQuantity = (vehicle: Vehicle): number => {
-    const inv = vehicle.inventory?.find((i: any) => i.agencyId === selectedAgency)
-    return inv?.quantity || 0
+    // Utiliser les disponibilités Fleet (véhicules physiques réels)
+    return fleetAvailability[vehicle.id] || 0
   }
 
   const getMaxQuantity = (vehicle: Vehicle): number => {

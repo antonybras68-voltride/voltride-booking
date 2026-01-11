@@ -57,6 +57,7 @@ function App() {
   const [step, setStep] = useState<Step>('dates')
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [fleetAvailability, setFleetAvailability] = useState<Record<string, number>>({})
   const [options, setOptions] = useState<Option[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAgency, setSelectedAgency] = useState<string>('')
@@ -178,6 +179,7 @@ function App() {
     }
   }, [])
   useEffect(() => { if (selectedAgency) loadVehicles() }, [selectedAgency])
+  useEffect(() => { if (selectedAgency && startDate && endDate) loadFleetAvailability() }, [startDate, endDate])
   useEffect(() => { if (startDate && !startTimeSlots.includes(startTime)) setStartTime(startTimeSlots[0] || '10:00') }, [startDate, startTimeSlots])
   useEffect(() => { if (endDate && !endTimeSlots.includes(endTime)) setEndTime(endTimeSlots[0] || '10:00') }, [endDate, endTimeSlots])
 
@@ -197,14 +199,27 @@ function App() {
     try {
       const res = await fetch(`${API_URL}/api/vehicles?agencyId=${selectedAgency}`)
       const data = await res.json()
-      // Filtrer par marque ET par stock > 0
+      // Filtrer par marque
       const filtered = (Array.isArray(data) ? data : []).filter((v: Vehicle) => {
-        if (v.category?.brand !== BRAND) return false
-        const inv = v.inventory?.find((i: any) => i.agencyId === selectedAgency)
-        return inv && inv.quantity > 0
+        return v.category?.brand === BRAND
       })
       setVehicles(filtered)
+      
+      // Charger les disponibilités Fleet pour cette agence et ces dates
+      await loadFleetAvailability()
     } catch (error) { console.error('Error:', error) }
+  }
+  
+  const loadFleetAvailability = async () => {
+    if (!selectedAgency) return
+    try {
+      let url = API_URL + '/api/fleet-availability?agencyId=' + selectedAgency
+      if (startDate) url += '&startDate=' + startDate
+      if (endDate) url += '&endDate=' + endDate
+      const res = await fetch(url)
+      const data = await res.json()
+      setFleetAvailability(data)
+    } catch (error) { console.error('Fleet availability error:', error) }
   }
 
   const getName = (obj: any) => obj?.[lang] || obj?.fr || ''
@@ -242,8 +257,8 @@ function App() {
   }
   
   const getAvailableQuantity = (vehicle: Vehicle): number => {
-    const inv = vehicle.inventory?.find((i: any) => i.agencyId === selectedAgency)
-    return inv?.quantity || 0
+    // Utiliser les disponibilités Fleet (véhicules physiques réels)
+    return fleetAvailability[vehicle.id] || 0
   }
 
   const getMaxQuantity = (vehicle: Vehicle): number => {

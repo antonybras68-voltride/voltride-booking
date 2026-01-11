@@ -2,15 +2,14 @@ import { useState, useEffect } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-production.up.railway.app'
 
-type Tab = 'dashboard' | 'bookings' | 'vehicles' | 'inventory' | 'agencies' | 'customers' | 'categories' | 'options'
+type Tab = 'dashboard' | 'bookings' | 'vehicles' | 'agencies' | 'customers' | 'categories' | 'options'
 
 interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean }
 interface Category { id: string; code: string; name: any; brand: string; bookingFee: number; _count?: { vehicles: number }; options?: any[] }
-interface Vehicle { id: string; sku: string; name: any; description: any; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; kmIncludedPerDay?: number; extraKmPrice?: number; helmetIncluded?: boolean; imageUrl?: string; categoryId: string; category?: Category; pricing: any[]; inventory: any[] }
+interface Vehicle { id: string; sku: string; name: any; description: any; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; kmIncludedPerDay?: number; extraKmPrice?: number; helmetIncluded?: boolean; imageUrl?: string; categoryId: string; category?: Category; pricing: any[] }
 interface Option { id: string; code: string; name: any; maxQuantity: number; includedByDefault: boolean; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
 interface Booking { id: string; reference: string; agency: Agency; customer: any; startDate: string; endDate: string; startTime: string; endTime: string; totalPrice: number; depositAmount: number; status: string; items: any[]; options: any[] }
 interface Customer { id: string; firstName: string; lastName: string; email: string; phone: string; city?: string; country: string }
-interface Inventory { id: string; vehicleId: string; agencyId: string; quantity: number; vehicle: Vehicle; agency: Agency }
 
 function App() {
   const [tab, setTab] = useState<Tab>('dashboard')
@@ -20,7 +19,6 @@ function App() {
   const [options, setOptions] = useState<Option[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
-  const [inventory, setInventory] = useState<Inventory[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState<string | null>(null)
   const [editItem, setEditItem] = useState<any>(null)
@@ -29,9 +27,9 @@ function App() {
 
   const loadAllData = async () => {
     try {
-      const [agRes, catRes, vehRes, optRes, bookRes, custRes, invRes] = await Promise.all([
+      const [agRes, catRes, vehRes, optRes, bookRes, custRes] = await Promise.all([
         fetch(API_URL + '/api/agencies'), fetch(API_URL + '/api/categories'), fetch(API_URL + '/api/vehicles'),
-        fetch(API_URL + '/api/options'), fetch(API_URL + '/api/bookings'), fetch(API_URL + '/api/customers'), fetch(API_URL + '/api/inventory')
+        fetch(API_URL + '/api/options'), fetch(API_URL + '/api/bookings'), fetch(API_URL + '/api/customers')
       ])
       setAgencies(await agRes.json())
       setCategories(await catRes.json())
@@ -39,7 +37,6 @@ function App() {
       setOptions(await optRes.json())
       setBookings(await bookRes.json())
       setCustomers(await custRes.json())
-      setInventory(await invRes.json())
     } catch (e) { console.error(e) }
     setLoading(false)
   }
@@ -59,8 +56,6 @@ function App() {
     loadAllData()
   }
 
-  const handleInventoryChange = async (vehicleId: string, agencyId: string, quantity: number) => {
-    await fetch(API_URL + '/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vehicleId, agencyId, quantity }) })
     loadAllData()
   }
 
@@ -78,7 +73,6 @@ function App() {
             { id: 'bookings', icon: '📅', label: 'Réservations' },
             { id: 'vehicles', icon: '🚲', label: 'Véhicules' },
             { id: 'categories', icon: '🏷️', label: 'Catégories' },
-            { id: 'inventory', icon: '📦', label: 'Inventaire' },
             { id: 'agencies', icon: '🏢', label: 'Agences' },
             { id: 'options', icon: '🎒', label: 'Options' },
             { id: 'customers', icon: '👥', label: 'Clients' }
@@ -184,33 +178,6 @@ function App() {
           </div>
         )}
 
-        {tab === 'inventory' && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Inventaire</h2>
-            <div className="bg-white rounded-xl shadow overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr><th className="px-4 py-3 text-left">Véhicule</th>{agencies.map(a => <th key={a.id} className="px-4 py-3 text-center">{getName(a.name)}</th>)}</tr>
-                </thead>
-                <tbody>
-                  {vehicles.map(v => (
-                    <tr key={v.id} className="border-t">
-                      <td className="px-4 py-3 font-medium">{getName(v.name)}</td>
-                      {agencies.map(a => {
-                        const inv = inventory.find(i => i.vehicleId === v.id && i.agencyId === a.id)
-                        return (
-                          <td key={a.id} className="px-4 py-3 text-center">
-                            <input type="number" min="0" value={inv?.quantity || 0} onChange={(e) => handleInventoryChange(v.id, a.id, parseInt(e.target.value) || 0)} className="w-16 text-center border rounded p-1" />
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
         {tab === 'agencies' && (
           <div>

@@ -1912,7 +1912,7 @@ export default function App() {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="p-4 border rounded-lg">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="font-medium">{lang === 'fr' ? 'Pièce d'identité' : 'Documento de identidad'}</span>
+                              <span className="font-medium">{lang === 'fr' ? "Pièce d'identité" : 'Documento de identidad'}</span>
                               {selectedCustomer.idDocumentUrl ? (
                                 <span className="text-green-600 text-sm">✓ {lang === 'fr' ? 'Vérifié' : 'Verificado'}</span>
                               ) : (
@@ -2289,7 +2289,7 @@ export default function App() {
                   <div className="border-t pt-4">
                     <h4 className="font-medium mb-3">{lang === 'fr' ? 'Documents' : 'Documentos'}</h4>
                     <div>
-                      <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'URL Pièce d'identité' : 'URL Documento identidad'}</label>
+                      <label className="block text-sm font-medium mb-1">{lang === 'fr' ? "URL Pièce d'identité" : 'URL Documento identidad'}</label>
                       <input name="idDocumentUrl" defaultValue={editingCustomer?.idDocumentUrl || ''} className="w-full border rounded-lg px-3 py-2" placeholder="https://..." />
                     </div>
                     <div className="mt-3">

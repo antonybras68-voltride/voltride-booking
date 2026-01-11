@@ -8,8 +8,6 @@ interface Agency { id: string; code: string; name: any; address: string; city: s
 interface Category { id: string; code: string; name: any; brand: string; bookingFee: number; _count?: { vehicles: number }; options?: any[] }
 interface Vehicle { id: string; sku: string; name: any; description: any; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; kmIncludedPerDay?: number; extraKmPrice?: number; helmetIncluded?: boolean; imageUrl?: string; categoryId: string; category?: Category; pricing: any[] }
 interface Option { id: string; code: string; name: any; maxQuantity: number; includedByDefault: boolean; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
-interface Booking { id: string; reference: string; agency: Agency; customer: any; startDate: string; endDate: string; startTime: string; endTime: string; totalPrice: number; depositAmount: number; status: string; items: any[]; options: any[] }
-interface Customer { id: string; firstName: string; lastName: string; email: string; phone: string; city?: string; country: string }
 
 function App() {
   const [tab, setTab] = useState<Tab>('vehicles')
@@ -17,8 +15,6 @@ function App() {
   const [categories, setCategories] = useState<Category[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [options, setOptions] = useState<Option[]>([])
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState<string | null>(null)
   const [editItem, setEditItem] = useState<any>(null)
@@ -65,12 +61,10 @@ function App() {
         <nav className="space-y-2">
           {[
             { id: 'dashboard', icon: '📊', label: 'Dashboard' },
-            { id: 'bookings', icon: '📅', label: 'Réservations' },
             { id: 'vehicles', icon: '🚲', label: 'Véhicules' },
             { id: 'categories', icon: '🏷️', label: 'Catégories' },
             { id: 'agencies', icon: '🏢', label: 'Agences' },
             { id: 'options', icon: '🎒', label: 'Options' },
-            { id: 'customers', icon: '👥', label: 'Clients' }
           ].map(item => (
             <button key={item.id} onClick={() => setTab(item.id as Tab)} className={'w-full text-left px-4 py-2 rounded-lg flex items-center gap-3 ' + (tab === item.id ? 'bg-blue-600' : 'hover:bg-gray-800')}>
               <span>{item.icon}</span> {item.label}

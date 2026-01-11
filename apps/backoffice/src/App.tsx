@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-production.up.railway.app'
 
-type Tab = 'dashboard' | 'bookings' | 'vehicles' | 'agencies' | 'customers' | 'categories' | 'options'
+type Tab = 'vehicles' | 'agencies' | 'categories' | 'options'
 
 interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean }
 interface Category { id: string; code: string; name: any; brand: string; bookingFee: number; _count?: { vehicles: number }; options?: any[] }
@@ -12,7 +12,7 @@ interface Booking { id: string; reference: string; agency: Agency; customer: any
 interface Customer { id: string; firstName: string; lastName: string; email: string; phone: string; city?: string; country: string }
 
 function App() {
-  const [tab, setTab] = useState<Tab>('dashboard')
+  const [tab, setTab] = useState<Tab>('vehicles')
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
@@ -27,16 +27,14 @@ function App() {
 
   const loadAllData = async () => {
     try {
-      const [agRes, catRes, vehRes, optRes, bookRes, custRes] = await Promise.all([
+      const [agRes, catRes, vehRes, optRes] = await Promise.all([
         fetch(API_URL + '/api/agencies'), fetch(API_URL + '/api/categories'), fetch(API_URL + '/api/vehicles'),
-        fetch(API_URL + '/api/options'), fetch(API_URL + '/api/bookings'), fetch(API_URL + '/api/customers')
+        fetch(API_URL + '/api/options')
       ])
       setAgencies(await agRes.json())
       setCategories(await catRes.json())
       setVehicles(await vehRes.json())
       setOptions(await optRes.json())
-      setBookings(await bookRes.json())
-      setCustomers(await custRes.json())
     } catch (e) { console.error(e) }
     setLoading(false)
   }
@@ -82,40 +80,7 @@ function App() {
       </div>
 
       <div className="flex-1 p-8">
-        {tab === 'dashboard' && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
-            <div className="grid grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-xl shadow"><p className="text-gray-500">Réservations</p><p className="text-3xl font-bold text-blue-600">{bookings.length}</p></div>
-              <div className="bg-white p-6 rounded-xl shadow"><p className="text-gray-500">Véhicules</p><p className="text-3xl font-bold text-green-600">{vehicles.length}</p></div>
-              <div className="bg-white p-6 rounded-xl shadow"><p className="text-gray-500">Agences</p><p className="text-3xl font-bold text-purple-600">{agencies.length}</p></div>
-              <div className="bg-white p-6 rounded-xl shadow"><p className="text-gray-500">Options</p><p className="text-3xl font-bold text-orange-600">{options.length}</p></div>
-            </div>
-          </div>
-        )}
 
-        {tab === 'bookings' && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Réservations</h2>
-            <div className="bg-white rounded-xl shadow overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Réf</th><th className="px-4 py-3 text-left">Client</th><th className="px-4 py-3 text-left">Agence</th><th className="px-4 py-3 text-left">Dates</th><th className="px-4 py-3 text-left">Total</th><th className="px-4 py-3 text-left">Statut</th></tr></thead>
-                <tbody>
-                  {bookings.map(b => (
-                    <tr key={b.id} className="border-t">
-                      <td className="px-4 py-3 font-mono text-sm">{b.reference}</td>
-                      <td className="px-4 py-3">{b.customer.firstName} {b.customer.lastName}</td>
-                      <td className="px-4 py-3">{getName(b.agency.name)}</td>
-                      <td className="px-4 py-3 text-sm">{new Date(b.startDate).toLocaleDateString()} - {new Date(b.endDate).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 font-bold">{b.totalPrice}€</td>
-                      <td className="px-4 py-3"><span className={'px-2 py-1 rounded-full text-xs ' + (b.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800')}>{b.status}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
         {tab === 'vehicles' && (
           <div>
@@ -243,26 +208,6 @@ function App() {
           </div>
         )}
 
-        {tab === 'customers' && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Clients</h2>
-            <div className="bg-white rounded-xl shadow overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left">Nom</th><th className="px-4 py-3 text-left">Email</th><th className="px-4 py-3 text-left">Téléphone</th><th className="px-4 py-3 text-left">Ville</th></tr></thead>
-                <tbody>
-                  {customers.map(c => (
-                    <tr key={c.id} className="border-t">
-                      <td className="px-4 py-3 font-medium">{c.firstName} {c.lastName}</td>
-                      <td className="px-4 py-3">{c.email}</td>
-                      <td className="px-4 py-3">{c.phone}</td>
-                      <td className="px-4 py-3">{c.city || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </div>
 
       {showModal === 'agency' && <AgencyModal agency={editItem} onSave={(data) => handleSave('agencies', data)} onClose={() => { setShowModal(null); setEditItem(null) }} />}

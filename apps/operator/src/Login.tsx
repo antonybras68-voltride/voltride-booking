@@ -45,8 +45,10 @@ export function Login({ onLogin }: LoginProps) {
     }}>
       <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-4">🚲</div>
-          <h1 className="text-2xl font-bold text-gray-800">Voltride Operator</h1>
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1768119263/IMG-20260111-WA0001-removebg-preview_lpc7xh.png" className="h-16" alt="Voltride" />
+            <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766930480/logo-2024-e1699439584325-removebg-preview_sv6yxg.png" className="h-16" alt="Motor-Rent" />
+          </div>
           <p className="text-gray-500 mt-2">Connectez-vous pour continuer</p>
         </div>
 

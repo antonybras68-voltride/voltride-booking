@@ -398,7 +398,7 @@ function App() {
                 <p className="text-center text-gray-500 py-8">{t.noVehicles}</p>
               ) : (
                 <div className="space-y-3">
-                  {vehicles.map(vehicle => {
+                  {[...vehicles].sort((a, b) => getVehiclePrice(a, calculateDays(), calculateExtraHours()) - getVehiclePrice(b, calculateDays(), calculateExtraHours())).map(vehicle => {
                     const available = getAvailableQuantity(vehicle)
                     const maxQty = getMaxQuantity(vehicle)
                     const price = getVehiclePrice(vehicle, calculateDays(), calculateExtraHours())

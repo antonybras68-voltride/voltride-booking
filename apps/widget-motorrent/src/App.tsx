@@ -333,7 +333,7 @@ function App() {
           <div className="flex justify-center gap-2 mt-3">
             {(['fr', 'es', 'en'] as Lang[]).map(l => (
               <button key={l} onClick={() => setLang(l)} className={'px-3 py-1 rounded-full text-sm font-bold transition shadow-md ' + (lang === l ? 'bg-white text-[#fcb900]' : 'bg-white/50 text-gray-700 hover:bg-white/70')}>
-                {l.toUpperCase()}
+                {l === 'fr' ? '🇫🇷' : l === 'es' ? '🇪🇸' : '🇬🇧'}
               </button>
             ))}
           </div>
@@ -351,7 +351,7 @@ function App() {
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6">
           {step === 'dates' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-800">🌴 {t.selectDates}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t.selectDates}</h2>
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">{t.selectAgency}</label>
                 <select value={selectedAgency} onChange={(e) => setSelectedAgency(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl">
@@ -392,7 +392,7 @@ function App() {
 
           {step === 'vehicles' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-800">🏍️ {t.selectVehicles}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t.selectVehicles}</h2>
               <p className="text-gray-500">{daysText}{extraHoursText}</p>
               {vehicles.length === 0 ? (
                 <p className="text-center text-gray-500 py-8">{t.noVehicles}</p>
@@ -451,7 +451,7 @@ function App() {
 
           {step === 'options' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-800">🎒 {t.options}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t.options}</h2>
               {filteredOptions.length === 0 ? (
                 <p className="text-center text-gray-500 py-4">Aucune option disponible pour cette sélection</p>
               ) : (

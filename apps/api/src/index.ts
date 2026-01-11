@@ -48,7 +48,7 @@ app.post('/api/agencies', async (req, res) => {
 
 app.put('/api/agencies/:id', async (req, res) => {
   try {
-    const agency = await prisma.agency.update({ where: { id: req.params.id }, data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country, phone: req.body.phone, email: req.body.email, brand: req.body.brand, isActive: req.body.isActive} })
+    const agency = await prisma.agency.update({ where: { id: req.params.id }, data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country, phone: req.body.phone, email: req.body.email, brand: req.body.brand, isActive: req.body.isActive, closedOnSunday: req.body.closedOnSunday } })
     res.json(agency)
   } catch (error) { res.status(500).json({ error: 'Failed to update agency' }) }
 })
@@ -1530,7 +1530,7 @@ app.post('/api/numbering-categories', async (req, res) => {
 
 app.put('/api/numbering-categories/:id', async (req, res) => {
   try {
-    const category = await prisma.vehicleNumberingCategory.update({ where: { id: req.params.id }, data: { code: req.body.code, prefix: req.body.prefix, name: req.body.name, description: req.body.description, numberPadding: req.body.numberPadding, inspectionType: req.body.inspectionType, isActive: req.body.isActive} })
+    const category = await prisma.vehicleNumberingCategory.update({ where: { id: req.params.id }, data: { code: req.body.code, prefix: req.body.prefix, name: req.body.name, description: req.body.description, numberPadding: req.body.numberPadding, inspectionType: req.body.inspectionType, isActive: req.body.isActive, closedOnSunday: req.body.closedOnSunday } })
     res.json(category)
   } catch (error) { res.status(500).json({ error: 'Failed to update numbering category' }) }
 })

@@ -255,6 +255,7 @@ app.delete("/api/customers/:id", async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.booking.deleteMany({ where: { customerId: id } });
+    await prisma.rentalContract.deleteMany({ where: { customerId: id } });
     await prisma.customer.delete({ where: { id } });
     res.json({ success: true });
   } catch (error) {

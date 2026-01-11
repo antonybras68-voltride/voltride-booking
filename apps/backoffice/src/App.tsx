@@ -56,7 +56,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      <div className="w-64 bg-gray-900 text-white p-4">
+      <div className="w-64 p-4" style={{ background: 'linear-gradient(180deg, #abdee6 0%, #ffaf10 100%)' }}>
         <div className="flex justify-center items-center gap-3 mb-8">
             <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1768119263/IMG-20260111-WA0001-removebg-preview_lpc7xh.png" className="h-10" alt="Voltride" />
             <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766930480/logo-2024-e1699439584325-removebg-preview_sv6yxg.png" className="h-10" alt="Motor-Rent" />

@@ -203,15 +203,50 @@ app.post('/api/bookings', async (req, res) => {
     if (!customer) {
       customer = await prisma.customer.create({ data: { firstName: req.body.customer.firstName, lastName: req.body.customer.lastName, email: req.body.customer.email, phone: req.body.customer.phone, address: req.body.customer.address, postalCode: req.body.customer.postalCode, city: req.body.customer.city, country: req.body.customer.country || 'ES', language: req.body.customer.language || 'es' } })
     }
+    // Créer la réservation d'abord
     const booking = await prisma.booking.create({
       data: {
         reference, agencyId: req.body.agencyId, customerId: customer.id, startDate: new Date(req.body.startDate), endDate: new Date(req.body.endDate), startTime: req.body.startTime, endTime: req.body.endTime, totalPrice: req.body.totalPrice, depositAmount: req.body.depositAmount, language: req.body.language || 'es',
+        source: 'WIDGET',
         items: { create: req.body.items.map((item: any) => ({ vehicleId: item.vehicleId, quantity: item.quantity, unitPrice: item.unitPrice, totalPrice: item.totalPrice })) },
         options: { create: (req.body.options || []).map((opt: any) => ({ optionId: opt.optionId, quantity: opt.quantity, unitPrice: opt.unitPrice, totalPrice: opt.totalPrice })) }
       },
       include: { agency: true, customer: true, items: { include: { vehicle: true } }, options: { include: { option: true } } }
     })
-    res.json(booking)
+
+    // Auto-assignation pour les réservations WIDGET
+    if (booking.items && booking.items.length > 0) {
+      const vehicleTypeId = booking.items[0].vehicleId
+      const { fleetId, reason } = await autoAssignVehicle(
+        booking.id,
+        vehicleTypeId,
+        booking.agencyId,
+        new Date(req.body.startDate),
+        new Date(req.body.endDate)
+      )
+      
+      if (fleetId) {
+        await prisma.booking.update({
+          where: { id: booking.id },
+          data: {
+            fleetVehicleId: fleetId,
+            assignmentType: 'AUTOMATIC',
+            assignedAt: new Date()
+          }
+        })
+        console.log(`Booking ${booking.reference} auto-assigned to fleet ${fleetId}: ${reason}`)
+      } else {
+        console.log(`Booking ${booking.reference} not auto-assigned: ${reason}`)
+      }
+    }
+
+    // Recharger le booking avec les infos d'assignation
+    const finalBooking = await prisma.booking.findUnique({
+      where: { id: booking.id },
+      include: { agency: true, customer: true, items: { include: { vehicle: true } }, options: { include: { option: true } }, fleetVehicle: true }
+    })
+    
+    res.json(finalBooking)
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create booking' }) }
 })
 
@@ -1000,6 +1035,97 @@ app.post('/api/settings', async (req, res) => {
 
 
 
+
+
+// ============== AUTO-ASSIGNMENT FUNCTION ==============
+// Logique: Privilégier les véhicules qui ont déjà des réservations proches
+// pour garder des véhicules complètement libres pour les longues locations
+async function autoAssignVehicle(bookingId: string, vehicleTypeId: string, agencyId: string, startDate: Date, endDate: Date): Promise<{ fleetId: string | null, reason: string }> {
+  try {
+    // 1. Trouver tous les véhicules de la flotte du même type et agence, disponibles
+    const fleetVehicles = await prisma.fleet.findMany({
+      where: {
+        vehicleId: vehicleTypeId,
+        agencyId: agencyId,
+        status: 'AVAILABLE'
+      },
+      include: {
+        bookings: {
+          where: {
+            status: { in: ['CONFIRMED', 'PENDING'] },
+            id: { not: bookingId }
+          },
+          orderBy: { endDate: 'desc' }
+        }
+      }
+    })
+
+    if (fleetVehicles.length === 0) {
+      return { fleetId: null, reason: 'Aucun véhicule disponible dans la flotte' }
+    }
+
+    // 2. Filtrer les véhicules vraiment disponibles pour la période demandée
+    const availableVehicles = fleetVehicles.filter(fleet => {
+      const hasConflict = fleet.bookings.some(booking => {
+        const bookingStart = new Date(booking.startDate)
+        const bookingEnd = new Date(booking.endDate)
+        // Vérifier si les périodes se chevauchent
+        return !(endDate <= bookingStart || startDate >= bookingEnd)
+      })
+      return !hasConflict
+    })
+
+    if (availableVehicles.length === 0) {
+      return { fleetId: null, reason: 'Tous les véhicules sont occupés pour cette période' }
+    }
+
+    // 3. Calculer le score de chaque véhicule
+    // Score élevé = véhicule avec réservation proche (à privilégier)
+    // Score bas = véhicule complètement libre (à garder pour longues locations)
+    const scoredVehicles = availableVehicles.map(fleet => {
+      let score = 0
+      
+      if (fleet.bookings.length > 0) {
+        // Trouver la réservation la plus proche avant ou après
+        fleet.bookings.forEach(booking => {
+          const bookingEnd = new Date(booking.endDate)
+          const bookingStart = new Date(booking.startDate)
+          
+          // Jours entre la fin d'une réservation et le début de celle-ci
+          const daysAfterPrevious = Math.floor((startDate.getTime() - bookingEnd.getTime()) / (1000 * 60 * 60 * 24))
+          // Jours entre la fin de celle-ci et le début d'une autre
+          const daysBeforeNext = Math.floor((bookingStart.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24))
+          
+          // Plus la réservation est proche, plus le score est élevé
+          if (daysAfterPrevious >= 0 && daysAfterPrevious <= 3) {
+            score += (4 - daysAfterPrevious) * 10 // 0 jours = 40pts, 1 jour = 30pts, etc.
+          }
+          if (daysBeforeNext >= 0 && daysBeforeNext <= 3) {
+            score += (4 - daysBeforeNext) * 10
+          }
+        })
+        
+        // Bonus pour véhicules déjà utilisés récemment
+        score += fleet.bookings.length * 5
+      }
+      
+      return { fleet, score }
+    })
+
+    // 4. Trier par score décroissant (privilégier les véhicules avec réservations proches)
+    scoredVehicles.sort((a, b) => b.score - a.score)
+
+    const selectedVehicle = scoredVehicles[0]
+    const reason = selectedVehicle.score > 0 
+      ? `Assigné automatiquement (suite de location, score: ${selectedVehicle.score})`
+      : `Assigné automatiquement (véhicule libre)`
+
+    return { fleetId: selectedVehicle.fleet.id, reason }
+  } catch (error) {
+    console.error('Auto-assign error:', error)
+    return { fleetId: null, reason: 'Erreur lors de l\'assignation automatique' }
+  }
+}
 
 // ============== AUTHENTICATION ==============
 // Login
@@ -2659,6 +2785,7 @@ app.post('/api/bookings/operator', async (req, res) => {
         depositAmount,
         status: 'CONFIRMED',
         language,
+        source: 'WALK_IN',
         items: {
           create: [{
             vehicleId,

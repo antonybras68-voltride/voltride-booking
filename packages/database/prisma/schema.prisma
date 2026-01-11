@@ -196,6 +196,8 @@ model Booking {
   fleetVehicle          Fleet?          @relation(fields: [fleetVehicleId], references: [id])
   assignmentType        AssignmentType?
   assignedAt            DateTime?
+  source                BookingSource   @default(WIDGET)
+  autoAssign            Boolean         @default(true)
   contract              RentalContract?
   reallocations         ReservationReallocation[]
   isReallocated         Boolean         @default(false)
@@ -335,6 +337,13 @@ enum MaintenanceIntervalType {
 enum AssignmentType {
   AUTOMATIC
   MANUAL
+}
+
+enum BookingSource {
+  WIDGET
+  WALK_IN
+  MANUAL
+  BACKOFFICE
 }
 
 model FleetDocument {

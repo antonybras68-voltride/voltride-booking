@@ -83,7 +83,32 @@ export default function App() {
       toDevelop: 'À développer',
       walkin: 'Walk-in',
       checkin: 'Check-in',
-      language: 'Langue'
+      language: 'Langue',
+      contractNumber: "N° Contrat",
+      client: "Client",
+      vehicleContract: "Véhicule",
+      period: "Période",
+      amount: "Montant",
+      contractStatus: "Statut",
+      filterByPeriod: "Filtrer par période",
+      from: "Du",
+      to: "Au",
+      allStatuses: "Tous les statuts",
+      draft: "Brouillon",
+      completed: "Terminé",
+      cancelled: "Annulé",
+      viewContract: "Voir contrat",
+      downloadPdf: "Télécharger PDF",
+      downloadInvoice: "Télécharger facture",
+      noContracts: "Aucun contrat trouvé",
+      noInvoices: "Aucune facture trouvée",
+      totalHT: "Total HT",
+      tva: "TVA",
+      totalTTC: "Total TTC",
+      deposit: "Caution",
+      invoiceNumber: "N° Facture",
+      invoiceDate: "Date facture",
+      dueDate: "Échéance",
     },
     es: {
       dashboard: 'Panel',
@@ -149,7 +174,32 @@ export default function App() {
       toDevelop: 'Por desarrollar',
       walkin: 'Walk-in',
       checkin: 'Check-in',
-      language: 'Idioma'
+      language: 'Idioma',
+      contractNumber: "N° Contrato",
+      client: "Cliente",
+      vehicleContract: "Vehículo",
+      period: "Período",
+      amount: "Importe",
+      contractStatus: "Estado",
+      filterByPeriod: "Filtrar por período",
+      from: "Desde",
+      to: "Hasta",
+      allStatuses: "Todos los estados",
+      draft: "Borrador",
+      completed: "Completado",
+      cancelled: "Cancelado",
+      viewContract: "Ver contrato",
+      downloadPdf: "Descargar PDF",
+      downloadInvoice: "Descargar factura",
+      noContracts: "Ningún contrato encontrado",
+      noInvoices: "Ninguna factura encontrada",
+      totalHT: "Total sin IVA",
+      tva: "IVA",
+      totalTTC: "Total con IVA",
+      deposit: "Depósito",
+      invoiceNumber: "N° Factura",
+      invoiceDate: "Fecha factura",
+      dueDate: "Vencimiento",
     }
   }
 
@@ -253,6 +303,8 @@ export default function App() {
   const [settingsMainTab, setSettingsMainTab] = useState<'documents' | 'users'>('documents')
   const [permissions, setPermissions] = useState<any[]>([])
   const [usersList, setUsersList] = useState<any[]>([])
+  const [contracts, setContracts] = useState<any[]>([])
+  const [contractsFilter, setContractsFilter] = useState({ startDate: "", endDate: "", status: "" })
   const [showNewUserModal, setShowNewUserModal] = useState(false)
   const [editingUser, setEditingUser] = useState<any>(null)
 
@@ -263,6 +315,7 @@ export default function App() {
   })
 
   useEffect(() => { loadData() }, [selectedAgency, brand])
+  useEffect(() => { if (tab === "contracts" || tab === "invoices") loadContracts() }, [tab])
   // Charger les permissions
   const loadPermissions = async () => {
     try {
@@ -352,6 +405,13 @@ export default function App() {
       const data = await api.getUsers()
       setUsersList(Array.isArray(data) ? data : [])
     } catch (e) { console.error('Erreur chargement utilisateurs:', e) }
+  }
+  const loadContracts = async () => {
+    try {
+      const res = await fetch(API_URL + "/api/contracts")
+      const data = await res.json()
+      setContracts(Array.isArray(data) ? data : [])
+    } catch (e) { console.error("Erreur chargement contrats:", e) }
   }
 
   // Vérifier si l'utilisateur a accès à une permission
@@ -1982,9 +2042,117 @@ export default function App() {
           )}
 
           {/* CONTRACTS & INVOICES - À développer */}
-          {!loading && ['contracts', 'invoices'].includes(tab) && (
-            <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
-              {t[lang].module} {tab} - {t[lang].toDevelop}
+          {!loading && tab === 'contracts' && (
+            <div className="space-y-4">
+              <div className="bg-white rounded-xl shadow p-4 flex flex-wrap gap-4 items-end">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].from}</label>
+                  <input type="date" value={contractsFilter.startDate} onChange={(e) => setContractsFilter({...contractsFilter, startDate: e.target.value})} className="border rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].to}</label>
+                  <input type="date" value={contractsFilter.endDate} onChange={(e) => setContractsFilter({...contractsFilter, endDate: e.target.value})} className="border rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].contractStatus}</label>
+                  <select value={contractsFilter.status} onChange={(e) => setContractsFilter({...contractsFilter, status: e.target.value})} className="border rounded-lg px-3 py-2">
+                    <option value="">{t[lang].allStatuses}</option>
+                    <option value="DRAFT">{t[lang].draft}</option>
+                    <option value="ACTIVE">{t[lang].active}</option>
+                    <option value="COMPLETED">{t[lang].completed}</option>
+                    <option value="CANCELLED">{t[lang].cancelled}</option>
+                  </select>
+                </div>
+                <button onClick={() => setContractsFilter({ startDate: '', endDate: '', status: '' })} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Reset</button>
+              </div>
+              <div className="bg-white rounded-xl shadow overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].contractNumber}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].client}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].vehicleContract}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].period}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].amount}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].contractStatus}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].actions}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {contracts.filter(c => {
+                      if (contractsFilter.status && c.status !== contractsFilter.status) return false;
+                      if (contractsFilter.startDate && new Date(c.currentStartDate) < new Date(contractsFilter.startDate)) return false;
+                      if (contractsFilter.endDate && new Date(c.currentEndDate) > new Date(contractsFilter.endDate)) return false;
+                      return true;
+                    }).map((contract: any) => (
+                      <tr key={contract.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium">{contract.contractNumber}</td>
+                        <td className="px-4 py-3">{contract.customer?.firstName} {contract.customer?.lastName}</td>
+                        <td className="px-4 py-3">{contract.fleetVehicle?.identificationNumber || contract.fleetVehicle?.vehicle?.name}</td>
+                        <td className="px-4 py-3 text-sm">{new Date(contract.currentStartDate).toLocaleDateString()} - {new Date(contract.currentEndDate).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 font-semibold">{Number(contract.totalAmount).toFixed(2)} EUR</td>
+                        <td className="px-4 py-3"><span className={"px-2 py-1 rounded-full text-xs font-medium " + (contract.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : contract.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' : contract.status === 'CANCELLED' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')}>{contract.status}</span></td>
+                        <td className="px-4 py-3 space-x-2">
+                          <a href={API_URL + '/api/contracts/' + contract.id + '/pdf'} target="_blank" className="text-blue-600 hover:underline text-sm">PDF</a>
+                          <a href={API_URL + '/api/contracts/' + contract.id + '/invoice-pdf'} target="_blank" className="text-green-600 hover:underline text-sm">{t[lang].invoices}</a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {contracts.length === 0 && <div className="p-8 text-center text-gray-500">{t[lang].noContracts}</div>}
+              </div>
+            </div>
+          )}
+          {!loading && tab === 'invoices' && (
+            <div className="space-y-4">
+              <div className="bg-white rounded-xl shadow p-4 flex flex-wrap gap-4 items-end">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].from}</label>
+                  <input type="date" value={contractsFilter.startDate} onChange={(e) => setContractsFilter({...contractsFilter, startDate: e.target.value})} className="border rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].to}</label>
+                  <input type="date" value={contractsFilter.endDate} onChange={(e) => setContractsFilter({...contractsFilter, endDate: e.target.value})} className="border rounded-lg px-3 py-2" />
+                </div>
+                <button onClick={() => setContractsFilter({ startDate: '', endDate: '', status: '' })} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Reset</button>
+              </div>
+              <div className="bg-white rounded-xl shadow overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].invoiceNumber}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].client}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].invoiceDate}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].totalHT}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].tva}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].totalTTC}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].actions}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {contracts.filter(c => {
+                      if (c.status !== 'COMPLETED' && c.status !== 'CHECKED_IN') return false;
+                      if (contractsFilter.startDate && new Date(c.currentStartDate) < new Date(contractsFilter.startDate)) return false;
+                      if (contractsFilter.endDate && new Date(c.currentEndDate) > new Date(contractsFilter.endDate)) return false;
+                      return true;
+                    }).map((contract: any) => (
+                      <tr key={contract.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium">FAC-{contract.contractNumber}</td>
+                        <td className="px-4 py-3">{contract.customer?.firstName} {contract.customer?.lastName}</td>
+                        <td className="px-4 py-3">{new Date(contract.actualEndDate || contract.currentEndDate).toLocaleDateString()}</td>
+                        <td className="px-4 py-3">{Number(contract.subtotal).toFixed(2)} EUR</td>
+                        <td className="px-4 py-3">{Number(contract.taxAmount).toFixed(2)} EUR ({Number(contract.taxRate)}%)</td>
+                        <td className="px-4 py-3 font-semibold">{Number(contract.totalAmount).toFixed(2)} EUR</td>
+                        <td className="px-4 py-3">
+                          <a href={API_URL + '/api/contracts/' + contract.id + '/invoice-pdf'} target="_blank" className="text-green-600 hover:underline text-sm">{t[lang].downloadPdf}</a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {contracts.filter(c => c.status === 'COMPLETED' || c.status === 'CHECKED_IN').length === 0 && <div className="p-8 text-center text-gray-500">{t[lang].noInvoices}</div>}
+              </div>
             </div>
           )}
         </div>

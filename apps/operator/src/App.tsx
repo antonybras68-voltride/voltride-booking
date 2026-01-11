@@ -8,6 +8,8 @@ import { NewFleetModal } from './NewFleetModal'
 import { CheckOutModal } from './CheckOutModal'
 import { getName } from './types'
 
+const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
+
 export default function App() {
   // Authentication state
   const [user, setUser] = useState<any>(null)

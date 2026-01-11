@@ -94,16 +94,27 @@ function App() {
     setLoading(false)
   }
 
+  const loadFleetAvailability = async () => {
+    if (!selectedAgency) return
+    try {
+      let url = API_URL + '/api/fleet-availability?agencyId=' + selectedAgency
+      if (startDate) url += '&startDate=' + startDate
+      if (endDate) url += '&endDate=' + endDate
+      const res = await fetch(url)
+      const data = await res.json()
+      setFleetAvailability(data)
+    } catch (error) { console.error('Fleet availability error:', error) }
+  }
+
   const loadVehicles = async () => {
     try {
       const res = await fetch(API_URL + '/api/vehicles?agencyId=' + selectedAgency)
       const data = await res.json()
       const filtered = data.filter((v: Vehicle) => {
-        if (v.category?.brand !== BRAND) return false
-        const inv = v.inventory?.find((i: any) => i.agencyId === selectedAgency)
-        return inv && inv.quantity > 0
+        return v.category?.brand === BRAND
       })
       setVehicles(filtered)
+      await loadFleetAvailability()
     } catch (error) { console.error('Error:', error) }
   }
 

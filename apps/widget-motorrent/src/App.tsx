@@ -317,14 +317,14 @@ function App() {
   const filteredOptions = getFilteredOptions()
 
   if (loading) return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fcb900] to-white flex items-center justify-center relative">
+    <div className="min-h-screen bg-gradient-to-br from-[#fcb900] via-[#ff9500] to-[#fcb900] flex items-center justify-center relative">
       <WavesBackground />
       <div className="text-gray-800 text-xl z-10">Cargando...</div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fcb900] to-white p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#fcb900] via-[#ff9500] to-[#fcb900] p-4 relative overflow-hidden">
       <WavesBackground />
       <div className="max-w-2xl mx-auto relative z-10">
         <div className="text-center mb-6">

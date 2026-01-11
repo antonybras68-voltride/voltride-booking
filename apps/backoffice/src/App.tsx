@@ -56,9 +56,6 @@ function App() {
     loadAllData()
   }
 
-    loadAllData()
-  }
-
   const getName = (obj: any, lang = 'fr') => obj?.[lang] || obj?.fr || obj?.es || ''
 
   if (loading) return <div className="min-h-screen bg-gray-100 flex items-center justify-center"><p className="text-xl">Chargement...</p></div>

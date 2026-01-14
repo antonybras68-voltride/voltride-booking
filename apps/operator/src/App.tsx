@@ -606,10 +606,10 @@ export default function App() {
   const selectedAgencyData = agencies.find(a => a.id === selectedAgency)
   const filteredFleet = fleet.filter(f => {
     if (!selectedAgency) return true
-    // Filtrer par locationCode qui correspond au code de l'agence
+    // Filtrer UNIQUEMENT par locationCode qui correspond au code de l'agence
     if (selectedAgencyData && f.locationCode === selectedAgencyData.code) return true
-    // Fallback: filtrer par agencyId
-    if (f.agencyId === selectedAgency) return true
+    // Si pas de locationCode défini, afficher le véhicule partout
+    if (!f.locationCode) return true
     return false
   })
   

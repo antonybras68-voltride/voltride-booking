@@ -1676,7 +1676,6 @@ app.post('/api/fleet', async (req, res) => {
     res.json(fleetVehicle)
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create fleet vehicle' }) }
 })
-})
 
 app.put('/api/fleet/:id/status', async (req, res) => {
   try {

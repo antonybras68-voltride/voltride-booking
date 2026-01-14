@@ -290,7 +290,7 @@ app.post('/api/bookings', async (req, res) => {
     // Créer la réservation d'abord
     const booking = await prisma.booking.create({
       data: {
-        reference, vehicleId: req.body.vehicleId,
+        reference,
         agencyId: req.body.agencyId, customerId: customer.id, startDate: new Date(req.body.startDate), endDate: new Date(req.body.endDate), startTime: req.body.startTime, endTime: req.body.endTime, totalPrice: req.body.totalPrice, depositAmount: req.body.depositAmount, language: req.body.language || 'es',
         source: 'WIDGET',
         items: { create: req.body.items.map((item: any) => ({ vehicleId: item.vehicleId, quantity: item.quantity, unitPrice: item.unitPrice, totalPrice: item.totalPrice })) },
@@ -468,7 +468,6 @@ app.post('/api/tablet-sessions', async (req, res) => {
       data: {
         sessionId: req.body.sessionId,
         bookingId: req.body.bookingId,
-        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         type: req.body.type || 'checkin',
         language: req.body.language || 'fr',
@@ -571,7 +570,6 @@ app.post('/api/walkin-sessions', async (req, res) => {
     const session = await prisma.walkinSession.create({
       data: {
         sessionId: req.body.sessionId,
-        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         language: req.body.language || 'fr',
         brand: req.body.brand,
@@ -922,7 +920,6 @@ app.post('/api/fleet/:fleetId/maintenance', async (req, res) => {
         performedBy: req.body.providerName,
         invoiceNumber: req.body.invoiceNumber,
         notes: req.body.notes,
-        vehicleId: req.body.vehicleId,
       }
     })
     res.json(record)
@@ -1654,7 +1651,6 @@ app.post('/api/fleet', async (req, res) => {
         licensePlate: req.body.licensePlate,
         locationCode: req.body.locationCode,
         chassisNumber: req.body.chassisNumber,
-        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         year: req.body.year,
         color: req.body.color,
@@ -1669,7 +1665,6 @@ app.post('/api/fleet', async (req, res) => {
         status: req.body.status || 'AVAILABLE',
         condition: req.body.condition || 'GOOD',
         notes: req.body.notes,
-        vehicleId: req.body.vehicleId,
       },
       include: { vehicle: { include: { category: true, pricing: true } }, agency: true }
     })
@@ -1909,7 +1904,6 @@ app.post('/api/fleet/:fleetId/maintenance', async (req, res) => {
         priority: req.body.priority || 'NORMAL',
         technicianId: req.body.technicianId,
         notes: req.body.notes,
-        vehicleId: req.body.vehicleId,
       }
     })
     
@@ -1944,7 +1938,6 @@ app.put('/api/maintenance/:id', async (req, res) => {
         partsReplaced: req.body.partsReplaced,
         technicianNotes: req.body.technicianNotes,
         notes: req.body.notes,
-        vehicleId: req.body.vehicleId,
       },
       include: { fleet: true }
     })
@@ -2156,7 +2149,6 @@ app.post('/api/contracts', async (req, res) => {
         contractNumber,
         bookingId: req.body.bookingId,
         fleetVehicleId: req.body.fleetVehicleId,
-        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         customerId: customer.id,
         originalStartDate: new Date(req.body.startDate),
@@ -2371,7 +2363,6 @@ app.post('/api/contracts/:contractId/deductions', async (req, res) => {
         validatedBy: req.body.validatedBy,
         validatedAt: new Date(),
         notes: req.body.notes,
-        vehicleId: req.body.vehicleId,
       }
     })
     

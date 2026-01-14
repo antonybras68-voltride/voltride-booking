@@ -253,7 +253,6 @@ app.get('/api/inventory', async (req, res) => {
 
 app.post('/api/inventory', async (req, res) => {
   try {
-    const inventory = await prisma.inventory.upsert({ where: { vehicleId_agencyId: { vehicleId: req.body.vehicleId, agencyId: req.body.agencyId } }, update: { quantity: req.body.quantity }, create: { vehicleId: req.body.vehicleId, agencyId: req.body.agencyId, quantity: req.body.quantity } })
     res.json(inventory)
   } catch (error) { res.status(500).json({ error: 'Failed to update inventory' }) }
 })
@@ -925,7 +924,7 @@ app.post('/api/fleet/:fleetId/maintenance', async (req, res) => {
         performedBy: req.body.providerName,
         invoiceNumber: req.body.invoiceNumber,
         notes: req.body.notes,
-        vehicleId: req.body.vehicleId
+        vehicleId: req.body.vehicleId,
       }
     })
     res.json(record)
@@ -970,7 +969,7 @@ app.put('/api/fleet/:id', async (req, res) => {
         maintenanceIntervalKm: req.body.maintenanceIntervalKm,
         maintenanceIntervalDays: req.body.maintenanceIntervalDays,
         notes: req.body.notes,
-        vehicleId: req.body.vehicleId
+        vehicleId: req.body.vehicleId,
       },
       include: {
         vehicle: true,
@@ -1003,7 +1002,6 @@ app.post('/api/fleet', async (req, res) => {
         year: req.body.year || null,
         color: req.body.color || null,
         currentMileage: req.body.currentMileage || 0,
-        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         status: 'AVAILABLE'
       },
@@ -1657,7 +1655,6 @@ app.post('/api/fleet', async (req, res) => {
         licensePlate: req.body.licensePlate,
         locationCode: req.body.locationCode,
         chassisNumber: req.body.chassisNumber,
-        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         year: req.body.year,
         color: req.body.color,
@@ -1672,6 +1669,7 @@ app.post('/api/fleet', async (req, res) => {
         status: req.body.status || 'AVAILABLE',
         condition: req.body.condition || 'GOOD',
         notes: req.body.notes,
+        vehicleId: req.body.vehicleId,
       },
       include: { vehicle: { include: { category: true, pricing: true } }, agency: true }
     })
@@ -1698,6 +1696,7 @@ app.put('/api/fleet/:id', async (req, res) => {
         status: req.body.status,
         condition: req.body.condition,
         notes: req.body.notes,
+        vehicleId: req.body.vehicleId,
         isActive: req.body.isActive
       },
       include: { vehicle: { include: { category: true, pricing: true } }, agency: true }
@@ -1938,7 +1937,7 @@ app.post('/api/fleet/:fleetId/maintenance', async (req, res) => {
         priority: req.body.priority || 'NORMAL',
         technicianId: req.body.technicianId,
         notes: req.body.notes,
-        vehicleId: req.body.vehicleId
+        vehicleId: req.body.vehicleId,
       }
     })
     
@@ -1973,7 +1972,7 @@ app.put('/api/maintenance/:id', async (req, res) => {
         partsReplaced: req.body.partsReplaced,
         technicianNotes: req.body.technicianNotes,
         notes: req.body.notes,
-        vehicleId: req.body.vehicleId
+        vehicleId: req.body.vehicleId,
       },
       include: { fleet: true }
     })
@@ -2399,7 +2398,7 @@ app.post('/api/contracts/:contractId/deductions', async (req, res) => {
         validatedBy: req.body.validatedBy,
         validatedAt: new Date(),
         notes: req.body.notes,
-        vehicleId: req.body.vehicleId
+        vehicleId: req.body.vehicleId,
       }
     })
     

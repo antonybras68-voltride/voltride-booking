@@ -7,7 +7,7 @@ type Tab = 'vehicles' | 'agencies' | 'categories' | 'options'
 interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean; closedOnSunday: boolean }
 interface Category { id: string; code: string; name: any; brand: string; bookingFee: number; _count?: { vehicles: number }; options?: any[] }
 interface Vehicle { id: string; sku: string; name: any; description: any; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; kmIncludedPerDay?: number; extraKmPrice?: number; helmetIncluded?: boolean; imageUrl?: string; categoryId: string; category?: Category; pricing: any[] }
-interface Option { id: string; code: string; name: any; maxQuantity: number; includedByDefault: boolean; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
+interface Option { id: string; code: string; name: any; maxQuantity: number; includedByDefault: boolean; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; sortOrder?: number; categories?: any[] }
 
 function App() {
   const [tab, setTab] = useState<Tab>('vehicles')
@@ -170,10 +170,31 @@ function App() {
               <h2 className="text-2xl font-bold">Options & Accessoires</h2>
               <button onClick={() => { setEditItem(null); setShowModal('option') }} className="bg-blue-600 text-white px-4 py-2 rounded-lg">+ Ajouter</button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {options.map(o => (
-                <div key={o.id} className="bg-white p-4 rounded-xl shadow">
-                  <div className="flex gap-3">
+            <div className="space-y-2">
+              {[...options].sort((a, b) => (a.includedByDefault === b.includedByDefault) ? (a.sortOrder || 0) - (b.sortOrder || 0) : a.includedByDefault ? 1 : -1).map((o) => (
+                <div 
+                  key={o.id} 
+                  draggable
+                  onDragStart={(e) => e.dataTransfer.setData('optionId', o.id)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    const draggedId = e.dataTransfer.getData('optionId');
+                    if (draggedId === o.id) return;
+                    const newOrder = options.filter(opt => opt.id !== draggedId);
+                    const draggedOpt = options.find(opt => opt.id === draggedId)!;
+                    const dropIndex = newOrder.findIndex(opt => opt.id === o.id);
+                    newOrder.splice(dropIndex, 0, draggedOpt);
+                    const orderedIds = newOrder.map(opt => opt.id);
+                    await fetch(API_URL + '/api/options/reorder', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ orderedIds })
+                    });
+                    loadAllData();
+                  }}
+                  className="bg-white p-4 rounded-xl shadow cursor-move hover:shadow-lg transition-shadow border-2 border-transparent hover:border-blue-200">
+                  <div className="flex gap-3 items-center"><div className="text-gray-400 cursor-grab active:cursor-grabbing">⋮⋮</div>
                     {o.imageUrl ? (
                       <img src={o.imageUrl} alt="" className="w-16 h-16 object-cover rounded-lg" />
                     ) : (

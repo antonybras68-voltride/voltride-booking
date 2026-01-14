@@ -144,6 +144,7 @@ model Option {
   day13             Float            @default(0)
   day14             Float            @default(0)
   includedByDefault Boolean          @default(false)
+  sortOrder         Int              @default(0)
   imageUrl          String?
   bookingOptions    BookingOption[]
   categories        OptionCategory[]

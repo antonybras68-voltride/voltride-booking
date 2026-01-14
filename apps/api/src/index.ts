@@ -181,7 +181,7 @@ app.get('/api/fleet-availability', async (req, res) => {
 // ============== OPTIONS ==============
 app.get('/api/options', async (req, res) => {
   try {
-    const options = await prisma.option.findMany({ where: { isActive: true }, include: { categories: { include: { category: true } } }, orderBy: { code: 'asc' } })
+    const options = await prisma.option.findMany({ where: { isActive: true }, include: { categories: { include: { category: true } } }, orderBy: [{ includedByDefault: 'asc' }, { sortOrder: 'asc' }, { code: 'asc' }] })
     res.json(options)
   } catch (error) { res.status(500).json({ error: 'Failed to fetch options' }) }
 })
@@ -203,6 +203,20 @@ app.post('/api/options', async (req, res) => {
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create option' }) }
 })
 
+// Reorder options
+app.put("/api/options/reorder", async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    const updates = orderedIds.map((id: string, index: number) =>
+      prisma.option.update({ where: { id }, data: { sortOrder: index } })
+    );
+    await Promise.all(updates);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Reorder options error:", error);
+    res.status(500).json({ error: "Failed to reorder options" });
+  }
+});
 app.put('/api/options/:id', async (req, res) => {
   try {
     const option = await prisma.option.update({

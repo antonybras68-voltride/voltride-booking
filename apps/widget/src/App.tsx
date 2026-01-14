@@ -6,7 +6,7 @@ const BRAND = 'VOLTRIDE'
 
 interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; closedOnSunday?: boolean }
 interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { id: string; name: { fr: string; es: string; en: string }; brand: string }; pricing: any[]; inventory: any[] }
-interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; maxQuantity: number; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
+interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; description?: { fr: string; es: string; en: string }; maxQuantity: number; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
 
 type Lang = 'fr' | 'es' | 'en'
 type Step = 'dates' | 'vehicles' | 'options' | 'customer' | 'payment' | 'confirmation'
@@ -606,6 +606,7 @@ function App() {
                       )}
                       <div>
                         <h3 className="font-bold text-gray-800">{getName(option.name)}</h3>
+                        {option.description && getName(option.description) && <p className="text-xs text-gray-500">{getName(option.description)}</p>}
                         <p className="text-sm text-[#ffaf10]">{getOptionPrice(option, calculateDays())}€</p>
                       </div>
                     </div>

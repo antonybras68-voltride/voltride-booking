@@ -327,7 +327,6 @@ function VehicleModal({ vehicle, categories, onSave, onClose }: { vehicle: any; 
   }
 
   const handleSubmit = () => onSave({
-    sku: form.sku, name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn },
     description: { fr: form.descFr, es: form.descEs, en: form.descEn },
     deposit: parseFloat(String(form.deposit)), hasPlate: form.hasPlate, licenseType: { fr: form.licenseTypeFr, es: form.licenseTypeEs, en: form.licenseTypeEn }, kmIncluded: { fr: form.kmIncludedFr, es: form.kmIncludedEs, en: form.kmIncludedEn }, kmIncludedPerDay: parseInt(String(form.kmIncludedPerDay)) || 100, extraKmPrice: parseFloat(String(form.extraKmPrice)) || 0.15, helmetIncluded: form.helmetIncluded, categoryId: form.categoryId, imageUrl: form.imageUrl,
     pricing: form.pricing
@@ -425,7 +424,7 @@ function VehicleModal({ vehicle, categories, onSave, onClose }: { vehicle: any; 
 function OptionModal({ option, categories, onSave, onClose }: { option: any; categories: Category[]; onSave: (data: any) => void; onClose: () => void }) {
   const existingCatIds = option?.categories?.map((c: any) => c.categoryId) || []
   const [form, setForm] = useState({
-    code: option?.code || '', nameFr: option?.name?.fr || '', nameEs: option?.name?.es || '', nameEn: option?.name?.en || '',
+    code: option?.code || '', nameFr: option?.name?.fr || '', nameEs: option?.name?.es || '', nameEn: option?.name?.en || '', descFr: option?.description?.fr || '', descEs: option?.description?.es || '', descEn: option?.description?.en || '',
     maxQuantity: option?.maxQuantity || 10, includedByDefault: option?.includedByDefault || false, imageUrl: option?.imageUrl || '',
     day1: option?.day1 || 0, day2: option?.day2 || 0, day3: option?.day3 || 0, day4: option?.day4 || 0, day5: option?.day5 || 0, day6: option?.day6 || 0, day7: option?.day7 || 0,
     day8: option?.day8 || 0, day9: option?.day9 || 0, day10: option?.day10 || 0, day11: option?.day11 || 0, day12: option?.day12 || 0, day13: option?.day13 || 0, day14: option?.day14 || 0,
@@ -452,7 +451,7 @@ function OptionModal({ option, categories, onSave, onClose }: { option: any; cat
   }
 
   const handleSubmit = () => onSave({
-    code: form.code, name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn },
+    code: form.code, name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn }, description: { fr: form.descFr, es: form.descEs, en: form.descEn },
     maxQuantity: parseInt(String(form.maxQuantity)), includedByDefault: form.includedByDefault, imageUrl: form.imageUrl,
     day1: parseFloat(String(form.day1)) || 0, day2: parseFloat(String(form.day2)) || 0, day3: parseFloat(String(form.day3)) || 0, day4: parseFloat(String(form.day4)) || 0,
     day5: parseFloat(String(form.day5)) || 0, day6: parseFloat(String(form.day6)) || 0, day7: parseFloat(String(form.day7)) || 0, day8: parseFloat(String(form.day8)) || 0,
@@ -470,6 +469,9 @@ function OptionModal({ option, categories, onSave, onClose }: { option: any; cat
           <input placeholder="Nom FR" value={form.nameFr} onChange={e => setForm({ ...form, nameFr: e.target.value })} className="w-full p-2 border rounded" />
           <input placeholder="Nom ES" value={form.nameEs} onChange={e => setForm({ ...form, nameEs: e.target.value })} className="w-full p-2 border rounded" />
           <input placeholder="Nom EN" value={form.nameEn} onChange={e => setForm({ ...form, nameEn: e.target.value })} className="w-full p-2 border rounded" />
+          <textarea placeholder="Description FR (optionnel)" value={form.descFr} onChange={e => setForm({ ...form, descFr: e.target.value })} className="w-full p-2 border rounded" rows={2} />
+          <textarea placeholder="Description ES (optionnel)" value={form.descEs} onChange={e => setForm({ ...form, descEs: e.target.value })} className="w-full p-2 border rounded" rows={2} />
+          <textarea placeholder="Description EN (optionnel)" value={form.descEn} onChange={e => setForm({ ...form, descEn: e.target.value })} className="w-full p-2 border rounded" rows={2} />
           <div className="grid grid-cols-2 gap-2">
             <input type="number" placeholder="Quantité max" value={form.maxQuantity} onChange={e => setForm({ ...form, maxQuantity: parseInt(e.target.value) || 10 })} className="p-2 border rounded" />
             <label className="flex items-center gap-2 p-2 border rounded">

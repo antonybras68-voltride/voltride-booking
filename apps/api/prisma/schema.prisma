@@ -124,6 +124,7 @@ model Option {
   id                String           @id @default(cuid())
   code              String           @unique
   name              Json
+  description       Json?
   maxQuantity       Int              @default(10)
   isActive          Boolean          @default(true)
   createdAt         DateTime         @default(now())

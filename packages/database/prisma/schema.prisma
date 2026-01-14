@@ -32,6 +32,8 @@ model Agency {
   fleetVehicles     Fleet[]
   contracts         RentalContract[]
   extensionSettings ExtensionSettings?
+  schedulePeriods   AgencySchedulePeriod[]
+  closures          AgencyClosure[]
 }
 
 model Category {
@@ -1285,4 +1287,69 @@ model RolePermission {
   updatedAt   DateTime @updatedAt
 
   @@unique([role, permission])
+}
+
+// ============== AGENCY SCHEDULE ==============
+model AgencySchedulePeriod {
+  id              String    @id @default(cuid())
+  agencyId        String
+  agency          Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  name            String    // Ex: "Été 2025", "Hiver 2025-2026"
+  startDate       DateTime
+  endDate         DateTime
+  isDefault       Boolean   @default(false)
+  
+  // Lundi
+  mondayOpen      String?   // "10:00"
+  mondayClose     String?   // "19:00"
+  mondayIsClosed  Boolean   @default(false)
+  
+  // Mardi
+  tuesdayOpen     String?
+  tuesdayClose    String?
+  tuesdayIsClosed Boolean   @default(false)
+  
+  // Mercredi
+  wednesdayOpen   String?
+  wednesdayClose  String?
+  wednesdayIsClosed Boolean @default(false)
+  
+  // Jeudi
+  thursdayOpen    String?
+  thursdayClose   String?
+  thursdayIsClosed Boolean  @default(false)
+  
+  // Vendredi
+  fridayOpen      String?
+  fridayClose     String?
+  fridayIsClosed  Boolean   @default(false)
+  
+  // Samedi
+  saturdayOpen    String?
+  saturdayClose   String?
+  saturdayIsClosed Boolean  @default(false)
+  
+  // Dimanche
+  sundayOpen      String?
+  sundayClose     String?
+  sundayIsClosed  Boolean   @default(true)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([agencyId])
+  @@index([startDate, endDate])
+}
+
+model AgencyClosure {
+  id          String    @id @default(cuid())
+  agencyId    String
+  agency      Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  startDate   DateTime
+  endDate     DateTime
+  reason      String    // "Vacances", "Travaux", "Jour férié"
+  createdAt   DateTime  @default(now())
+  
+  @@index([agencyId])
+  @@index([startDate, endDate])
 }

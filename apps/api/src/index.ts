@@ -3029,3 +3029,172 @@ app.put('/api/fleet/spare-parts/:id', async (req, res) => {
 })
 
 console.log('Delete and update routes loaded')
+
+// ============== AGENCY SCHEDULE PERIODS ==============
+app.get('/api/agencies/:agencyId/schedule-periods', async (req, res) => {
+  try {
+    const periods = await prisma.agencySchedulePeriod.findMany({
+      where: { agencyId: req.params.agencyId },
+      orderBy: { startDate: 'asc' }
+    })
+    res.json(periods)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch schedule periods' }) }
+})
+
+app.post('/api/agencies/:agencyId/schedule-periods', async (req, res) => {
+  try {
+    const period = await prisma.agencySchedulePeriod.create({
+      data: {
+        agencyId: req.params.agencyId,
+        name: req.body.name,
+        startDate: new Date(req.body.startDate),
+        endDate: new Date(req.body.endDate),
+        isDefault: req.body.isDefault || false,
+        mondayOpen: req.body.mondayOpen,
+        mondayClose: req.body.mondayClose,
+        mondayIsClosed: req.body.mondayIsClosed || false,
+        tuesdayOpen: req.body.tuesdayOpen,
+        tuesdayClose: req.body.tuesdayClose,
+        tuesdayIsClosed: req.body.tuesdayIsClosed || false,
+        wednesdayOpen: req.body.wednesdayOpen,
+        wednesdayClose: req.body.wednesdayClose,
+        wednesdayIsClosed: req.body.wednesdayIsClosed || false,
+        thursdayOpen: req.body.thursdayOpen,
+        thursdayClose: req.body.thursdayClose,
+        thursdayIsClosed: req.body.thursdayIsClosed || false,
+        fridayOpen: req.body.fridayOpen,
+        fridayClose: req.body.fridayClose,
+        fridayIsClosed: req.body.fridayIsClosed || false,
+        saturdayOpen: req.body.saturdayOpen,
+        saturdayClose: req.body.saturdayClose,
+        saturdayIsClosed: req.body.saturdayIsClosed || false,
+        sundayOpen: req.body.sundayOpen,
+        sundayClose: req.body.sundayClose,
+        sundayIsClosed: req.body.sundayIsClosed ?? true
+      }
+    })
+    res.json(period)
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create schedule period' }) }
+})
+
+app.put('/api/schedule-periods/:id', async (req, res) => {
+  try {
+    const period = await prisma.agencySchedulePeriod.update({
+      where: { id: req.params.id },
+      data: {
+        name: req.body.name,
+        startDate: new Date(req.body.startDate),
+        endDate: new Date(req.body.endDate),
+        isDefault: req.body.isDefault,
+        mondayOpen: req.body.mondayOpen,
+        mondayClose: req.body.mondayClose,
+        mondayIsClosed: req.body.mondayIsClosed,
+        tuesdayOpen: req.body.tuesdayOpen,
+        tuesdayClose: req.body.tuesdayClose,
+        tuesdayIsClosed: req.body.tuesdayIsClosed,
+        wednesdayOpen: req.body.wednesdayOpen,
+        wednesdayClose: req.body.wednesdayClose,
+        wednesdayIsClosed: req.body.wednesdayIsClosed,
+        thursdayOpen: req.body.thursdayOpen,
+        thursdayClose: req.body.thursdayClose,
+        thursdayIsClosed: req.body.thursdayIsClosed,
+        fridayOpen: req.body.fridayOpen,
+        fridayClose: req.body.fridayClose,
+        fridayIsClosed: req.body.fridayIsClosed,
+        saturdayOpen: req.body.saturdayOpen,
+        saturdayClose: req.body.saturdayClose,
+        saturdayIsClosed: req.body.saturdayIsClosed,
+        sundayOpen: req.body.sundayOpen,
+        sundayClose: req.body.sundayClose,
+        sundayIsClosed: req.body.sundayIsClosed
+      }
+    })
+    res.json(period)
+  } catch (error) { res.status(500).json({ error: 'Failed to update schedule period' }) }
+})
+
+app.delete('/api/schedule-periods/:id', async (req, res) => {
+  try {
+    await prisma.agencySchedulePeriod.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: 'Failed to delete schedule period' }) }
+})
+
+// ============== AGENCY CLOSURES ==============
+app.get('/api/agencies/:agencyId/closures', async (req, res) => {
+  try {
+    const closures = await prisma.agencyClosure.findMany({
+      where: { agencyId: req.params.agencyId },
+      orderBy: { startDate: 'asc' }
+    })
+    res.json(closures)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch closures' }) }
+})
+
+app.post('/api/agencies/:agencyId/closures', async (req, res) => {
+  try {
+    const closure = await prisma.agencyClosure.create({
+      data: {
+        agencyId: req.params.agencyId,
+        startDate: new Date(req.body.startDate),
+        endDate: new Date(req.body.endDate),
+        reason: req.body.reason
+      }
+    })
+    res.json(closure)
+  } catch (error) { res.status(500).json({ error: 'Failed to create closure' }) }
+})
+
+app.delete('/api/closures/:id', async (req, res) => {
+  try {
+    await prisma.agencyClosure.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: 'Failed to delete closure' }) }
+})
+
+// Get agency schedule for a specific date
+app.get('/api/agencies/:agencyId/schedule', async (req, res) => {
+  try {
+    const { date } = req.query
+    const targetDate = date ? new Date(date as string) : new Date()
+    
+    // Check if closed
+    const closure = await prisma.agencyClosure.findFirst({
+      where: {
+        agencyId: req.params.agencyId,
+        startDate: { lte: targetDate },
+        endDate: { gte: targetDate }
+      }
+    })
+    if (closure) {
+      return res.json({ isClosed: true, reason: closure.reason })
+    }
+    
+    // Find applicable period
+    const period = await prisma.agencySchedulePeriod.findFirst({
+      where: {
+        agencyId: req.params.agencyId,
+        startDate: { lte: targetDate },
+        endDate: { gte: targetDate }
+      }
+    }) || await prisma.agencySchedulePeriod.findFirst({
+      where: { agencyId: req.params.agencyId, isDefault: true }
+    })
+    
+    if (!period) {
+      return res.json({ isClosed: false, schedule: null })
+    }
+    
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const dayName = dayNames[targetDate.getDay()]
+    
+    res.json({
+      isClosed: (period as any)[`${dayName}IsClosed`],
+      openTime: (period as any)[`${dayName}Open`],
+      closeTime: (period as any)[`${dayName}Close`],
+      periodName: period.name
+    })
+  } catch (error) { res.status(500).json({ error: 'Failed to get schedule' }) }
+})
+
+console.log('Agency schedule routes loaded')

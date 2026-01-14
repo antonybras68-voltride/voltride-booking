@@ -208,7 +208,7 @@ function PeriodForm({ agencyId, period, onSave, onCancel }: any) {
     sundayIsClosed: period?.sundayIsClosed ?? true,
   })
   const [saving, setSaving] = useState(false)
-  const [selectingDates, setSelectingDates] = useState(false)
+  // const [selectingDates, setSelectingDates] = useState(false)
 
   const handleSave = async () => {
     if (!form.name || !form.startDate || !form.endDate) {

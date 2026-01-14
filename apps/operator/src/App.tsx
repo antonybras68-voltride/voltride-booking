@@ -550,7 +550,7 @@ export default function App() {
     try {
       const [agenciesData, fleetData, bookingsData] = await Promise.all([
         api.getAgencies(),
-        api.getFleet(selectedAgency ? { agencyId: selectedAgency } : {}),
+        api.getFleet({}),
         api.getBookings(selectedAgency ? { agencyId: selectedAgency } : {})
       ])
       setAgencies(agenciesData.filter(a => a.brand === brand))

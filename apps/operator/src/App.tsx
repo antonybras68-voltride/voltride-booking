@@ -603,7 +603,15 @@ export default function App() {
   const today = formatDate(new Date())
   const todayDepartures = bookings.filter(b => b.startDate?.split('T')[0] === today && !b.checkedIn)
   const todayReturns = bookings.filter(b => b.endDate?.split('T')[0] === today && b.checkedIn && !b.checkedOut)
-  const filteredFleet = fleet.filter(f => !selectedAgency || f.agencyId === selectedAgency)
+  const selectedAgencyData = agencies.find(a => a.id === selectedAgency)
+  const filteredFleet = fleet.filter(f => {
+    if (!selectedAgency) return true
+    // Filtrer par locationCode qui correspond au code de l'agence
+    if (selectedAgencyData && f.locationCode === selectedAgencyData.code) return true
+    // Fallback: filtrer par agencyId
+    if (f.agencyId === selectedAgency) return true
+    return false
+  })
   
   // Vehicles currently rented (for checkout)
   const rentedBookings = bookings.filter(b => 

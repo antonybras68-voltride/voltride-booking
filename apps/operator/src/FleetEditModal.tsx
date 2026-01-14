@@ -79,6 +79,7 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
   const [newMaintenance, setNewMaintenance] = useState({ type: 'SERVICE', scheduledDate: '', description: '', cost: '', performedBy: '' })
   const [categories, setCategories] = useState([])
   const [vehicles, setVehicles] = useState([])
+  const [agencies, setAgencies] = useState([])
   const [selectedCategoryId, setSelectedCategoryId] = useState(fleet?.vehicle?.categoryId || '')
   const [selectedVehicleId, setSelectedVehicleId] = useState(fleet?.vehicleId || '')
 
@@ -89,12 +90,14 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
   const loadFleetData = async () => {
     // Load categories and vehicles
     try {
-      const [catRes, vehRes] = await Promise.all([
+      const [catRes, vehRes, agRes] = await Promise.all([
         fetch(API_URL + '/api/categories'),
-        fetch(API_URL + '/api/vehicles')
+        fetch(API_URL + '/api/vehicles'),
+        fetch(API_URL + '/api/agencies')
       ])
       setCategories(await catRes.json())
       setVehicles(await vehRes.json())
+      setAgencies(await agRes.json())
     } catch (e) { console.error(e) }
 
     try {
@@ -398,6 +401,19 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
                         <option value="RENTED">En location</option>
                         <option value="MAINTENANCE">Maintenance</option>
                         <option value="OUT_OF_SERVICE">Hors service</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-gray-700">Agence / Localisation</label>
+                      <select value={form.locationCode} onChange={e => updateForm('locationCode', e.target.value)}
+                        className="w-full border rounded-lg p-2 text-sm">
+                        <option value="">-- Sélectionner une agence --</option>
+                        {agencies.map((ag: any) => (
+                          <option key={ag.id} value={ag.code}>{ag.code} - {ag.name?.fr || ag.name?.es || ag.city}</option>
+                        ))}
                       </select>
                     </div>
                   </div>

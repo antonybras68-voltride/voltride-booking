@@ -10,6 +10,7 @@ interface NewFleetModalProps {
 }
 
 export function NewFleetModal({ agencyId, onClose, onSave }: NewFleetModalProps) {
+  const [agencies, setAgencies] = useState([])
   const [saving, setSaving] = useState(false)
   const [categories, setCategories] = useState([])
   const [vehicles, setVehicles] = useState([])
@@ -45,12 +46,14 @@ export function NewFleetModal({ agencyId, onClose, onSave }: NewFleetModalProps)
 
   const loadData = async () => {
     try {
-      const [catRes, vehRes] = await Promise.all([
+      const [catRes, vehRes, agRes] = await Promise.all([
         fetch(`${API_URL}/api/categories`),
-        fetch(`${API_URL}/api/vehicles`)
+        fetch(`${API_URL}/api/vehicles`),
+        fetch(`${API_URL}/api/agencies`)
       ])
       setCategories(await catRes.json())
       setVehicles(await vehRes.json())
+      setAgencies(await agRes.json())
     } catch (e) {
       console.error(e)
     }
@@ -146,9 +149,14 @@ export function NewFleetModal({ agencyId, onClose, onSave }: NewFleetModalProps)
                 className="w-full border rounded-lg p-2 text-sm" placeholder="S50-001" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">Localisation</label>
-              <input type="text" value={form.locationCode} onChange={e => updateForm('locationCode', e.target.value)}
-                className="w-full border rounded-lg p-2 text-sm" placeholder="V01, M01, M02..." />
+              <label className="block text-sm font-medium mb-1 text-gray-700">Agence *</label>
+              <select value={form.locationCode} onChange={e => updateForm('locationCode', e.target.value)}
+                className="w-full border rounded-lg p-2 text-sm">
+                <option value="">-- Sélectionner une agence --</option>
+                {agencies.map((ag: any) => (
+                  <option key={ag.id} value={ag.code}>{ag.code} - {ag.name?.fr || ag.name?.es || ag.city}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Immatriculation</label>

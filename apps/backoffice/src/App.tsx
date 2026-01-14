@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { AgencyScheduleModal } from './AgencyScheduleModal'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-production.up.railway.app'
 
@@ -18,6 +19,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState<string | null>(null)
   const [editItem, setEditItem] = useState<any>(null)
+  const [scheduleAgency, setScheduleAgency] = useState<Agency | null>(null)
 
   useEffect(() => { loadAllData() }, [])
 
@@ -156,6 +158,7 @@ function App() {
                   </div>
                   <div className="flex gap-2 mt-3">
                     <button onClick={() => { setEditItem(a); setShowModal('agency') }} className="flex-1 bg-gray-100 py-1 rounded">Modifier</button>
+                    <button onClick={() => setScheduleAgency(a)} className="flex-1 bg-green-100 text-green-700 py-1 rounded">Horaires</button>
                     <button onClick={() => handleDelete('agencies', a.id)} className="flex-1 bg-red-100 text-red-600 py-1 rounded">Supprimer</button>
                   </div>
                 </div>
@@ -231,6 +234,7 @@ function App() {
       {showModal === 'category' && <CategoryModal category={editItem} onSave={(data) => handleSave('categories', data)} onClose={() => { setShowModal(null); setEditItem(null) }} />}
       {showModal === 'vehicle' && <VehicleModal vehicle={editItem} categories={categories} onSave={(data) => handleSave('vehicles', data)} onClose={() => { setShowModal(null); setEditItem(null) }} />}
       {showModal === 'option' && <OptionModal option={editItem} categories={categories} onSave={(data) => handleSave('options', data)} onClose={() => { setShowModal(null); setEditItem(null) }} />}
+      {scheduleAgency && <AgencyScheduleModal agency={scheduleAgency} onClose={() => setScheduleAgency(null)} />}
     </div>
   )
 }

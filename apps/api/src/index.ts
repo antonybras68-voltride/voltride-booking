@@ -924,7 +924,8 @@ app.post('/api/fleet/:fleetId/maintenance', async (req, res) => {
         partsCost: req.body.partsCost || 0,
         performedBy: req.body.providerName,
         invoiceNumber: req.body.invoiceNumber,
-        notes: req.body.notes
+        notes: req.body.notes,
+        vehicleId: req.body.vehicleId
       }
     })
     res.json(record)
@@ -968,7 +969,8 @@ app.put('/api/fleet/:id', async (req, res) => {
         insurancePolicyNumber: req.body.insurancePolicyNumber,
         maintenanceIntervalKm: req.body.maintenanceIntervalKm,
         maintenanceIntervalDays: req.body.maintenanceIntervalDays,
-        notes: req.body.notes
+        notes: req.body.notes,
+        vehicleId: req.body.vehicleId
       },
       include: {
         vehicle: true,
@@ -1669,7 +1671,8 @@ app.post('/api/fleet', async (req, res) => {
         insuranceExpiryDate: req.body.insuranceExpiryDate ? new Date(req.body.insuranceExpiryDate) : null,
         status: req.body.status || 'AVAILABLE',
         condition: req.body.condition || 'GOOD',
-        notes: req.body.notes
+        notes: req.body.notes,
+        vehicleId: req.body.vehicleId
       },
       include: { vehicle: { include: { category: true, pricing: true } }, agency: true }
     })
@@ -1935,7 +1938,8 @@ app.post('/api/fleet/:fleetId/maintenance', async (req, res) => {
         status: req.body.status || 'SCHEDULED',
         priority: req.body.priority || 'NORMAL',
         technicianId: req.body.technicianId,
-        notes: req.body.notes
+        notes: req.body.notes,
+        vehicleId: req.body.vehicleId
       }
     })
     
@@ -1969,7 +1973,8 @@ app.put('/api/maintenance/:id', async (req, res) => {
         priority: req.body.priority,
         partsReplaced: req.body.partsReplaced,
         technicianNotes: req.body.technicianNotes,
-        notes: req.body.notes
+        notes: req.body.notes,
+        vehicleId: req.body.vehicleId
       },
       include: { fleet: true }
     })
@@ -2394,7 +2399,8 @@ app.post('/api/contracts/:contractId/deductions', async (req, res) => {
         photoUrls: req.body.photoUrls,
         validatedBy: req.body.validatedBy,
         validatedAt: new Date(),
-        notes: req.body.notes
+        notes: req.body.notes,
+        vehicleId: req.body.vehicleId
       }
     })
     

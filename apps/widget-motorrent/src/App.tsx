@@ -478,7 +478,7 @@ function App() {
                             </p>
                           </div>
                         </div>
-                        <input type="checkbox" checked={(selectedOptions[option.id] || 0) > 0} onChange={(e) => setSelectedOptions({ ...selectedOptions, [option.id]: e.target.checked ? Object.values(selectedVehicles).reduce((a, b) => a + b, 0) : 0 })} className="w-6 h-6 accent-[#fcb900]" />
+                        {isIncluded ? <span className="text-green-600 text-xl">✓</span> : <input type="checkbox" checked={(selectedOptions[option.id] || 0) > 0} onChange={(e) => setSelectedOptions({ ...selectedOptions, [option.id]: e.target.checked ? Object.values(selectedVehicles).reduce((a, b) => a + b, 0) : 0 })} className="w-6 h-6 accent-[#fcb900]" />}
                       </div>
                     )
                   })}

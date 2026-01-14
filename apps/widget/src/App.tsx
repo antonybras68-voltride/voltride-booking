@@ -6,15 +6,15 @@ const BRAND = 'VOLTRIDE'
 
 interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; closedOnSunday?: boolean }
 interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { id: string; name: { fr: string; es: string; en: string }; brand: string }; pricing: any[]; inventory: any[] }
-interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; description?: { fr: string; es: string; en: string }; maxQuantity: number; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; categories?: any[] }
+interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; description?: { fr: string; es: string; en: string }; maxQuantity: number; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; includedByDefault?: boolean; categories?: any[] }
 
 type Lang = 'fr' | 'es' | 'en'
 type Step = 'dates' | 'vehicles' | 'options' | 'customer' | 'payment' | 'confirmation'
 
 const translations = {
-  fr: { title: 'Location de vélos & e-bikes', selectAgency: 'Agence', selectDates: 'Sélectionnez vos dates', pickupDate: 'Date de retrait', returnDate: 'Date de retour', pickupTime: 'Heure de retrait', returnTime: 'Heure de retour', continue: 'Continuer', back: 'Retour', selectVehicles: 'Choisissez vos véhicules', quantity: 'Quantité', available: 'disponible(s)', deposit: 'Caution', perDay: '/jour', options: 'Options & Accessoires', yourInfo: 'Vos informations', firstName: 'Prénom', lastName: 'Nom', email: 'Email', phone: 'Téléphone', address: 'Adresse', postalCode: 'Code postal', city: 'Ville', country: 'Pays', payment: 'Paiement', summary: 'Récapitulatif', total: 'Total', depositToPay: 'Acompte à payer', depositInfo20: '20% car montant > 100€', depositInfo50: '50% car montant ≤ 100€', payNow: 'Payer maintenant', confirmation: 'Réservation confirmée !', bookingRef: 'Référence', emailSent: 'Un email de confirmation a été envoyé.', requiredDocs: 'Documents requis', docId: "Pièce d'identité ou passeport", docLicense: "Permis AM/A1/A2/B selon véhicule", securityDeposit: 'Caution à régler sur place', cashOrCard: 'En espèces ou carte de crédit (pas de carte de débit)', days: 'jour(s)', hours: 'heure(s) sup.', noVehicles: 'Aucun véhicule disponible pour cette agence', processing: 'Traitement en cours...', licensePlateWarning: '1 seul par réservation', helmetIncluded: 'Casque inclus' },
-  es: { title: 'Alquiler de bicicletas y e-bikes', selectAgency: 'Agencia', selectDates: 'Seleccione sus fechas', pickupDate: 'Fecha de recogida', returnDate: 'Fecha de devolución', pickupTime: 'Hora de recogida', returnTime: 'Hora de devolución', continue: 'Continuar', back: 'Volver', selectVehicles: 'Elija sus vehículos', quantity: 'Cantidad', available: 'disponible(s)', deposit: 'Fianza', perDay: '/día', options: 'Opciones y Accesorios', yourInfo: 'Sus datos', firstName: 'Nombre', lastName: 'Apellido', email: 'Email', phone: 'Teléfono', address: 'Dirección', postalCode: 'Código postal', city: 'Ciudad', country: 'País', payment: 'Pago', summary: 'Resumen', total: 'Total', depositToPay: 'Anticipo a pagar', depositInfo20: '20% porque importe > 100€', depositInfo50: '50% porque importe ≤ 100€', payNow: 'Pagar ahora', confirmation: '¡Reserva confirmada!', bookingRef: 'Referencia', emailSent: 'Se ha enviado un email de confirmación.', requiredDocs: 'Documentos requeridos', docId: 'Documento de identidad o pasaporte', docLicense: 'Permiso AM/A1/A2/B según vehículo', securityDeposit: 'Fianza a pagar en tienda', cashOrCard: 'En efectivo o tarjeta de crédito (no débito)', days: 'día(s)', hours: 'hora(s) extra', noVehicles: 'No hay vehículos disponibles para esta agencia', processing: 'Procesando...', licensePlateWarning: 'solo 1 por reserva', helmetIncluded: 'Casco incluido' },
-  en: { title: 'Bike & E-Bike Rental', selectAgency: 'Agency', selectDates: 'Select your dates', pickupDate: 'Pickup date', returnDate: 'Return date', pickupTime: 'Pickup time', returnTime: 'Return time', continue: 'Continue', back: 'Back', selectVehicles: 'Choose your vehicles', quantity: 'Quantity', available: 'available', deposit: 'Deposit', perDay: '/day', options: 'Options & Accessories', yourInfo: 'Your information', firstName: 'First name', lastName: 'Last name', email: 'Email', phone: 'Phone', address: 'Address', postalCode: 'Postal code', city: 'City', country: 'Country', payment: 'Payment', summary: 'Summary', total: 'Total', depositToPay: 'Deposit to pay', depositInfo20: '20% because amount > 100€', depositInfo50: '50% because amount ≤ 100€', payNow: 'Pay now', confirmation: 'Booking confirmed!', bookingRef: 'Reference', emailSent: 'A confirmation email has been sent.', requiredDocs: 'Required documents', docId: 'ID card or passport', docLicense: 'AM/A1/A2/B license depending on vehicle', securityDeposit: 'Security deposit payable on site', cashOrCard: 'Cash or credit card (no debit cards)', days: 'day(s)', hours: 'extra hour(s)', noVehicles: 'No vehicles available for this agency', processing: 'Processing...', licensePlateWarning: 'only 1 per booking', helmetIncluded: 'Helmet included' }
+  fr: { title: 'Location de vélos & e-bikes', selectAgency: 'Agence', selectDates: 'Sélectionnez vos dates', pickupDate: 'Date de retrait', returnDate: 'Date de retour', pickupTime: 'Heure de retrait', returnTime: 'Heure de retour', continue: 'Continuer', back: 'Retour', selectVehicles: 'Choisissez vos véhicules', quantity: 'Quantité', available: 'disponible(s)', deposit: 'Caution', perDay: '/jour', options: 'Options & Accessoires', yourInfo: 'Vos informations', firstName: 'Prénom', lastName: 'Nom', email: 'Email', phone: 'Téléphone', address: 'Adresse', postalCode: 'Code postal', city: 'Ville', country: 'Pays', payment: 'Paiement', summary: 'Récapitulatif', total: 'Total', depositToPay: 'Acompte à payer', depositInfo20: '20% car montant > 100€', depositInfo50: '50% car montant ≤ 100€', payNow: 'Payer maintenant', confirmation: 'Réservation confirmée !', bookingRef: 'Référence', emailSent: 'Un email de confirmation a été envoyé.', requiredDocs: 'Documents requis', docId: "Pièce d'identité ou passeport", docLicense: "Permis AM/A1/A2/B selon véhicule", securityDeposit: 'Caution à régler sur place', cashOrCard: 'En espèces ou carte de crédit (pas de carte de débit)', days: 'jour(s)', hours: 'heure(s) sup.', noVehicles: 'Aucun véhicule disponible pour cette agence', processing: 'Traitement en cours...', licensePlateWarning: '1 seul par réservation', helmetIncluded: 'Casque inclus', free: 'Gratuit', included: 'Inclus' },
+  es: { title: 'Alquiler de bicicletas y e-bikes', selectAgency: 'Agencia', selectDates: 'Seleccione sus fechas', pickupDate: 'Fecha de recogida', returnDate: 'Fecha de devolución', pickupTime: 'Hora de recogida', returnTime: 'Hora de devolución', continue: 'Continuar', back: 'Volver', selectVehicles: 'Elija sus vehículos', quantity: 'Cantidad', available: 'disponible(s)', deposit: 'Fianza', perDay: '/día', options: 'Opciones y Accesorios', yourInfo: 'Sus datos', firstName: 'Nombre', lastName: 'Apellido', email: 'Email', phone: 'Teléfono', address: 'Dirección', postalCode: 'Código postal', city: 'Ciudad', country: 'País', payment: 'Pago', summary: 'Resumen', total: 'Total', depositToPay: 'Anticipo a pagar', depositInfo20: '20% porque importe > 100€', depositInfo50: '50% porque importe ≤ 100€', payNow: 'Pagar ahora', confirmation: '¡Reserva confirmada!', bookingRef: 'Referencia', emailSent: 'Se ha enviado un email de confirmación.', requiredDocs: 'Documentos requeridos', docId: 'Documento de identidad o pasaporte', docLicense: 'Permiso AM/A1/A2/B según vehículo', securityDeposit: 'Fianza a pagar en tienda', cashOrCard: 'En efectivo o tarjeta de crédito (no débito)', days: 'día(s)', hours: 'hora(s) extra', noVehicles: 'No hay vehículos disponibles para esta agencia', processing: 'Procesando...', licensePlateWarning: 'solo 1 por reserva', helmetIncluded: 'Casco incluido', free: 'Gratis', included: 'Incluido' },
+  en: { title: 'Bike & E-Bike Rental', selectAgency: 'Agency', selectDates: 'Select your dates', pickupDate: 'Pickup date', returnDate: 'Return date', pickupTime: 'Pickup time', returnTime: 'Return time', continue: 'Continue', back: 'Back', selectVehicles: 'Choose your vehicles', quantity: 'Quantity', available: 'available', deposit: 'Deposit', perDay: '/day', options: 'Options & Accessories', yourInfo: 'Your information', firstName: 'First name', lastName: 'Last name', email: 'Email', phone: 'Phone', address: 'Address', postalCode: 'Postal code', city: 'City', country: 'Country', payment: 'Payment', summary: 'Summary', total: 'Total', depositToPay: 'Deposit to pay', depositInfo20: '20% because amount > 100€', depositInfo50: '50% because amount ≤ 100€', payNow: 'Pay now', confirmation: 'Booking confirmed!', bookingRef: 'Reference', emailSent: 'A confirmation email has been sent.', requiredDocs: 'Required documents', docId: 'ID card or passport', docLicense: 'AM/A1/A2/B license depending on vehicle', securityDeposit: 'Security deposit payable on site', cashOrCard: 'Cash or credit card (no debit cards)', days: 'day(s)', hours: 'extra hour(s)', noVehicles: 'No vehicles available for this agency', processing: 'Processing...', licensePlateWarning: 'only 1 per booking', helmetIncluded: 'Helmet included', free: 'Free', included: 'Included' }
 }
 
 const getTimeSlots = (dateStr: string): string[] => {
@@ -596,26 +596,36 @@ function App() {
             <div className="space-y-4">
               <h2 className="text-xl font-bold text-gray-800">{t.options}</h2>
               <div className="space-y-3">
-                {getFilteredOptions().map(option => (
-                  <div key={option.id} className="border border-gray-200 rounded-xl p-4 flex justify-between items-center hover:shadow-md transition">
-                    <div className="flex items-center gap-3">
-                      {option.imageUrl ? (
-                        <img src={option.imageUrl} alt="" className="w-16 h-16 object-cover rounded-lg" />
-                      ) : (
-                        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">🎁</div>
-                      )}
-                      <div>
-                        <h3 className="font-bold text-gray-800">{getName(option.name)}</h3>
-                        {option.description && getName(option.description) && <p className="text-xs text-gray-500">{getName(option.description)}</p>}
-                        <p className="text-sm text-[#ffaf10]">{getOptionPrice(option, calculateDays())}€</p>
+                {getFilteredOptions().map(option => {
+                  const isIncluded = option.includedByDefault;
+                  const price = getOptionPrice(option, calculateDays());
+                  return (
+                    <div key={option.id} className={'border rounded-xl p-4 flex justify-between items-center hover:shadow-md transition ' + (isIncluded ? 'border-green-300 bg-green-50/50' : 'border-gray-200')}>
+                      <div className="flex items-center gap-3">
+                        {option.imageUrl ? (
+                          <img src={option.imageUrl} alt="" className="w-16 h-16 object-cover rounded-lg" />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">🎁</div>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-gray-800">{getName(option.name)}</h3>
+                            {isIncluded && <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full">✓ {t.included}</span>}
+                          </div>
+                          {option.description && getName(option.description) && <p className="text-xs text-gray-500">{getName(option.description)}</p>}
+                          <p className="text-sm text-[#ffaf10]">{isIncluded ? t.free : (price > 0 ? price + '€' : t.free)}</p>
+                        </div>
                       </div>
+                      {isIncluded ? (
+                        <span className="text-green-600 text-xl">✓</span>
+                      ) : (
+                        <select value={selectedOptions[option.id] || 0} onChange={(e) => setSelectedOptions({ ...selectedOptions, [option.id]: parseInt(e.target.value) })} className="p-2 border border-gray-200 rounded-lg">
+                          {[...Array(getTotalSelectedVehicles() + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}
+                        </select>
+                      )}
                     </div>
-                    <select value={selectedOptions[option.id] || 0} onChange={(e) => setSelectedOptions({ ...selectedOptions, [option.id]: parseInt(e.target.value) })} className="p-2 border border-gray-200 rounded-lg">
-                      {[...Array(getTotalSelectedVehicles() + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}
-                    </select>
-
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setStep('vehicles')} className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition">{t.back}</button>

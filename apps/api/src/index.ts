@@ -1672,7 +1672,6 @@ app.post('/api/fleet', async (req, res) => {
         status: req.body.status || 'AVAILABLE',
         condition: req.body.condition || 'GOOD',
         notes: req.body.notes,
-        vehicleId: req.body.vehicleId
       },
       include: { vehicle: { include: { category: true, pricing: true } }, agency: true }
     })

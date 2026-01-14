@@ -25,12 +25,15 @@ const CONTRACT_FIELDS = [
 ]
 
 const DOCUMENT_TYPES = [
-  { type: 'REGISTRATION', label: 'Carte grise' },
-  { type: 'TECHNICAL_SHEET', label: 'Fiche technique' },
-  { type: 'INSURANCE', label: 'Assurance' },
-  { type: 'ITV', label: 'ITV' },
-  { type: 'TUTORIAL', label: 'Tutoriel' },
-  { type: 'ACCIDENT_REPORT', label: 'Constat pré-rempli' },
+  { type: 'CARTE_GRISE', label: 'Carte grise' },
+  { type: 'FICHE_TECHNIQUE', label: 'Fiche technique' },
+  { type: 'ASSURANCE', label: 'Assurance' },
+  { type: 'RAPPORT_ITV', label: 'ITV' },
+  { type: 'TUTORIEL_VIDEO', label: 'Tutoriel vidéo' },
+  { type: 'TUTORIEL_PHOTO', label: 'Tutoriel photo' },
+  { type: 'CONSTAT_PREREMPLI', label: 'Constat pré-rempli' },
+  { type: 'MANUEL_UTILISATEUR', label: 'Manuel utilisateur' },
+  { type: 'PERMIS_CIRCULATION', label: 'Permis de circulation' },
   { type: 'OTHER', label: 'Autre' },
 ]
 

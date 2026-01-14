@@ -468,7 +468,6 @@ app.post('/api/tablet-sessions', async (req, res) => {
       data: {
         sessionId: req.body.sessionId,
         bookingId: req.body.bookingId,
-        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         type: req.body.type || 'checkin',
         language: req.body.language || 'fr',
@@ -571,7 +570,6 @@ app.post('/api/walkin-sessions', async (req, res) => {
     const session = await prisma.walkinSession.create({
       data: {
         sessionId: req.body.sessionId,
-        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         language: req.body.language || 'fr',
         brand: req.body.brand,
@@ -999,7 +997,6 @@ app.post('/api/fleet', async (req, res) => {
         year: req.body.year || null,
         color: req.body.color || null,
         currentMileage: req.body.currentMileage || 0,
-        vehicleId: req.body.vehicleId,
         vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         status: 'AVAILABLE'
@@ -2153,7 +2150,6 @@ app.post('/api/contracts', async (req, res) => {
         contractNumber,
         bookingId: req.body.bookingId,
         fleetVehicleId: req.body.fleetVehicleId,
-        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         customerId: customer.id,
         originalStartDate: new Date(req.body.startDate),

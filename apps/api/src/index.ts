@@ -251,11 +251,6 @@ app.get('/api/inventory', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to fetch inventory' }) }
 })
 
-app.post('/api/inventory', async (req, res) => {
-  try {
-    res.json(inventory)
-  } catch (error) { res.status(500).json({ error: 'Failed to update inventory' }) }
-})
 
 // ============== CUSTOMERS ==============
 app.get('/api/customers', async (req, res) => {
@@ -295,7 +290,8 @@ app.post('/api/bookings', async (req, res) => {
     // Créer la réservation d'abord
     const booking = await prisma.booking.create({
       data: {
-        reference, agencyId: req.body.agencyId, customerId: customer.id, startDate: new Date(req.body.startDate), endDate: new Date(req.body.endDate), startTime: req.body.startTime, endTime: req.body.endTime, totalPrice: req.body.totalPrice, depositAmount: req.body.depositAmount, language: req.body.language || 'es',
+        reference, vehicleId: req.body.vehicleId,
+        agencyId: req.body.agencyId, customerId: customer.id, startDate: new Date(req.body.startDate), endDate: new Date(req.body.endDate), startTime: req.body.startTime, endTime: req.body.endTime, totalPrice: req.body.totalPrice, depositAmount: req.body.depositAmount, language: req.body.language || 'es',
         source: 'WIDGET',
         items: { create: req.body.items.map((item: any) => ({ vehicleId: item.vehicleId, quantity: item.quantity, unitPrice: item.unitPrice, totalPrice: item.totalPrice })) },
         options: { create: (req.body.options || []).map((opt: any) => ({ optionId: opt.optionId, quantity: opt.quantity, unitPrice: opt.unitPrice, totalPrice: opt.totalPrice })) }
@@ -472,6 +468,7 @@ app.post('/api/tablet-sessions', async (req, res) => {
       data: {
         sessionId: req.body.sessionId,
         bookingId: req.body.bookingId,
+        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         type: req.body.type || 'checkin',
         language: req.body.language || 'fr',
@@ -574,6 +571,7 @@ app.post('/api/walkin-sessions', async (req, res) => {
     const session = await prisma.walkinSession.create({
       data: {
         sessionId: req.body.sessionId,
+        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         language: req.body.language || 'fr',
         brand: req.body.brand,
@@ -1002,6 +1000,7 @@ app.post('/api/fleet', async (req, res) => {
         year: req.body.year || null,
         color: req.body.color || null,
         currentMileage: req.body.currentMileage || 0,
+        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         status: 'AVAILABLE'
       },
@@ -1655,6 +1654,7 @@ app.post('/api/fleet', async (req, res) => {
         licensePlate: req.body.licensePlate,
         locationCode: req.body.locationCode,
         chassisNumber: req.body.chassisNumber,
+        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         year: req.body.year,
         color: req.body.color,
@@ -1676,33 +1676,6 @@ app.post('/api/fleet', async (req, res) => {
     res.json(fleetVehicle)
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create fleet vehicle' }) }
 })
-
-app.put('/api/fleet/:id', async (req, res) => {
-  try {
-    const fleetVehicle = await prisma.fleet.update({
-      where: { id: req.params.id },
-      data: {
-        licensePlate: req.body.licensePlate,
-        year: req.body.year,
-        color: req.body.color,
-        purchaseDate: req.body.purchaseDate ? new Date(req.body.purchaseDate) : undefined,
-        purchasePrice: req.body.purchasePrice,
-        currentMileage: req.body.currentMileage,
-        itvDate: req.body.itvDate ? new Date(req.body.itvDate) : undefined,
-        itvExpiryDate: req.body.itvExpiryDate ? new Date(req.body.itvExpiryDate) : undefined,
-        insuranceCompany: req.body.insuranceCompany,
-        insurancePolicyNumber: req.body.insurancePolicyNumber,
-        insuranceExpiryDate: req.body.insuranceExpiryDate ? new Date(req.body.insuranceExpiryDate) : undefined,
-        status: req.body.status,
-        condition: req.body.condition,
-        notes: req.body.notes,
-        vehicleId: req.body.vehicleId,
-        isActive: req.body.isActive
-      },
-      include: { vehicle: { include: { category: true, pricing: true } }, agency: true }
-    })
-    res.json(fleetVehicle)
-  } catch (error) { res.status(500).json({ error: 'Failed to update fleet vehicle' }) }
 })
 
 app.put('/api/fleet/:id/status', async (req, res) => {
@@ -2184,6 +2157,7 @@ app.post('/api/contracts', async (req, res) => {
         contractNumber,
         bookingId: req.body.bookingId,
         fleetVehicleId: req.body.fleetVehicleId,
+        vehicleId: req.body.vehicleId,
         agencyId: req.body.agencyId,
         customerId: customer.id,
         originalStartDate: new Date(req.body.startDate),

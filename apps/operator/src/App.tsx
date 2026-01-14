@@ -232,6 +232,7 @@ export default function App() {
   }
 
   const [tab, setTab] = useState('planning')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [brand, setBrand] = useState('VOLTRIDE')
   const [agencies, setAgencies] = useState([])
   const [selectedAgency, setSelectedAgency] = useState('')
@@ -865,9 +866,9 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 relative">
       {/* Sidebar */}
-      <div className="w-56 flex flex-col shadow-xl" style={{ background: 'linear-gradient(180deg, #abdee6 0%, #ffaf10 100%)' }}>
+      <div className={(mobileMenuOpen ? "translate-x-0" : "-translate-x-full") + " md:translate-x-0 fixed md:relative z-40 w-56 flex flex-col shadow-xl transition-transform duration-300"} style={{ background: 'linear-gradient(180deg, #abdee6 0%, #ffaf10 100%)' }}>
         <div className="p-4 border-b border-white/20">
           <div className="flex justify-center mb-3">
             {brand === 'VOLTRIDE' ? (
@@ -895,7 +896,7 @@ export default function App() {
             { id: 'invoices', label: t[lang].invoices },
             { id: 'settings', label: t[lang].settings },
           ].filter(item => hasPermission(item.id)).map(item => (
-            <button key={item.id} onClick={() => setTab(item.id)}
+            <button key={item.id} onClick={() => { setTab(item.id); setMobileMenuOpen(false) }}
               className={'w-full text-left px-4 py-2.5 rounded-xl mb-1 transition-all ' +
                 (tab === item.id ? 'bg-white/90 text-gray-800 font-semibold shadow-md' : 'text-white/90 hover:bg-white/20')}>
               {item.label}
@@ -929,9 +930,14 @@ export default function App() {
         </div>
       </div>
 
+      {/* Mobile overlay */}
+      {mobileMenuOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setMobileMenuOpen(false)} />}
       {/* Main content */}
-      <div className="flex-1 overflow-auto bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="bg-white/95 backdrop-blur shadow-sm px-6 py-4 flex items-center gap-4 border-b border-gray-100">
+      <div className="flex-1 overflow-auto bg-gradient-to-br from-gray-50 to-gray-100 w-full">
+        <div className="bg-white/95 backdrop-blur shadow-sm px-4 md:px-6 py-4 flex items-center gap-4 border-b border-gray-100">
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 rounded-lg hover:bg-gray-100">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
           <select value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)} className="border rounded-lg px-3 py-2">
             <option value="">{t[lang].allAgencies}</option>
             {agencies.map(a => <option key={a.id} value={a.id}>{a.city}</option>)}
@@ -947,7 +953,7 @@ export default function App() {
           {!loading && tab === 'dashboard' && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold">{t[lang].dashboard}</h2>
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-lg">
                   <div className="text-4xl font-bold text-blue-600">{todayDepartures.length}</div>
                   <div className="text-gray-600 mb-4">{t[lang].todayDepartures}</div>
@@ -975,9 +981,9 @@ export default function App() {
           {/* PLANNING */}
           {!loading && tab === 'planning' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-4 flex-wrap">
-                <h2 className="text-2xl font-bold">Planning</h2>
-                <div className="flex items-center gap-2 text-sm">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-wrap">
+                <h2 className="text-xl md:text-2xl font-bold">Planning</h2>
+                <div className="flex items-center gap-2 text-xs md:text-sm flex-wrap">
                   <span className="w-4 h-4 rounded bg-blue-500"></span> {t[lang].confirmed}
                   <span className="w-4 h-4 rounded bg-violet-500 ml-2"></span> {t[lang].confirmedAlt}
                   <span className="w-4 h-4 rounded bg-green-600 ml-2"></span> {t[lang].checkedIn}

@@ -1005,10 +1005,10 @@ export default function App() {
                   className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">{t[lang].next} →</button>
               </div>
 
-              <div className="bg-white rounded-xl shadow overflow-hidden">
-                <div className="overflow-x-auto">
+              <div className="bg-white rounded-xl shadow overflow-hidden max-h-[calc(100vh-200px)]">
+                <div className="overflow-auto">
                   <table className="w-full border-collapse" style={{ minWidth: '1000px' }}>
-                    <thead>
+                    <thead className="sticky top-0 z-30 bg-gray-50">
                       <tr className="bg-gray-50">
                         <th className="sticky left-0 bg-gray-50 px-3 py-3 text-left font-medium w-44 z-20 border-r">{t[lang].vehicle}</th>
                         {days.map((day, i) => {
@@ -1796,9 +1796,9 @@ export default function App() {
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-bold">🔐 {t[lang].permissions}</h3>
                     </div>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-auto">
                       <table className="w-full text-sm">
-                        <thead>
+                        <thead className="sticky top-0 z-30 bg-gray-50">
                           <tr className="border-b">
                             <th className="text-left py-2 px-3">{lang === "fr" ? "Permission" : "Permiso"}</th>
                             <th className="text-center py-2 px-3">ADMIN</th>
@@ -1838,9 +1838,9 @@ export default function App() {
                         + Nouvel utilisateur
                       </button>
                     </div>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-auto">
                       <table className="w-full text-sm">
-                        <thead>
+                        <thead className="sticky top-0 z-30 bg-gray-50">
                           <tr className="border-b bg-gray-50">
                             <th className="text-left py-3 px-3">{t[lang].lastName}</th>
                             <th className="text-left py-3 px-3">{t[lang].email}</th>
@@ -2079,7 +2079,7 @@ export default function App() {
                 </div>
                 <button onClick={() => setContractsFilter({ startDate: '', endDate: '', status: '' })} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Reset</button>
               </div>
-              <div className="bg-white rounded-xl shadow overflow-hidden">
+              <div className="bg-white rounded-xl shadow overflow-hidden max-h-[calc(100vh-200px)]">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
@@ -2131,7 +2131,7 @@ export default function App() {
                 </div>
                 <button onClick={() => setContractsFilter({ startDate: '', endDate: '', status: '' })} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Reset</button>
               </div>
-              <div className="bg-white rounded-xl shadow overflow-hidden">
+              <div className="bg-white rounded-xl shadow overflow-hidden max-h-[calc(100vh-200px)]">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>

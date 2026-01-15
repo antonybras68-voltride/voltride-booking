@@ -1005,8 +1005,8 @@ export default function App() {
                   className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">{t[lang].next} →</button>
               </div>
 
-              <div className="bg-white rounded-xl shadow overflow-hidden max-h-[calc(100vh-200px)]">
-                <div className="overflow-auto">
+              <div className="bg-white rounded-xl shadow overflow-hidden">
+                <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
                   <table className="w-full border-collapse" style={{ minWidth: '1000px' }}>
                     <thead className="sticky top-0 z-30 bg-gray-50">
                       <tr className="bg-gray-50">
@@ -1796,7 +1796,7 @@ export default function App() {
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-bold">🔐 {t[lang].permissions}</h3>
                     </div>
-                    <div className="overflow-auto">
+                    <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
                       <table className="w-full text-sm">
                         <thead className="sticky top-0 z-30 bg-gray-50">
                           <tr className="border-b">
@@ -1838,7 +1838,7 @@ export default function App() {
                         + Nouvel utilisateur
                       </button>
                     </div>
-                    <div className="overflow-auto">
+                    <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
                       <table className="w-full text-sm">
                         <thead className="sticky top-0 z-30 bg-gray-50">
                           <tr className="border-b bg-gray-50">
@@ -2079,7 +2079,7 @@ export default function App() {
                 </div>
                 <button onClick={() => setContractsFilter({ startDate: '', endDate: '', status: '' })} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Reset</button>
               </div>
-              <div className="bg-white rounded-xl shadow overflow-hidden max-h-[calc(100vh-200px)]">
+              <div className="bg-white rounded-xl shadow overflow-hidden">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
@@ -2131,7 +2131,7 @@ export default function App() {
                 </div>
                 <button onClick={() => setContractsFilter({ startDate: '', endDate: '', status: '' })} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Reset</button>
               </div>
-              <div className="bg-white rounded-xl shadow overflow-hidden max-h-[calc(100vh-200px)]">
+              <div className="bg-white rounded-xl shadow overflow-hidden">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>

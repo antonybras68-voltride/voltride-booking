@@ -70,6 +70,8 @@ model Vehicle {
   helmetIncluded Boolean       @default(true)
   kmIncluded     Json?         @default("{}")
   licenseType    Json?         @default("{}")
+  kmIncludedPerDay Int?          @default(100)
+  extraKmPrice     Float?        @default(0.15)
   fuelChargeQuarter    Float    @default(5)
   fuelChargeHalf       Float    @default(10)
   fuelChargeThreeQ     Float    @default(15)

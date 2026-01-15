@@ -264,31 +264,6 @@ function AgencyModal({ agency, onSave, onClose }: { agency: any; onSave: (data: 
             <option value="VOLTRIDE">VOLTRIDE</option>
             <option value="MOTOR-RENT">MOTOR-RENT</option>
           </select>
-          <div className="grid grid-cols-3 gap-2 mt-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Ouverture</label>
-              <input type="time" value={form.openingTime} onChange={e => setForm({ ...form, openingTime: e.target.value })} className="w-full p-2 border rounded" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Fermeture été</label>
-              <input type="time" value={form.closingTimeSummer} onChange={e => setForm({ ...form, closingTimeSummer: e.target.value })} className="w-full p-2 border rounded" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Fermeture hiver</label>
-              <input type="time" value={form.closingTimeWinter} onChange={e => setForm({ ...form, closingTimeWinter: e.target.value })} className="w-full p-2 border rounded" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mt-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Début saison été (MM-JJ)</label>
-              <input type="text" placeholder="04-01" value={form.summerStartDate} onChange={e => setForm({ ...form, summerStartDate: e.target.value })} className="w-full p-2 border rounded" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Fin saison été (MM-JJ)</label>
-              <input type="text" placeholder="09-30" value={form.summerEndDate} onChange={e => setForm({ ...form, summerEndDate: e.target.value })} className="w-full p-2 border rounded" />
-            </div>
-          </div>
-          <label className="flex items-center gap-2 mt-3"><input type="checkbox" checked={form.closedOnSunday} onChange={e => setForm({ ...form, closedOnSunday: e.target.checked })} className="w-4 h-4" /><span className="text-sm">Fermé le dimanche (pas de prise en charge ni retour)</span></label>
         </div>
         <div className="flex gap-2 mt-4">
           <button onClick={onClose} className="flex-1 py-2 bg-gray-200 rounded">Annuler</button>

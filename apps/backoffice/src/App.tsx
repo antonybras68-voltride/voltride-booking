@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-produc
 
 type Tab = 'vehicles' | 'agencies' | 'categories' | 'options'
 
-interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean; closedOnSunday: boolean }
+interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean; closedOnSunday: boolean; agencyType: 'OWN' | 'PARTNER' | 'FRANCHISE'; commissionRate?: number }
 interface Category { id: string; code: string; name: any; brand: string; bookingFee: number; _count?: { vehicles: number }; options?: any[] }
 interface Vehicle { id: string; sku: string; name: any; description: any; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; kmIncludedPerDay?: number; extraKmPrice?: number; helmetIncluded?: boolean; imageUrl?: string; categoryId: string; category?: Category; pricing: any[] }
 interface Option { id: string; code: string; name: any; maxQuantity: number; includedByDefault: boolean; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; sortOrder?: number; categories?: any[] }
@@ -153,6 +153,14 @@ function App() {
                       <h3 className="font-bold">{getName(a.name)}</h3>
                       <p className="text-sm text-gray-500">{a.code} - {a.city}</p>
                       <p className="text-sm text-gray-500">{a.phone}</p>
+                      {a.agencyType && a.agencyType !== 'OWN' && (
+                        <p className="text-sm mt-1">
+                          <span className={'px-2 py-0.5 rounded text-xs ' + (a.agencyType === 'PARTNER' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800')}>
+                            {a.agencyType === 'PARTNER' ? 'Partenaire' : 'Franchise'}
+                          </span>
+                          {a.commissionRate && <span className="ml-2 text-gray-600">{(a.commissionRate * 100).toFixed(0)}%</span>}
+                        </p>
+                      )}
                     </div>
                     <span className={'text-xs px-2 py-1 h-fit rounded-full ' + (a.brand === 'VOLTRIDE' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800')}>{a.brand}</span>
                   </div>
@@ -240,8 +248,35 @@ function App() {
 }
 
 function AgencyModal({ agency, onSave, onClose }: { agency: any; onSave: (data: any) => void; onClose: () => void }) {
-  const [form, setForm] = useState({ code: agency?.code || '', nameFr: agency?.name?.fr || '', nameEs: agency?.name?.es || '', nameEn: agency?.name?.en || '', address: agency?.address || '', city: agency?.city || '', postalCode: agency?.postalCode || '', country: agency?.country || 'ES', phone: agency?.phone || '', email: agency?.email || '', brand: agency?.brand || 'VOLTRIDE', openingTime: agency?.openingTime || '10:00', closingTimeSummer: agency?.closingTimeSummer || '19:00', closingTimeWinter: agency?.closingTimeWinter || '16:00', summerStartDate: agency?.summerStartDate || "04-01", summerEndDate: agency?.summerEndDate || "09-30", isActive: agency?.isActive ?? true, closedOnSunday: agency?.closedOnSunday ?? false })
-  const handleSubmit = () => onSave({ ...form, name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn } })
+  const [form, setForm] = useState({
+    code: agency?.code || '',
+    nameFr: agency?.name?.fr || '',
+    nameEs: agency?.name?.es || '',
+    nameEn: agency?.name?.en || '',
+    address: agency?.address || '',
+    city: agency?.city || '',
+    postalCode: agency?.postalCode || '',
+    country: agency?.country || 'ES',
+    phone: agency?.phone || '',
+    email: agency?.email || '',
+    brand: agency?.brand || 'VOLTRIDE',
+    openingTime: agency?.openingTime || '10:00',
+    closingTimeSummer: agency?.closingTimeSummer || '19:00',
+    closingTimeWinter: agency?.closingTimeWinter || '16:00',
+    summerStartDate: agency?.summerStartDate || '04-01',
+    summerEndDate: agency?.summerEndDate || '09-30',
+    isActive: agency?.isActive ?? true,
+    closedOnSunday: agency?.closedOnSunday ?? false,
+    agencyType: agency?.agencyType || 'OWN',
+    commissionRate: agency?.commissionRate ? agency.commissionRate * 100 : ''
+  })
+
+  const handleSubmit = () => onSave({
+    ...form,
+    name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn },
+    commissionRate: form.agencyType !== 'OWN' && form.commissionRate ? parseFloat(String(form.commissionRate)) / 100 : null
+  })
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -257,13 +292,28 @@ function AgencyModal({ agency, onSave, onClose }: { agency: any; onSave: (data: 
             <input placeholder="Code postal" value={form.postalCode} onChange={e => setForm({ ...form, postalCode: e.target.value })} className="p-2 border rounded" />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <input placeholder="Téléphone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="p-2 border rounded" />
+            <input placeholder="Telephone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="p-2 border rounded" />
             <input placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="p-2 border rounded" />
           </div>
           <select value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="w-full p-2 border rounded">
             <option value="VOLTRIDE">VOLTRIDE</option>
             <option value="MOTOR-RENT">MOTOR-RENT</option>
           </select>
+          <div className="border rounded p-3 bg-gray-50">
+            <p className="text-sm font-medium mb-2">Type d agence</p>
+            <select value={form.agencyType} onChange={e => setForm({ ...form, agencyType: e.target.value })} className="w-full p-2 border rounded">
+              <option value="OWN">Agence propre</option>
+              <option value="PARTNER">Partenaire (commission a reverser)</option>
+              <option value="FRANCHISE">Franchise (commission a prelever)</option>
+            </select>
+            {form.agencyType !== 'OWN' && (
+              <div className="mt-3">
+                <label className="text-sm text-gray-600">{form.agencyType === 'PARTNER' ? 'Commission a reverser au partenaire (%)' : 'Commission a prelever du franchise (%)'}</label>
+                <input type="number" placeholder="Ex: 15" value={form.commissionRate} onChange={e => setForm({ ...form, commissionRate: e.target.value })} className="w-full p-2 border rounded mt-1" min="0" max="100" step="0.5" />
+                {form.commissionRate && <p className="text-xs text-gray-500 mt-1">{form.agencyType === 'PARTNER' ? `Pour une location de 100EUR, vous reverserez ${form.commissionRate}EUR au partenaire` : `Pour une location de 100EUR, le franchise vous versera ${form.commissionRate}EUR`}</p>}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex gap-2 mt-4">
           <button onClick={onClose} className="flex-1 py-2 bg-gray-200 rounded">Annuler</button>

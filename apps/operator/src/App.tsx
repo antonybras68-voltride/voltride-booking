@@ -1826,7 +1826,7 @@ export default function App() {
                           {['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices', 'settings', 'users'].map(perm => (
                             <tr key={perm} className="border-b hover:bg-gray-50">
                               <td className="py-2 px-3 font-medium capitalize">{t[lang][perm] || perm}</td>
-                              {['ADMIN', 'MANAGER', 'OPERATOR'].map(role => (
+                              {['ADMIN', 'MANAGER', 'OPERATOR', 'COLLABORATOR', 'FRANCHISEE'].map(role => (
                                 <td key={role} className="text-center py-2 px-3">
                                   <input 
                                     type="checkbox" 
@@ -1873,7 +1873,7 @@ export default function App() {
                               <td className="py-3 px-3 text-gray-600">{u.email}</td>
                               <td className="py-3 px-3">
                                 <span className={'px-2 py-1 rounded text-xs font-medium ' + 
-                                  (u.role === 'ADMIN' ? 'bg-red-100 text-red-700' : u.role === 'MANAGER' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700')}>
+                                  (u.role === 'ADMIN' ? 'bg-red-100 text-red-700' : u.role === 'MANAGER' ? 'bg-blue-100 text-blue-700' : u.role === 'COLLABORATOR' ? 'bg-yellow-100 text-yellow-700' : u.role === 'FRANCHISEE' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700')}>
                                   {u.role}
                                 </span>
                               </td>
@@ -2241,6 +2241,8 @@ export default function App() {
                   <option value="ADMIN">Admin</option>
                   <option value="MANAGER">Manager</option>
                   <option value="OPERATOR">{lang === "fr" ? "Opérateur" : "Operador"}</option>
+                  <option value="COLLABORATOR">{lang === "fr" ? "Collaborateur (Partenaire)" : "Colaborador (Socio)"}</option>
+                  <option value="FRANCHISEE">{lang === "fr" ? "Franchisé" : "Franquiciado"}</option>
                 </select>
               </div>
               <div>

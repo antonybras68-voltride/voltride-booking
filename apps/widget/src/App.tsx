@@ -494,7 +494,7 @@ function App() {
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">{t.selectAgency}</label>
                 <select value={selectedAgency} onChange={(e) => setSelectedAgency(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
-                  {agencies.map(a => <option key={a.id} value={a.id}>{getName(a.name)} - {a.city}</option>)}
+                  {agencies.map(a => <option key={a.id} value={a.id}>{getName(a.name)}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">

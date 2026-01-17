@@ -1881,9 +1881,9 @@ export default function App() {
                         </div>
                         <div className="text-right">
                           <div className="text-xs text-gray-500">Depuis</div>
-                          <div className="text-sm font-medium">{booking.startDate?.split('T')[0]}</div>
+                          <div className="text-sm font-medium">{new Date(booking.startDate).toLocaleDateString('fr-FR')}</div>
                           <div className="text-xs text-blue-600 mt-1">
-                            Retour prévu: {booking.endDate?.split('T')[0]}
+                            Retour prévu: {new Date(booking.endDate).toLocaleDateString('fr-FR')}
                           </div>
                         </div>
                       </div>
@@ -2537,7 +2537,7 @@ export default function App() {
           <div className="font-bold">{tooltip.booking.customer?.firstName} {tooltip.booking.customer?.lastName}</div>
           {tooltip.booking.customer?.phone && <div className="text-yellow-300">📞 {tooltip.booking.customer.phone}</div>}
           <div className="text-gray-300">{tooltip.booking.reference}</div>
-          <div className="text-gray-300">{tooltip.booking.startDate?.split('T')[0]} → {tooltip.booking.endDate?.split('T')[0]}</div>
+          <div className="text-gray-300">{new Date(tooltip.booking.startDate).toLocaleDateString('fr-FR')} → {new Date(tooltip.booking.endDate).toLocaleDateString('fr-FR')}</div>
           <div className="text-gray-300">{tooltip.booking.startTime} - {tooltip.booking.endTime}</div>
           {tooltip.booking.checkedIn && <div className="text-green-400">✓ {t[lang].checkedIn}</div>}
         </div>

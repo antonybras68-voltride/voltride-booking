@@ -966,7 +966,15 @@ export default function App() {
           </button>
           <select value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)} className="border rounded-lg px-3 py-2">
             <option value="">{t[lang].allAgencies}</option>
-            {allAgencies.map((a: any) => <option key={a.id} value={a.id}>{getName(a.name, lang)} {a.agencyType && a.agencyType !== 'OWN' ? (a.agencyType === 'PARTNER' ? '(P)' : '(F)') : ''}</option>)}
+            {allAgencies
+              .filter((a: any) => a.brand === brand)
+              .filter((a: any) => {
+                if (user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE')) {
+                  return user.agencyIds?.includes(a.id)
+                }
+                return true
+              })
+              .map((a: any) => <option key={a.id} value={a.id}>{getName(a.name, lang)}{a.agencyType && a.agencyType !== 'OWN' ? (a.agencyType === 'PARTNER' ? ' (P)' : ' (F)') : ''}</option>)}
           </select>
           <div className="flex-1" />
           <span className="text-sm text-gray-500">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>

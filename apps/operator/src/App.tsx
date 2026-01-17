@@ -2195,7 +2195,7 @@ export default function App() {
                         </div>
                         <div>
                           <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Créé le' : 'Creado el'}</label>
-                          <p className="font-medium">{selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : '-'}</p>
+                          <p className="font-medium">{selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString('fr-FR') : '-'}</p>
                         </div>
                       </div>
 
@@ -2248,7 +2248,7 @@ export default function App() {
                                 <div>
                                   <span className="font-mono text-sm">{b.reference}</span>
                                   <span className="ml-2 text-sm text-gray-500">
-                                    {new Date(b.startDate).toLocaleDateString()} → {new Date(b.endDate).toLocaleDateString()}
+                                    {new Date(b.startDate).toLocaleDateString('fr-FR')} → {new Date(b.endDate).toLocaleDateString('fr-FR')}
                                   </span>
                                 </div>
                                 <span className={'px-2 py-1 rounded text-xs ' + 
@@ -2320,7 +2320,7 @@ export default function App() {
                         <td className="px-4 py-3 font-medium">{contract.contractNumber}</td>
                         <td className="px-4 py-3">{contract.customer?.firstName} {contract.customer?.lastName}</td>
                         <td className="px-4 py-3">{contract.fleetVehicle?.identificationNumber || contract.fleetVehicle?.vehicle?.name}</td>
-                        <td className="px-4 py-3 text-sm">{new Date(contract.currentStartDate).toLocaleDateString()} - {new Date(contract.currentEndDate).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 text-sm">{new Date(contract.currentStartDate).toLocaleDateString('fr-FR')} - {new Date(contract.currentEndDate).toLocaleDateString('fr-FR')}</td>
                         <td className="px-4 py-3 font-semibold">{Number(contract.totalAmount).toFixed(2)} EUR</td>
                         <td className="px-4 py-3"><span className={"px-2 py-1 rounded-full text-xs font-medium " + (contract.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : contract.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' : contract.status === 'CANCELLED' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')}>{contract.status}</span></td>
                         <td className="px-4 py-3 space-x-2">
@@ -2371,7 +2371,7 @@ export default function App() {
                       <tr key={contract.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 font-medium">FAC-{contract.contractNumber}</td>
                         <td className="px-4 py-3">{contract.customer?.firstName} {contract.customer?.lastName}</td>
-                        <td className="px-4 py-3">{new Date(contract.actualEndDate || contract.currentEndDate).toLocaleDateString()}</td>
+                        <td className="px-4 py-3">{new Date(contract.actualEndDate || contract.currentEndDate).toLocaleDateString('fr-FR')}</td>
                         <td className="px-4 py-3">{Number(contract.subtotal).toFixed(2)} EUR</td>
                         <td className="px-4 py-3">{Number(contract.taxAmount).toFixed(2)} EUR ({Number(contract.taxRate)}%)</td>
                         <td className="px-4 py-3 font-semibold">{Number(contract.totalAmount).toFixed(2)} EUR</td>

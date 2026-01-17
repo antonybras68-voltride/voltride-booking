@@ -267,6 +267,7 @@ export default function App() {
   const [showCustomerModal, setShowCustomerModal] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<any>(null)
   const [customerSearch, setCustomerSearch] = useState('')
+  const [bookingSearch, setBookingSearch] = useState('')
   const [fleetStatusFilter, setFleetStatusFilter] = useState('ALL')
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
   const [selectedCheckoutBooking, setSelectedCheckoutBooking] = useState(null)
@@ -1567,9 +1568,29 @@ export default function App() {
           {/* BOOKINGS */}
           {!loading && tab === 'bookings' && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold">{lang === "fr" ? "Réservations à assigner" : "Reservas por asignar"}</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">{lang === "fr" ? "Réservations" : "Reservas"}</h2>
+                <input
+                  type="text"
+                  placeholder={lang === 'fr' ? "Rechercher (nom, email, tel, ref...)" : "Buscar (nombre, email, tel, ref...)"}
+                  value={bookingSearch}
+                  onChange={(e) => setBookingSearch(e.target.value)}
+                  className="px-4 py-2 border rounded-lg w-80 text-sm"
+                />
+              </div>
               <div className="bg-white rounded-xl shadow">
-                {bookings.filter(b => !b.fleetVehicleId && b.status !== 'CANCELLED').length === 0 ? (
+                {bookings.filter(b => {
+                  if (!bookingSearch) return !b.fleetVehicleId && b.status !== 'CANCELLED'
+                  const search = bookingSearch.toLowerCase()
+                  const matchesSearch = (
+                    b.reference?.toLowerCase().includes(search) ||
+                    b.customer?.firstName?.toLowerCase().includes(search) ||
+                    b.customer?.lastName?.toLowerCase().includes(search) ||
+                    b.customer?.email?.toLowerCase().includes(search) ||
+                    b.customer?.phone?.toLowerCase().includes(search)
+                  )
+                  return matchesSearch && b.status !== 'CANCELLED'
+                }).length === 0 ? (
                   <div className="p-8 text-center text-gray-500">✓ Toutes les réservations sont assignées</div>
                 ) : (
                   <table className="w-full">
@@ -1583,7 +1604,18 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {bookings.filter(b => !b.fleetVehicleId && b.status !== 'CANCELLED').map(b => (
+                      {bookings.filter(b => {
+                  if (!bookingSearch) return !b.fleetVehicleId && b.status !== 'CANCELLED'
+                  const search = bookingSearch.toLowerCase()
+                  const matchesSearch = (
+                    b.reference?.toLowerCase().includes(search) ||
+                    b.customer?.firstName?.toLowerCase().includes(search) ||
+                    b.customer?.lastName?.toLowerCase().includes(search) ||
+                    b.customer?.email?.toLowerCase().includes(search) ||
+                    b.customer?.phone?.toLowerCase().includes(search)
+                  )
+                  return matchesSearch && b.status !== 'CANCELLED'
+                }).map(b => (
                         <tr key={b.id} className="border-t hover:bg-gray-50">
                           <td className="px-4 py-3 font-mono text-sm">{b.reference}</td>
                           <td className="px-4 py-3">{b.customer?.firstName} {b.customer?.lastName}</td>
@@ -2348,6 +2380,7 @@ export default function App() {
         <div className="fixed bg-gray-900 text-white text-sm rounded-lg px-3 py-2 z-50 pointer-events-none shadow-lg"
           style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
           <div className="font-bold">{tooltip.booking.customer?.firstName} {tooltip.booking.customer?.lastName}</div>
+          {tooltip.booking.customer?.phone && <div className="text-yellow-300">📞 {tooltip.booking.customer.phone}</div>}
           <div className="text-gray-300">{tooltip.booking.reference}</div>
           <div className="text-gray-300">{tooltip.booking.startDate?.split('T')[0]} → {tooltip.booking.endDate?.split('T')[0]}</div>
           <div className="text-gray-300">{tooltip.booking.startTime} - {tooltip.booking.endTime}</div>

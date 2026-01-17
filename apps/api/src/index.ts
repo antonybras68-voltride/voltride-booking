@@ -280,9 +280,29 @@ app.get('/api/bookings', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to fetch bookings' }) }
 })
 
+// Generateur de numero de reservation sequentiel
+const generateBookingReference = async (brand: string) => {
+  const prefix = brand === 'MOTOR-RENT' ? 'MR-' : 'VR-'
+  
+  const lastBooking = await prisma.booking.findFirst({
+    where: { reference: { startsWith: prefix } },
+    orderBy: { reference: 'desc' }
+  })
+  
+  let nextNumber = 1
+  if (lastBooking) {
+    const lastNumber = parseInt(lastBooking.reference.replace(prefix, ''))
+    if (!isNaN(lastNumber)) nextNumber = lastNumber + 1
+  }
+  
+  return prefix + String(nextNumber).padStart(5, '0')
+}
+
 app.post('/api/bookings', async (req, res) => {
   try {
-    const reference = 'VR-' + Date.now().toString(36).toUpperCase()
+    // Recuperer l'agence pour connaitre la marque
+    const agency = await prisma.agency.findUnique({ where: { id: req.body.agencyId } })
+    const reference = await generateBookingReference(agency?.brand || 'VOLTRIDE')
     let customer = await prisma.customer.findFirst({ where: { email: req.body.customer.email } })
     if (!customer) {
       customer = await prisma.customer.create({ data: { firstName: req.body.customer.firstName, lastName: req.body.customer.lastName, email: req.body.customer.email, phone: req.body.customer.phone, address: req.body.customer.address, postalCode: req.body.customer.postalCode, city: req.body.customer.city, country: req.body.customer.country || 'ES', language: req.body.customer.language || 'es' } })
@@ -2879,8 +2899,9 @@ app.post('/api/bookings/operator', async (req, res) => {
       return res.status(400).json({ error: 'Customer required' })
     }
     
-    // Generate reference
-    const reference = `VR-${Date.now().toString(36).toUpperCase()}`
+    // Generate reference avec la marque de l'agence
+    const agencyForRef = await prisma.agency.findUnique({ where: { id: agencyId } })
+    const reference = await generateBookingReference(agencyForRef?.brand || 'VOLTRIDE')
     
     // Create booking
     const booking = await prisma.booking.create({

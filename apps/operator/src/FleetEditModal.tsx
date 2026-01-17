@@ -513,7 +513,10 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
               {mode === 'edit' && (
                 <div className="flex gap-2 items-center">
                   <select value={newDocType} onChange={e => setNewDocType(e.target.value)} className="border rounded-lg p-2 text-sm">
-                    {DOCUMENT_TYPES.map(dt => <option key={dt.type} value={dt.type}>{dt.label}</option>)}
+                    {DOCUMENT_TYPES.map(dt => {
+                      const hasDoc = documents.some(d => d.type === dt.type)
+                      return <option key={dt.type} value={dt.type}>{hasDoc ? '✅ ' : ''}{dt.label}</option>
+                    })}
                   </select>
                   <label className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 text-sm">
                     Uploader

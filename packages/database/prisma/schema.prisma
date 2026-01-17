@@ -30,6 +30,7 @@ model Agency {
   agencyType        AgencyType  @default(OWN)
   commissionRate    Float?
   commissionEmail   String?
+  showStockUrgency  Boolean     @default(false)
   bookings          Booking[]
   inventory         Inventory[]
   fleetVehicles     Fleet[]

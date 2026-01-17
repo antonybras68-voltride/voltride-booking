@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-produc
 
 type Tab = 'vehicles' | 'agencies' | 'categories' | 'options'
 
-interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean; closedOnSunday: boolean; agencyType: 'OWN' | 'PARTNER' | 'FRANCHISE'; commissionRate?: number; commissionEmail?: string }
+interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean; closedOnSunday: boolean; agencyType: 'OWN' | 'PARTNER' | 'FRANCHISE'; commissionRate?: number; commissionEmail?: string; showStockUrgency?: boolean }
 interface Category { id: string; code: string; name: any; brand: string; bookingFee: number; _count?: { vehicles: number }; options?: any[] }
 interface Vehicle { id: string; sku: string; name: any; description: any; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; kmIncludedPerDay?: number; extraKmPrice?: number; helmetIncluded?: boolean; imageUrl?: string; categoryId: string; category?: Category; pricing: any[] }
 interface Option { id: string; code: string; name: any; maxQuantity: number; includedByDefault: boolean; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; sortOrder?: number; categories?: any[] }
@@ -269,14 +269,16 @@ function AgencyModal({ agency, onSave, onClose }: { agency: any; onSave: (data: 
     closedOnSunday: agency?.closedOnSunday ?? false,
     agencyType: agency?.agencyType || 'OWN',
     commissionRate: agency?.commissionRate ? agency.commissionRate * 100 : '',
-    commissionEmail: agency?.commissionEmail || ''
+    commissionEmail: agency?.commissionEmail || '',
+    showStockUrgency: agency?.showStockUrgency || false
   })
 
   const handleSubmit = () => onSave({
     ...form,
     name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn },
     commissionRate: form.agencyType !== 'OWN' && form.commissionRate ? parseFloat(String(form.commissionRate)) / 100 : null,
-      commissionEmail: form.agencyType !== 'OWN' ? form.commissionEmail : null
+      commissionEmail: form.agencyType !== 'OWN' ? form.commissionEmail : null,
+      showStockUrgency: form.showStockUrgency
   })
 
   return (
@@ -320,6 +322,13 @@ function AgencyModal({ agency, onSave, onClose }: { agency: any; onSave: (data: 
               </div>
               </div>
             )}
+          </div>
+          <div className="border rounded p-3 bg-yellow-50">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.showStockUrgency} onChange={e => setForm({ ...form, showStockUrgency: e.target.checked })} className="w-4 h-4" />
+              <span className="text-sm font-medium">Activer le systeme d urgence stock</span>
+            </label>
+            <p className="text-xs text-gray-500 mt-1">Si active, affiche "Plus que X disponibles !" quand le stock est inferieur ou egal a 3 unites</p>
           </div>
         </div>
         <div className="flex gap-2 mt-4">

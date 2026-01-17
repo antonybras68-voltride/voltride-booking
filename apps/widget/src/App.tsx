@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'VOLTRIDE'
 
-interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; closedOnSunday?: boolean }
+interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; closedOnSunday?: boolean; isActive?: boolean; showStockUrgency?: boolean }
 interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { id: string; name: { fr: string; es: string; en: string }; brand: string }; pricing: any[]; inventory: any[] }
 interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; description?: { fr: string; es: string; en: string }; maxQuantity: number; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; includedByDefault?: boolean; categories?: any[] }
 
@@ -564,7 +564,21 @@ function App() {
                           <div className="flex justify-between items-center mt-2">
                             <span className="font-bold text-[#ffaf10] text-lg">{price * (selectedVehicles[vehicle.id] || 1)}€ {(selectedVehicles[vehicle.id] || 0) > 1 && <span className="text-sm font-normal text-gray-500">({price}€ x {selectedVehicles[vehicle.id]})</span>}</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-400">{available} {t.available}</span>
+                              {(() => {
+                                const currentAgency = agencies.find(a => a.id === selectedAgency)
+                                if (available === 0) {
+                                  const otherAgency = agencies.find(a => a.id !== selectedAgency && a.isActive)
+                                  return otherAgency ? (
+                                    <button onClick={() => setSelectedAgency(otherAgency.id)} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-lg hover:bg-red-200">
+                                      {lang === 'fr' ? 'Voir autre agence' : lang === 'es' ? 'Ver otra agencia' : 'See other agency'}
+                                    </button>
+                                  ) : <span className="text-xs text-red-500">{lang === 'fr' ? 'Indisponible' : lang === 'es' ? 'No disponible' : 'Unavailable'}</span>
+                                }
+                                if (currentAgency?.showStockUrgency && available <= 3) {
+                                  return <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-lg font-medium animate-pulse">{lang === 'fr' ? `Plus que ${available} !` : lang === 'es' ? `¡Solo quedan ${available}!` : `Only ${available} left!`}</span>
+                                }
+                                return null
+                              })()}
                               <select 
                                 value={selectedVehicles[vehicle.id] || 0} 
                                 onChange={(e) => handleVehicleSelect(vehicle.id, parseInt(e.target.value))}

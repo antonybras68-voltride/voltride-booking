@@ -278,6 +278,8 @@ export default function App() {
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [checkInBooking, setCheckInBooking] = useState(null)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showBookingDetail, setShowBookingDetail] = useState(false)
+  const [selectedBookingDetail, setSelectedBookingDetail] = useState(null)
   const [cancelBooking, setCancelBooking] = useState(null)
   const [cancelReason, setCancelReason] = useState('')
   const [contextMenu, setContextMenu] = useState(null)
@@ -1402,6 +1404,7 @@ export default function App() {
                                       draggable={!cellBooking.checkedIn}
                                       onDragStart={(e) => handleDragStart(e, cellBooking, 'move')}
                                       onDragEnd={handleDragEnd}
+                                      onClick={() => { setSelectedBookingDetail(cellBooking); setShowBookingDetail(true) }}
                                       onDoubleClick={() => handleDoubleClick(cellBooking)}
                                       onContextMenu={(e) => handleContextMenu(e, cellBooking)}
                                       onMouseEnter={() => setTooltip({ booking: cellBooking, x: 0, y: 0 })}
@@ -2731,6 +2734,169 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      
+      {/* Booking Detail Modal */}
+      {showBookingDetail && selectedBookingDetail && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowBookingDetail(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-4 border-b bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold">📋 Détails réservation</h2>
+                  <p className="text-blue-100 text-sm">{selectedBookingDetail.reference}</p>
+                </div>
+                <button onClick={() => setShowBookingDetail(false)} className="text-2xl opacity-70 hover:opacity-100">&times;</button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Statut et Source */}
+              <div className="flex gap-3">
+                <span className={'px-3 py-1 rounded-full text-sm font-medium ' + 
+                  (selectedBookingDetail.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 
+                   selectedBookingDetail.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 
+                   selectedBookingDetail.checkedIn ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700')}>
+                  {selectedBookingDetail.checkedIn ? '✅ Check-in fait' : selectedBookingDetail.status}
+                </span>
+                <span className={'px-3 py-1 rounded-full text-sm ' + 
+                  (selectedBookingDetail.source === 'WIDGET' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700')}>
+                  {selectedBookingDetail.source === 'WIDGET' ? '🌐 En ligne' : '🏪 Walk-in (agence)'}
+                </span>
+              </div>
+              
+              {/* Client */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="font-bold text-gray-700 mb-3">👤 Client</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Nom complet</p>
+                    <p className="font-medium">{selectedBookingDetail.customer?.firstName} {selectedBookingDetail.customer?.lastName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Téléphone</p>
+                    <p className="font-medium">
+                      <a href={'tel:' + selectedBookingDetail.customer?.phone} className="text-blue-600 hover:underline">
+                        📞 {selectedBookingDetail.customer?.phone}
+                      </a>
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Email</p>
+                    <p className="font-medium text-sm">{selectedBookingDetail.customer?.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Langue</p>
+                    <p className="font-medium">{selectedBookingDetail.language === 'fr' ? '🇫🇷 Français' : selectedBookingDetail.language === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Véhicule */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="font-bold text-gray-700 mb-3">🚲 Véhicule</h3>
+                <div className="flex items-center gap-4">
+                  {selectedBookingDetail.fleetVehicle?.vehicle?.imageUrl ? (
+                    <img src={selectedBookingDetail.fleetVehicle.vehicle.imageUrl} className="w-20 h-20 rounded-lg object-cover" />
+                  ) : (
+                    <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-3xl">🚲</div>
+                  )}
+                  <div>
+                    <p className="font-bold text-lg">{selectedBookingDetail.fleetVehicle?.vehicleNumber || 'Non assigné'}</p>
+                    <p className="text-gray-600">{getName(selectedBookingDetail.items?.[0]?.vehicle?.name)}</p>
+                    <p className="text-sm text-gray-500">{getName(selectedBookingDetail.items?.[0]?.vehicle?.category?.name)}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Dates */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="font-bold text-gray-700 mb-3">📅 Période de location</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Début</p>
+                    <p className="font-medium">{new Date(selectedBookingDetail.startDate).toLocaleDateString('fr-FR')} à {selectedBookingDetail.startTime}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Fin</p>
+                    <p className="font-medium">{new Date(selectedBookingDetail.endDate).toLocaleDateString('fr-FR')} à {selectedBookingDetail.endTime}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Options */}
+              {selectedBookingDetail.options && selectedBookingDetail.options.length > 0 && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h3 className="font-bold text-gray-700 mb-3">🎁 Options</h3>
+                  <div className="space-y-2">
+                    {selectedBookingDetail.options.map((opt, i) => (
+                      <div key={i} className="flex justify-between">
+                        <span>{getName(opt.option?.name)} x{opt.quantity}</span>
+                        <span className="font-medium">{opt.totalPrice?.toFixed(2)}€</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Tarification */}
+              <div className="bg-blue-50 rounded-xl p-4">
+                <h3 className="font-bold text-gray-700 mb-3">💰 Tarification</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Prix location</span>
+                    <span className="font-medium">{selectedBookingDetail.totalPrice?.toFixed(2)}€</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Caution</span>
+                    <span>{selectedBookingDetail.depositAmount?.toFixed(2)}€</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold pt-2 border-t border-blue-200">
+                    <span>Total</span>
+                    <span className="text-blue-600">{((selectedBookingDetail.totalPrice || 0) + (selectedBookingDetail.depositAmount || 0)).toFixed(2)}€</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Infos réservation */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="font-bold text-gray-700 mb-3">📝 Informations</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Date de réservation</p>
+                    <p className="font-medium">{new Date(selectedBookingDetail.createdAt).toLocaleDateString('fr-FR')} à {new Date(selectedBookingDetail.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Agence</p>
+                    <p className="font-medium">{getName(selectedBookingDetail.agency?.name)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer avec actions */}
+            <div className="p-4 border-t bg-gray-50 flex gap-3 rounded-b-2xl">
+              {!selectedBookingDetail.checkedIn && selectedBookingDetail.fleetVehicleId && (
+                <button onClick={() => { setShowBookingDetail(false); setCheckInBooking(selectedBookingDetail); setShowCheckIn(true) }}
+                  className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+                  ✅ Faire le check-in
+                </button>
+              )}
+              {!selectedBookingDetail.fleetVehicleId && (
+                <button onClick={() => { setShowBookingDetail(false); openAssignModal(selectedBookingDetail) }}
+                  className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                  🚲 Assigner un véhicule
+                </button>
+              )}
+              <button onClick={() => setShowBookingDetail(false)}
+                className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}

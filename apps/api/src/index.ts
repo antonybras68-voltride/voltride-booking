@@ -942,12 +942,19 @@ app.delete('/api/fleet/maintenance/:id', async (req, res) => {
 // Update fleet with new fields
 app.put('/api/fleet/:id', async (req, res) => {
   try {
+    // Trouver l'agence par son code pour mettre a jour agencyId
+    let agencyId = undefined
+    if (req.body.locationCode) {
+      const agency = await prisma.agency.findFirst({ where: { code: req.body.locationCode } })
+      if (agency) agencyId = agency.id
+    }
     const fleet = await prisma.fleet.update({
       where: { id: req.params.id },
       data: {
         vehicleNumber: req.body.vehicleNumber,
         licensePlate: req.body.licensePlate,
         locationCode: req.body.locationCode,
+        agencyId: agencyId,
         chassisNumber: req.body.chassisNumber,
         brand: req.body.brand,
         model: req.body.model,

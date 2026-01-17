@@ -2799,18 +2799,35 @@ export default function App() {
               {/* Véhicule */}
               <div className="bg-gray-50 rounded-xl p-4">
                 <h3 className="font-bold text-gray-700 mb-3">🚲 Véhicule</h3>
-                <div className="flex items-center gap-4">
-                  {selectedBookingDetail.fleetVehicle?.vehicle?.imageUrl ? (
-                    <img src={selectedBookingDetail.fleetVehicle.vehicle.imageUrl} className="w-20 h-20 rounded-lg object-cover" />
-                  ) : (
-                    <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-3xl">🚲</div>
-                  )}
-                  <div>
-                    <p className="font-bold text-lg">{selectedBookingDetail.fleetVehicle?.vehicleNumber || 'Non assigné'}</p>
-                    <p className="text-gray-600">{getName(selectedBookingDetail.items?.[0]?.vehicle?.name)}</p>
-                    <p className="text-sm text-gray-500">{getName(selectedBookingDetail.items?.[0]?.vehicle?.category?.name)}</p>
-                  </div>
-                </div>
+                {(() => {
+                  const assignedVehicle = fleet.find(f => f.id === selectedBookingDetail.fleetVehicleId)
+                  return (
+                    <div className="flex items-center gap-4">
+                      {assignedVehicle?.vehicle?.imageUrl ? (
+                        <img src={assignedVehicle.vehicle.imageUrl} className="w-20 h-20 rounded-lg object-cover" />
+                      ) : selectedBookingDetail.items?.[0]?.vehicle?.imageUrl ? (
+                        <img src={selectedBookingDetail.items[0].vehicle.imageUrl} className="w-20 h-20 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-3xl">🚲</div>
+                      )}
+                      <div>
+                        {assignedVehicle ? (
+                          <>
+                            <p className="font-bold text-lg text-green-600">{assignedVehicle.vehicleNumber}</p>
+                            <p className="text-gray-600">{getName(assignedVehicle.vehicle?.name)}</p>
+                            <p className="text-sm text-gray-500">{getName(assignedVehicle.vehicle?.category?.name)}</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-bold text-lg text-orange-600">⚠️ Non assigné</p>
+                            <p className="text-gray-600">{getName(selectedBookingDetail.items?.[0]?.vehicle?.name)}</p>
+                            <p className="text-sm text-gray-500">{getName(selectedBookingDetail.items?.[0]?.vehicle?.category?.name)}</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
               
               {/* Dates */}

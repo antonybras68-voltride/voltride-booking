@@ -268,9 +268,6 @@ export default function App() {
   const [editingCustomer, setEditingCustomer] = useState<any>(null)
   const [customerSearch, setCustomerSearch] = useState('')
   const [bookingSearch, setBookingSearch] = useState('')
-  const [bookingStatusFilter, setBookingStatusFilter] = useState('ALL')
-  const [bookingAssignFilter, setBookingAssignFilter] = useState('ALL')
-  const [bookingSourceFilter, setBookingSourceFilter] = useState('ALL')
   const [fleetStatusFilter, setFleetStatusFilter] = useState('ALL')
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
   const [selectedCheckoutBooking, setSelectedCheckoutBooking] = useState(null)
@@ -1569,225 +1566,73 @@ export default function App() {
           )}
 
           {/* BOOKINGS */}
-{!loading && tab === 'bookings' && (
-  <div className="space-y-4">
-    {/* Header avec titre et recherche */}
-    <div className="flex items-center justify-between">
-      <h2 className="text-2xl font-bold">{lang === "fr" ? "Réservations" : "Reservas"}</h2>
-      <input
-        type="text"
-        placeholder={lang === 'fr' ? "Rechercher (nom, email, tel, ref...)" : "Buscar (nombre, email, tel, ref...)"}
-        value={bookingSearch}
-        onChange={(e) => setBookingSearch(e.target.value)}
-        className="px-4 py-2 border rounded-lg w-80 text-sm"
-      />
-    </div>
-    
-    {/* Filtres */}
-    <div className="flex flex-wrap gap-4 bg-white p-4 rounded-xl shadow">
-      {/* Filtre par statut */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600 font-medium">{lang === 'fr' ? 'Statut:' : 'Estado:'}</span>
-        <div className="flex gap-1">
-          {[
-            { id: 'ALL', label: lang === 'fr' ? 'Tous' : 'Todos', color: 'bg-gray-100 text-gray-700' },
-            { id: 'PENDING', label: lang === 'fr' ? 'En attente' : 'Pendiente', color: 'bg-yellow-100 text-yellow-700' },
-            { id: 'CONFIRMED', label: lang === 'fr' ? 'Confirmé' : 'Confirmado', color: 'bg-green-100 text-green-700' },
-            { id: 'CANCELLED', label: lang === 'fr' ? 'Annulé' : 'Cancelado', color: 'bg-red-100 text-red-700' },
-          ].map(s => (
-            <button key={s.id} onClick={() => setBookingStatusFilter(s.id)}
-              className={'px-3 py-1 rounded-lg text-xs font-medium transition ' + 
-                (bookingStatusFilter === s.id ? s.color + ' ring-2 ring-offset-1 ring-gray-400' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      
-      {/* Filtre par assignation */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600 font-medium">{lang === 'fr' ? 'Véhicule:' : 'Vehículo:'}</span>
-        <div className="flex gap-1">
-          {[
-            { id: 'ALL', label: lang === 'fr' ? 'Tous' : 'Todos' },
-            { id: 'ASSIGNED', label: lang === 'fr' ? 'Assigné' : 'Asignado' },
-            { id: 'UNASSIGNED', label: lang === 'fr' ? 'Non assigné' : 'Sin asignar' },
-          ].map(s => (
-            <button key={s.id} onClick={() => setBookingAssignFilter(s.id)}
-              className={'px-3 py-1 rounded-lg text-xs font-medium transition ' + 
-                (bookingAssignFilter === s.id ? 'bg-blue-100 text-blue-700 ring-2 ring-offset-1 ring-blue-400' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      
-      {/* Filtre par source */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600 font-medium">Source:</span>
-        <div className="flex gap-1">
-          {[
-            { id: 'ALL', label: lang === 'fr' ? 'Toutes' : 'Todas' },
-            { id: 'WIDGET', label: 'Widget' },
-            { id: 'WALK_IN', label: 'Walk-in' },
-          ].map(s => (
-            <button key={s.id} onClick={() => setBookingSourceFilter(s.id)}
-              className={'px-3 py-1 rounded-lg text-xs font-medium transition ' + 
-                (bookingSourceFilter === s.id ? 'bg-purple-100 text-purple-700 ring-2 ring-offset-1 ring-purple-400' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      
-      {/* Compteur */}
-      <div className="ml-auto text-sm text-gray-500">
-        {bookings.filter(b => {
-          if (bookingSearch) {
-            const search = bookingSearch.toLowerCase()
-            const matchesSearch = (
-              b.reference?.toLowerCase().includes(search) ||
-              b.customer?.firstName?.toLowerCase().includes(search) ||
-              b.customer?.lastName?.toLowerCase().includes(search) ||
-              b.customer?.email?.toLowerCase().includes(search) ||
-              b.customer?.phone?.toLowerCase().includes(search)
-            )
-            if (!matchesSearch) return false
-          }
-          if (bookingStatusFilter !== 'ALL' && b.status !== bookingStatusFilter) return false
-          if (bookingAssignFilter === 'ASSIGNED' && !b.fleetVehicleId) return false
-          if (bookingAssignFilter === 'UNASSIGNED' && b.fleetVehicleId) return false
-          if (bookingSourceFilter !== 'ALL' && b.source !== bookingSourceFilter) return false
-          return true
-        }).length} {lang === 'fr' ? 'réservation(s)' : 'reserva(s)'}
-      </div>
-    </div>
-    
-    {/* Tableau */}
-    <div className="bg-white rounded-xl shadow overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-3 text-left text-sm font-medium">Référence</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">Client</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">Dates</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">{t[lang].vehicle}</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">{lang === 'fr' ? 'Véhicule assigné' : 'Vehículo asignado'}</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">{t[lang].status}</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">Source</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">{t[lang].actions}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bookings.filter(b => {
-            if (bookingSearch) {
-              const search = bookingSearch.toLowerCase()
-              const matchesSearch = (
-                b.reference?.toLowerCase().includes(search) ||
-                b.customer?.firstName?.toLowerCase().includes(search) ||
-                b.customer?.lastName?.toLowerCase().includes(search) ||
-                b.customer?.email?.toLowerCase().includes(search) ||
-                b.customer?.phone?.toLowerCase().includes(search)
-              )
-              if (!matchesSearch) return false
-            }
-            if (bookingStatusFilter !== 'ALL' && b.status !== bookingStatusFilter) return false
-            if (bookingAssignFilter === 'ASSIGNED' && !b.fleetVehicleId) return false
-            if (bookingAssignFilter === 'UNASSIGNED' && b.fleetVehicleId) return false
-            if (bookingSourceFilter !== 'ALL' && b.source !== bookingSourceFilter) return false
-            return true
-          }).length === 0 ? (
-            <tr>
-              <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                {lang === 'fr' ? 'Aucune réservation trouvée' : 'No se encontraron reservas'}
-              </td>
-            </tr>
-          ) : (
-            bookings.filter(b => {
-              if (bookingSearch) {
-                const search = bookingSearch.toLowerCase()
-                const matchesSearch = (
-                  b.reference?.toLowerCase().includes(search) ||
-                  b.customer?.firstName?.toLowerCase().includes(search) ||
-                  b.customer?.lastName?.toLowerCase().includes(search) ||
-                  b.customer?.email?.toLowerCase().includes(search) ||
-                  b.customer?.phone?.toLowerCase().includes(search)
-                )
-                if (!matchesSearch) return false
-              }
-              if (bookingStatusFilter !== 'ALL' && b.status !== bookingStatusFilter) return false
-              if (bookingAssignFilter === 'ASSIGNED' && !b.fleetVehicleId) return false
-              if (bookingAssignFilter === 'UNASSIGNED' && b.fleetVehicleId) return false
-              if (bookingSourceFilter !== 'ALL' && b.source !== bookingSourceFilter) return false
-              return true
-            }).map(b => {
-              const assignedVehicle = fleet.find(f => f.id === b.fleetVehicleId)
-              return (
-                <tr key={b.id} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-sm font-medium">{b.reference}</td>
-                  <td className="px-4 py-3">
-                    <div>{b.customer?.firstName} {b.customer?.lastName}</div>
-                    <div className="text-xs text-gray-500">{b.customer?.phone}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <div>{new Date(b.startDate).toLocaleDateString('fr-FR')} {b.startTime}</div>
-                    <div className="text-gray-500">→ {new Date(b.endDate).toLocaleDateString('fr-FR')} {b.endTime}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm">{getName(b.items?.[0]?.vehicle?.name)}</td>
-                  <td className="px-4 py-3">
-                    {assignedVehicle ? (
-                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
-                        {assignedVehicle.vehicleNumber}
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs">
-                        {lang === 'fr' ? 'Non assigné' : 'Sin asignar'}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={'px-2 py-1 rounded text-xs font-medium ' + 
-                      (b.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 
-                       b.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 
-                       b.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700')}>
-                      {b.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={'px-2 py-1 rounded text-xs ' + 
-                      (b.source === 'WIDGET' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700')}>
-                      {b.source || 'WIDGET'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      {!b.fleetVehicleId && (
-                        <button onClick={(e) => { e.stopPropagation(); openAssignModal(b) }} 
-                          className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
-                          {lang === 'fr' ? 'Assigner' : 'Asignar'}
-                        </button>
-                      )}
-                      {b.fleetVehicleId && b.status === 'CONFIRMED' && (
-                        <button onClick={() => { setCheckInBooking(b); setShowCheckIn(true) }} 
-                          className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600">
-                          Check-in
-                        </button>
-                      )}
-                      <button onClick={(e) => { e.stopPropagation(); deleteBooking(b.id) }} 
-                        className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">
-                        ✕
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })
+          {!loading && tab === 'bookings' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">{lang === "fr" ? "Réservations" : "Reservas"}</h2>
+                <input
+                  type="text"
+                  placeholder={lang === 'fr' ? "Rechercher (nom, email, tel, ref...)" : "Buscar (nombre, email, tel, ref...)"}
+                  value={bookingSearch}
+                  onChange={(e) => setBookingSearch(e.target.value)}
+                  className="px-4 py-2 border rounded-lg w-80 text-sm"
+                />
+              </div>
+              <div className="bg-white rounded-xl shadow">
+                {bookings.filter(b => {
+                  if (!bookingSearch) return !b.fleetVehicleId && b.status !== 'CANCELLED'
+                  const search = bookingSearch.toLowerCase()
+                  const matchesSearch = (
+                    b.reference?.toLowerCase().includes(search) ||
+                    b.customer?.firstName?.toLowerCase().includes(search) ||
+                    b.customer?.lastName?.toLowerCase().includes(search) ||
+                    b.customer?.email?.toLowerCase().includes(search) ||
+                    b.customer?.phone?.toLowerCase().includes(search)
+                  )
+                  return matchesSearch && b.status !== 'CANCELLED'
+                }).length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">✓ Toutes les réservations sont assignées</div>
+                ) : (
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left">Référence</th>
+                        <th className="px-4 py-3 text-left">Client</th>
+                        <th className="px-4 py-3 text-left">Dates</th>
+                        <th className="px-4 py-3 text-left">{t[lang].vehicle}</th>
+                        <th className="px-4 py-3 text-left">{t[lang].actions}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bookings.filter(b => {
+                  if (!bookingSearch) return !b.fleetVehicleId && b.status !== 'CANCELLED'
+                  const search = bookingSearch.toLowerCase()
+                  const matchesSearch = (
+                    b.reference?.toLowerCase().includes(search) ||
+                    b.customer?.firstName?.toLowerCase().includes(search) ||
+                    b.customer?.lastName?.toLowerCase().includes(search) ||
+                    b.customer?.email?.toLowerCase().includes(search) ||
+                    b.customer?.phone?.toLowerCase().includes(search)
+                  )
+                  return matchesSearch && b.status !== 'CANCELLED'
+                }).map(b => (
+                        <tr key={b.id} className="border-t hover:bg-gray-50">
+                          <td className="px-4 py-3 font-mono text-sm">{b.reference}</td>
+                          <td className="px-4 py-3">{b.customer?.firstName} {b.customer?.lastName}</td>
+                          <td className="px-4 py-3 text-sm">{new Date(b.startDate).toLocaleDateString('fr-FR')} → {new Date(b.endDate).toLocaleDateString('fr-FR')}</td>
+                          <td className="px-4 py-3">{getName(b.items?.[0]?.vehicle?.name)}</td>
+                          <td className="px-4 py-3 flex gap-2">
+                            <button onClick={(e) => { e.stopPropagation(); openAssignModal(b) }} className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">{lang === 'fr' ? 'Assigner' : 'Asignar'}</button>
+                            <button onClick={(e) => { e.stopPropagation(); deleteBooking(b.id) }} className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600">{t[lang].delete}</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
           )}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
 
           {/* FLEET */}
           {!loading && tab === 'fleet' && (

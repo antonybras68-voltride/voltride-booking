@@ -41,6 +41,8 @@ const DOCUMENT_TYPES = [
 export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, onSave, onDelete }: FleetModalProps) {
   const isRestricted = userRole === 'COLLABORATOR' || userRole === 'FRANCHISEE'
   const [mode, setMode] = useState(initialMode)
+  // COLLABORATOR: forcer mode edit pour pouvoir ajouter des maintenances
+  useEffect(() => { if (isRestricted) setMode('edit') }, [isRestricted])
   const [activeTab, setActiveTab] = useState('general')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -327,14 +329,21 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
         <div className="border-b">
           <div className="flex items-center justify-between px-4 py-2 bg-gray-50">
             <div className="flex gap-2">
-              <button onClick={() => setMode('view')}
-                className={`px-3 py-1 rounded text-sm ${mode === 'view' ? 'bg-white shadow' : 'text-gray-500'}`}>
-                Voir
-              </button>
-              <button onClick={() => setMode('edit')}
-                className={`px-3 py-1 rounded text-sm ${mode === 'edit' ? 'bg-white shadow' : 'text-gray-500'}`}>
-                Modifier
-              </button>
+              {!isRestricted && (
+                <>
+                  <button onClick={() => setMode('view')}
+                    className={`px-3 py-1 rounded text-sm ${mode === 'view' ? 'bg-white shadow' : 'text-gray-500'}`}>
+                    Voir
+                  </button>
+                  <button onClick={() => setMode('edit')}
+                    className={`px-3 py-1 rounded text-sm ${mode === 'edit' ? 'bg-white shadow' : 'text-gray-500'}`}>
+                    Modifier
+                  </button>
+                </>
+              )}
+              {isRestricted && (
+                <span className="px-3 py-1 text-sm text-gray-500">Consultation</span>
+              )}
             </div>
             {mode === 'edit' && !isRestricted && (
               <button onClick={handleDelete} disabled={deleting}
@@ -360,7 +369,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
           {/* General Tab */}
           {activeTab === 'general' && (
             <div className="space-y-6">
-              {mode === 'view' ? (
+              {(mode === 'view' || isRestricted) ? (
                 // View mode
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -400,7 +409,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
                     <div>
                       <label className="block text-sm font-medium mb-1 text-gray-700">Statut</label>
                       <select value={form.status} onChange={e => updateForm('status', e.target.value)}
-                        className="w-full border rounded-lg p-2 text-sm">
+                        className="w-full border rounded-lg p-2 text-sm" disabled={isRestricted}>
                         <option value="AVAILABLE">Disponible</option>
                         <option value="RENTED">En location</option>
                         <option value="MAINTENANCE">Maintenance</option>
@@ -625,24 +634,46 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
                     </div>
                   )}
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="grid grid-cols-4 gap-2 mb-2">
-                      <select value={newMaintenance.type} onChange={e => setNewMaintenance(prev => ({ ...prev, type: e.target.value }))}
-                        className="border rounded-lg p-2 text-sm">
-                        <option value="SERVICE">Entretien</option>
-                        <option value="REPAIR">Réparation</option>
-                        <option value="INSPECTION">Contrôle</option>
-                        <option value="OTHER">Autre</option>
-                      </select>
-                      <input type="date" value={newMaintenance.scheduledDate} onChange={e => setNewMaintenance(prev => ({ ...prev, scheduledDate: e.target.value }))}
-                        className="border rounded-lg p-2 text-sm" />
-                      <input type="number" value={newMaintenance.cost} onChange={e => setNewMaintenance(prev => ({ ...prev, cost: e.target.value }))}
-                        className="border rounded-lg p-2 text-sm" placeholder="Coût €" />
-                      <input type="text" value={newMaintenance.performedBy} onChange={e => setNewMaintenance(prev => ({ ...prev, performedBy: e.target.value }))}
-                        className="border rounded-lg p-2 text-sm" placeholder="Prestataire" />
-                    </div>
-                    <input type="text" value={newMaintenance.description} onChange={e => setNewMaintenance(prev => ({ ...prev, description: e.target.value }))}
-                      className="w-full border rounded-lg p-2 text-sm mb-2" placeholder="Description" />
-                    <button onClick={addMaintenance} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Ajouter</button>
+                    {isRestricted ? (
+                      <>
+                        <p className="text-sm font-medium text-gray-700 mb-2">Demande d'intervention</p>
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <select value={newMaintenance.type} onChange={e => setNewMaintenance(prev => ({ ...prev, type: e.target.value }))}
+                            className="border rounded-lg p-2 text-sm">
+                            <option value="SERVICE">Entretien</option>
+                            <option value="REPAIR">Réparation</option>
+                            <option value="INSPECTION">Contrôle</option>
+                            <option value="OTHER">Autre</option>
+                          </select>
+                          <input type="date" value={newMaintenance.scheduledDate} onChange={e => setNewMaintenance(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                            className="border rounded-lg p-2 text-sm" />
+                        </div>
+                        <textarea value={newMaintenance.description} onChange={e => setNewMaintenance(prev => ({ ...prev, description: e.target.value }))}
+                          className="w-full border rounded-lg p-2 text-sm mb-2" placeholder="Decrivez le probleme ou l'intervention souhaitee..." rows={3} />
+                        <button onClick={addMaintenance} className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600">Envoyer la demande</button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-4 gap-2 mb-2">
+                          <select value={newMaintenance.type} onChange={e => setNewMaintenance(prev => ({ ...prev, type: e.target.value }))}
+                            className="border rounded-lg p-2 text-sm">
+                            <option value="SERVICE">Entretien</option>
+                            <option value="REPAIR">Réparation</option>
+                            <option value="INSPECTION">Contrôle</option>
+                            <option value="OTHER">Autre</option>
+                          </select>
+                          <input type="date" value={newMaintenance.scheduledDate} onChange={e => setNewMaintenance(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                            className="border rounded-lg p-2 text-sm" />
+                          <input type="number" value={newMaintenance.cost} onChange={e => setNewMaintenance(prev => ({ ...prev, cost: e.target.value }))}
+                            className="border rounded-lg p-2 text-sm" placeholder="Coût €" />
+                          <input type="text" value={newMaintenance.performedBy} onChange={e => setNewMaintenance(prev => ({ ...prev, performedBy: e.target.value }))}
+                            className="border rounded-lg p-2 text-sm" placeholder="Prestataire" />
+                        </div>
+                        <input type="text" value={newMaintenance.description} onChange={e => setNewMaintenance(prev => ({ ...prev, description: e.target.value }))}
+                          className="w-full border rounded-lg p-2 text-sm mb-2" placeholder="Description" />
+                        <button onClick={addMaintenance} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Ajouter</button>
+                      </>
+                    )}
                   </div>
                 </>
               )}
@@ -659,7 +690,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
                     <span className={`px-2 py-1 rounded text-xs ${m.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                       {m.status === 'COMPLETED' ? 'Terminé' : 'Prévu'}
                     </span>
-                    {mode === 'edit' && (
+                    {mode === 'edit' && !isRestricted && (
                       <button onClick={() => deleteMaintenance(m.id)} className="text-red-500 hover:text-red-700 text-xs">Suppr.</button>
                     )}
                   </div>

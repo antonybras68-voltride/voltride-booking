@@ -569,7 +569,7 @@ function App() {
                                 if (available === 0) {
                                   const otherAgency = agencies.find(a => a.id !== selectedAgency && a.isActive)
                                   return otherAgency ? (
-                                    <button onClick={() => setSelectedAgency(otherAgency.id)} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-lg hover:bg-red-200">
+                                    <button onClick={() => { setSelectedAgency(''); setStep('dates'); }} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-lg hover:bg-red-200">
                                       {lang === 'fr' ? 'Voir autre agence' : lang === 'es' ? 'Ver otra agencia' : 'See other agency'}
                                     </button>
                                   ) : <span className="text-xs text-red-500">{lang === 'fr' ? 'Indisponible' : lang === 'es' ? 'No disponible' : 'Unavailable'}</span>

@@ -426,7 +426,9 @@ export default function App() {
     // Permissions par défaut si pas trouvé
     const defaults: Record<string, string[]> = {
       MANAGER: ['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices'],
-      OPERATOR: ['dashboard', 'planning', 'bookings', 'checkout']
+      OPERATOR: ['dashboard', 'planning', 'bookings', 'checkout'],
+      COLLABORATOR: ['planning', 'checkout', 'contracts'],
+      FRANCHISEE: ['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices']
     }
     return defaults[user.role]?.includes(permissionId) ?? false
   }
@@ -553,9 +555,23 @@ export default function App() {
         api.getFleet({}),
         api.getBookings(selectedAgency ? { agencyId: selectedAgency } : {})
       ])
-      setAgencies(agenciesData.filter(a => a.brand === brand))
-      setFleet(Array.isArray(fleetData) ? fleetData.filter(f => f.agency?.brand === brand || !brand) : [])
-      setBookings(Array.isArray(bookingsData) ? bookingsData : [])
+      
+      // Filtrer selon le role utilisateur
+      let filteredAgencies = agenciesData.filter(a => a.brand === brand)
+      let filteredFleet = Array.isArray(fleetData) ? fleetData.filter(f => f.agency?.brand === brand || !brand) : []
+      let filteredBookings = Array.isArray(bookingsData) ? bookingsData : []
+      
+      // COLLABORATOR et FRANCHISEE: ne voir que leur agence
+      if (user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE')) {
+        const userAgencyIds = user.agencyIds || []
+        filteredAgencies = filteredAgencies.filter(a => userAgencyIds.includes(a.id))
+        filteredFleet = filteredFleet.filter(f => userAgencyIds.includes(f.agency?.id))
+        filteredBookings = filteredBookings.filter(b => userAgencyIds.includes(b.agencyId))
+      }
+      
+      setAgencies(filteredAgencies)
+      setFleet(filteredFleet)
+      setBookings(filteredBookings)
     } catch (e) { console.error(e) }
     setLoading(false)
   }

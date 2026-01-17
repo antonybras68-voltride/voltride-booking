@@ -4,8 +4,9 @@ export interface User {
   id: string
   email: string
   name: string
-  role: 'ADMIN' | 'MANAGER' | 'OPERATOR' | 'ACCOUNTANT'
+  role: 'ADMIN' | 'MANAGER' | 'OPERATOR' | 'ACCOUNTANT' | 'COLLABORATOR' | 'FRANCHISEE'
   agencyIds: string[]
+  partnerAgencyId?: string
   brands: ('VOLTRIDE' | 'MOTOR-RENT')[]
 }
 
@@ -18,6 +19,8 @@ export interface Agency {
   address?: string
   phone?: string
   email?: string
+  agencyType?: 'OWN' | 'PARTNER' | 'FRANCHISE'
+  commissionRate?: number
 }
 
 export interface Category {

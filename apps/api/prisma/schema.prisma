@@ -27,6 +27,8 @@ model Agency {
   summerEndDate     String      @default("09-30")
   summerStartDate   String      @default("04-01")
   closedOnSunday    Boolean     @default(false)
+  agencyType        AgencyType  @default(OWN)
+  commissionRate    Float?
   bookings          Booking[]
   inventory         Inventory[]
   fleetVehicles     Fleet[]
@@ -357,6 +359,22 @@ enum BookingSource {
   WALK_IN
   MANUAL
   BACKOFFICE
+}
+enum AgencyType {
+  OWN        // Tes propres agences
+  PARTNER    // Hotels/Campings - commission a REVERSER
+  FRANCHISE  // Franchises - commission a PRELEVER
+}
+
+enum CommissionType {
+  REVERSAL    // A reverser au partenaire (PARTNER)
+  DEDUCTION   // A prelever du franchise (FRANCHISE)
+}
+
+enum CommissionStatus {
+  PENDING     // En attente
+  CALCULATED  // Calculee
+  PAID        // Payee/Prelevee
 }
 
 model FleetDocument {
@@ -728,6 +746,13 @@ model RentalContract {
   extensions           ContractExtension[]
   contractOptions      ContractOption[]
   payments             ContractPayment[]
+  
+  // Commissions partenaires/franchises
+  commissionRate       Float?
+  commissionAmount     Decimal?          @db.Decimal(10, 2)
+  commissionType       CommissionType?
+  commissionStatus     CommissionStatus  @default(PENDING)
+  
   @@index([fleetVehicleId])
   @@index([customerId])
   @@index([agencyId])
@@ -1273,10 +1298,12 @@ model User {
 }
 
 enum UserRole {
-  ADMIN       // Accès total
-  MANAGER     // Gestion agences assignées
-  OPERATOR    // Check-in/out, réservations
-  ACCOUNTANT  // Lecture seule, factures
+  ADMIN        // Acces total
+  MANAGER      // Gestion agences assignees
+  OPERATOR     // Check-in/out, reservations
+  ACCOUNTANT   // Lecture seule, factures
+  COLLABORATOR // Partenaire externe (hotel/camping)
+  FRANCHISEE   // Franchise - gere sa franchise
 }
 
 // ============== ROLE PERMISSIONS ==============

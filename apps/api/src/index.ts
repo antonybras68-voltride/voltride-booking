@@ -40,7 +40,7 @@ app.get('/api/agencies', async (req, res) => {
 app.post('/api/agencies', async (req, res) => {
   try {
     const agency = await prisma.agency.create({
-      data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country || 'ES', phone: req.body.phone, email: req.body.email, brand: req.body.brand || 'VOLTRIDE', isActive: req.body.isActive ?? true, closedOnSunday: req.body.closedOnSunday ?? false }
+      data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country || 'ES', phone: req.body.phone, email: req.body.email, brand: req.body.brand || 'VOLTRIDE', isActive: req.body.isActive ?? true, closedOnSunday: req.body.closedOnSunday ?? false, agencyType: req.body.agencyType || 'OWN', commissionRate: req.body.commissionRate || null }
     })
     res.json(agency)
   } catch (error) { res.status(500).json({ error: 'Failed to create agency' }) }
@@ -48,7 +48,7 @@ app.post('/api/agencies', async (req, res) => {
 
 app.put('/api/agencies/:id', async (req, res) => {
   try {
-    const agency = await prisma.agency.update({ where: { id: req.params.id }, data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country, phone: req.body.phone, email: req.body.email, brand: req.body.brand, isActive: req.body.isActive, closedOnSunday: req.body.closedOnSunday } })
+    const agency = await prisma.agency.update({ where: { id: req.params.id }, data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country, phone: req.body.phone, email: req.body.email, brand: req.body.brand, isActive: req.body.isActive, closedOnSunday: req.body.closedOnSunday, agencyType: req.body.agencyType, commissionRate: req.body.commissionRate } })
     res.json(agency)
   } catch (error) { res.status(500).json({ error: 'Failed to update agency' }) }
 })

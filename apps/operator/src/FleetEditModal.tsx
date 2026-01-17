@@ -7,6 +7,7 @@ const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 interface FleetModalProps {
   fleet: any
   mode: 'view' | 'edit'
+  userRole?: string
   onClose: () => void
   onSave: () => void
   onDelete?: () => void
@@ -37,7 +38,8 @@ const DOCUMENT_TYPES = [
   { type: 'OTHER', label: 'Autre' },
 ]
 
-export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDelete }: FleetModalProps) {
+export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, onSave, onDelete }: FleetModalProps) {
+  const isRestricted = userRole === 'COLLABORATOR' || userRole === 'FRANCHISEE'
   const [mode, setMode] = useState(initialMode)
   const [activeTab, setActiveTab] = useState('general')
   const [saving, setSaving] = useState(false)
@@ -271,13 +273,15 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
     setDeleting(false)
   }
 
-  const tabs = [
+  const allTabs = [
     { id: 'general', label: 'Général' },
     { id: 'documents', label: 'Documents' },
     { id: 'equipment', label: 'Équipements' },
     { id: 'parts', label: 'Pièces' },
     { id: 'maintenance', label: 'Maintenance' },
   ]
+  // COLLABORATOR ne voit que General (lecture) et Maintenance
+  const tabs = isRestricted ? allTabs.filter(t => t.id === 'general' || t.id === 'maintenance') : allTabs
 
   const statusColors = {
     AVAILABLE: 'bg-green-100 text-green-700',
@@ -332,7 +336,7 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
                 Modifier
               </button>
             </div>
-            {mode === 'edit' && (
+            {mode === 'edit' && !isRestricted && (
               <button onClick={handleDelete} disabled={deleting}
                 className="px-3 py-1 text-red-600 hover:bg-red-50 rounded text-sm">
                 {deleting ? 'Suppression...' : 'Supprimer'}
@@ -391,8 +395,8 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
                 // Edit mode
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-4">
-                    <Input label="Numéro véhicule" value={form.vehicleNumber} onChange={v => updateForm('vehicleNumber', v)} />
-                    <Input label="Immatriculation" value={form.licensePlate} onChange={v => updateForm('licensePlate', v)} />
+                    <Input label="Numéro véhicule" value={form.vehicleNumber} onChange={v => updateForm('vehicleNumber', v)} disabled={isRestricted} />
+                    <Input label="Immatriculation" value={form.licensePlate} onChange={v => updateForm('licensePlate', v)} disabled={isRestricted} />
                     <div>
                       <label className="block text-sm font-medium mb-1 text-gray-700">Statut</label>
                       <select value={form.status} onChange={e => updateForm('status', e.target.value)}
@@ -409,7 +413,7 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
                     <div>
                       <label className="block text-sm font-medium mb-1 text-gray-700">Agence / Localisation</label>
                       <select value={form.locationCode} onChange={e => updateForm('locationCode', e.target.value)}
-                        className="w-full border rounded-lg p-2 text-sm">
+                        className="w-full border rounded-lg p-2 text-sm" disabled={isRestricted}>
                         <option value="">-- Sélectionner une agence --</option>
                         {agencies.map((ag: any) => (
                           <option key={ag.id} value={ag.code}>{ag.code} - {ag.name?.fr || ag.name?.es || ag.city}</option>
@@ -614,10 +618,12 @@ export function FleetEditModal({ fleet, mode: initialMode, onClose, onSave, onDe
             <div className="space-y-4">
               {mode === 'edit' && (
                 <>
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
-                    <Input label="Intervalle km" value={form.maintenanceIntervalKm} onChange={v => updateForm('maintenanceIntervalKm', v)} type="number" />
-                    <Input label="Intervalle jours" value={form.maintenanceIntervalDays} onChange={v => updateForm('maintenanceIntervalDays', v)} type="number" />
-                  </div>
+                  {!isRestricted && (
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+                      <Input label="Intervalle km" value={form.maintenanceIntervalKm} onChange={v => updateForm('maintenanceIntervalKm', v)} type="number" />
+                      <Input label="Intervalle jours" value={form.maintenanceIntervalDays} onChange={v => updateForm('maintenanceIntervalDays', v)} type="number" />
+                    </div>
+                  )}
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <div className="grid grid-cols-4 gap-2 mb-2">
                       <select value={newMaintenance.type} onChange={e => setNewMaintenance(prev => ({ ...prev, type: e.target.value }))}

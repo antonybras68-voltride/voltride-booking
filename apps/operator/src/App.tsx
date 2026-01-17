@@ -428,7 +428,7 @@ export default function App() {
     const defaults: Record<string, string[]> = {
       MANAGER: ['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices'],
       OPERATOR: ['dashboard', 'planning', 'bookings', 'checkout'],
-      COLLABORATOR: ['planning', 'checkout', 'contracts'],
+      COLLABORATOR: ['planning', 'fleet', 'checkout', 'contracts'],
       FRANCHISEE: ['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices']
     }
     return defaults[user.role]?.includes(permissionId) ?? false
@@ -1607,10 +1607,12 @@ export default function App() {
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Flotte</h2>
-                <button onClick={() => setShowNewFleet(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                  + Nouveau véhicule
-                </button>
+                {user?.role !== 'COLLABORATOR' && (
+                  <button onClick={() => setShowNewFleet(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                    + Nouveau véhicule
+                  </button>
+                )}
               </div>
               
               <div className="flex gap-2 mb-4">
@@ -2395,6 +2397,7 @@ export default function App() {
         <FleetEditModal
           fleet={selectedFleetForEdit}
           mode={fleetModalMode}
+          userRole={user?.role}
           onClose={() => { setShowFleetEdit(false); setSelectedFleetForEdit(null) }}
           onSave={() => { setShowFleetEdit(false); setSelectedFleetForEdit(null); loadData() }}
           onDelete={handleFleetDelete}

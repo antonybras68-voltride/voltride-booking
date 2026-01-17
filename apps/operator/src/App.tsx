@@ -235,6 +235,7 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [brand, setBrand] = useState('VOLTRIDE')
   const [agencies, setAgencies] = useState([])
+  const [allAgencies, setAllAgencies] = useState([])
   const [selectedAgency, setSelectedAgency] = useState('')
   const [fleet, setFleet] = useState([])
   const [bookings, setBookings] = useState([])
@@ -570,6 +571,7 @@ export default function App() {
       }
       
       setAgencies(filteredAgencies)
+      setAllAgencies(agenciesData)
       setFleet(filteredFleet)
       setBookings(filteredBookings)
     } catch (e) { console.error(e) }
@@ -2205,6 +2207,7 @@ export default function App() {
                 role: formData.get('role'),
                 language: formData.get('language'),
                 brands: Array.from(form.querySelectorAll('input[name="brands"]:checked')).map((el: any) => el.value),
+                agencyIds: Array.from(form.querySelectorAll('input[name="agencyIds"]:checked')).map((el: any) => el.value),
                 isActive: (form.querySelector('input[name="isActive"]') as HTMLInputElement)?.checked ?? true
               }
               if (editingUser) {
@@ -2263,6 +2266,22 @@ export default function App() {
                     <input type="checkbox" name="brands" value="MOTOR-RENT" defaultChecked={editingUser?.brands?.includes('MOTOR-RENT') ?? true} className="w-4 h-4" />
                     <span>Motor-Rent</span>
                   </label>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">{lang === 'fr' ? 'Agences autorisees' : 'Agencias autorizadas'}</label>
+                <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1">
+                  {allAgencies.map((a: any) => (
+                    <label key={a.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded">
+                      <input type="checkbox" name="agencyIds" value={a.id} defaultChecked={editingUser?.agencyIds?.includes(a.id) ?? false} className="w-4 h-4" />
+                      <span className="text-sm">{getName(a.name, lang)} ({a.code})</span>
+                      {a.agencyType && a.agencyType !== 'OWN' && (
+                        <span className={'text-xs px-1 rounded ' + (a.agencyType === 'PARTNER' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700')}>
+                          {a.agencyType === 'PARTNER' ? 'Partenaire' : 'Franchise'}
+                        </span>
+                      )}
+                    </label>
+                  ))}
                 </div>
               </div>
               <div>

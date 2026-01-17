@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://voltride-booking-produc
 
 type Tab = 'vehicles' | 'agencies' | 'categories' | 'options'
 
-interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean; closedOnSunday: boolean; agencyType: 'OWN' | 'PARTNER' | 'FRANCHISE'; commissionRate?: number }
+interface Agency { id: string; code: string; name: any; address: string; city: string; postalCode: string; country: string; phone: string; email: string; brand: string; openingTime: string; closingTimeSummer: string; closingTimeWinter: string; summerStartDate: string; summerEndDate: string; isActive: boolean; closedOnSunday: boolean; agencyType: 'OWN' | 'PARTNER' | 'FRANCHISE'; commissionRate?: number; commissionEmail?: string }
 interface Category { id: string; code: string; name: any; brand: string; bookingFee: number; _count?: { vehicles: number }; options?: any[] }
 interface Vehicle { id: string; sku: string; name: any; description: any; deposit: number; hasPlate: boolean; licenseType?: string; kmIncluded?: string; kmIncludedPerDay?: number; extraKmPrice?: number; helmetIncluded?: boolean; imageUrl?: string; categoryId: string; category?: Category; pricing: any[] }
 interface Option { id: string; code: string; name: any; maxQuantity: number; includedByDefault: boolean; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; sortOrder?: number; categories?: any[] }
@@ -268,13 +268,15 @@ function AgencyModal({ agency, onSave, onClose }: { agency: any; onSave: (data: 
     isActive: agency?.isActive ?? true,
     closedOnSunday: agency?.closedOnSunday ?? false,
     agencyType: agency?.agencyType || 'OWN',
-    commissionRate: agency?.commissionRate ? agency.commissionRate * 100 : ''
+    commissionRate: agency?.commissionRate ? agency.commissionRate * 100 : '',
+    commissionEmail: agency?.commissionEmail || ''
   })
 
   const handleSubmit = () => onSave({
     ...form,
     name: { fr: form.nameFr, es: form.nameEs, en: form.nameEn },
-    commissionRate: form.agencyType !== 'OWN' && form.commissionRate ? parseFloat(String(form.commissionRate)) / 100 : null
+    commissionRate: form.agencyType !== 'OWN' && form.commissionRate ? parseFloat(String(form.commissionRate)) / 100 : null,
+      commissionEmail: form.agencyType !== 'OWN' ? form.commissionEmail : null
   })
 
   return (
@@ -311,6 +313,11 @@ function AgencyModal({ agency, onSave, onClose }: { agency: any; onSave: (data: 
                 <label className="text-sm text-gray-600">{form.agencyType === 'PARTNER' ? 'Commission a reverser au partenaire (%)' : 'Commission a prelever du franchise (%)'}</label>
                 <input type="number" placeholder="Ex: 15" value={form.commissionRate} onChange={e => setForm({ ...form, commissionRate: e.target.value })} className="w-full p-2 border rounded mt-1" min="0" max="100" step="0.5" />
                 {form.commissionRate && <p className="text-xs text-gray-500 mt-1">{form.agencyType === 'PARTNER' ? `Pour une location de 100EUR, vous reverserez ${form.commissionRate}EUR au partenaire` : `Pour une location de 100EUR, le franchise vous versera ${form.commissionRate}EUR`}</p>}
+              <div className="mt-3">
+                <label className="text-sm text-gray-600">Email pour le rapport de commission</label>
+                <input type="email" placeholder="rapport@partenaire.com" value={form.commissionEmail} onChange={e => setForm({ ...form, commissionEmail: e.target.value })} className="w-full p-2 border rounded mt-1" />
+                <p className="text-xs text-gray-500 mt-1">Le rapport mensuel des commissions sera envoye a cette adresse</p>
+              </div>
               </div>
             )}
           </div>

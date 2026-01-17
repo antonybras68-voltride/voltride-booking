@@ -40,7 +40,7 @@ app.get('/api/agencies', async (req, res) => {
 app.post('/api/agencies', async (req, res) => {
   try {
     const agency = await prisma.agency.create({
-      data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country || 'ES', phone: req.body.phone, email: req.body.email, brand: req.body.brand || 'VOLTRIDE', isActive: req.body.isActive ?? true, closedOnSunday: req.body.closedOnSunday ?? false, agencyType: req.body.agencyType || 'OWN', commissionRate: req.body.commissionRate || null }
+      data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country || 'ES', phone: req.body.phone, email: req.body.email, brand: req.body.brand || 'VOLTRIDE', isActive: req.body.isActive ?? true, closedOnSunday: req.body.closedOnSunday ?? false, agencyType: req.body.agencyType || 'OWN', commissionRate: req.body.commissionRate || null, commissionEmail: req.body.commissionEmail || null }
     })
     res.json(agency)
   } catch (error) { res.status(500).json({ error: 'Failed to create agency' }) }
@@ -48,7 +48,7 @@ app.post('/api/agencies', async (req, res) => {
 
 app.put('/api/agencies/:id', async (req, res) => {
   try {
-    const agency = await prisma.agency.update({ where: { id: req.params.id }, data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country, phone: req.body.phone, email: req.body.email, brand: req.body.brand, isActive: req.body.isActive, closedOnSunday: req.body.closedOnSunday, agencyType: req.body.agencyType, commissionRate: req.body.commissionRate } })
+    const agency = await prisma.agency.update({ where: { id: req.params.id }, data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country, phone: req.body.phone, email: req.body.email, brand: req.body.brand, isActive: req.body.isActive, closedOnSunday: req.body.closedOnSunday, agencyType: req.body.agencyType, commissionRate: req.body.commissionRate, commissionEmail: req.body.commissionEmail } })
     res.json(agency)
   } catch (error) { res.status(500).json({ error: 'Failed to update agency' }) }
 })
@@ -2152,6 +2152,18 @@ app.post('/api/contracts', async (req, res) => {
       })
     }
     
+    // Calcul de la commission si agence partenaire ou franchise
+    let commissionRate = null
+    let commissionAmount = null
+    let commissionType = null
+    if (agency.agencyType === 'PARTNER' || agency.agencyType === 'FRANCHISE') {
+      commissionRate = agency.commissionRate || 0
+      // Calcul sur le prix HT (subtotal + options - discount)
+      const totalHT = (req.body.subtotal || 0) + (req.body.optionsTotal || 0) - (req.body.discountAmount || 0)
+      commissionAmount = Math.round(totalHT * commissionRate * 100) / 100
+      commissionType = agency.agencyType === 'PARTNER' ? 'REVERSAL' as const : 'DEDUCTION' as const
+    }
+    
     const contract = await prisma.rentalContract.create({
       data: {
         contractNumber,
@@ -2177,7 +2189,11 @@ app.post('/api/contracts', async (req, res) => {
         depositMethod: req.body.depositMethod,
         status: 'DRAFT',
         internalNotes: req.body.internalNotes,
-        customerNotes: req.body.customerNotes
+        customerNotes: req.body.customerNotes,
+        commissionRate: commissionRate,
+        commissionAmount: commissionAmount,
+        commissionType: commissionType,
+        commissionStatus: commissionRate ? 'PENDING' as const : undefined
       },
       include: { fleetVehicle: { include: { vehicle: true } }, agency: true, customer: true }
     })
@@ -3174,3 +3190,113 @@ app.get('/api/agencies/:agencyId/schedule', async (req, res) => {
 })
 
 console.log('Agency schedule routes loaded')
+
+// ============== COMMISSION REPORT ==============
+// Route pour générer et envoyer le rapport de commissions
+app.post('/api/commissions/report', async (req, res) => {
+  try {
+    const { agencyId, startDate, endDate, sendEmail } = req.body
+    
+    // Récupérer l'agence
+    const agency = await prisma.agency.findUnique({ where: { id: agencyId } })
+    if (!agency) return res.status(404).json({ error: 'Agency not found' })
+    if (agency.agencyType === 'OWN') return res.status(400).json({ error: 'Commission report only for PARTNER or FRANCHISE agencies' })
+    
+    // Récupérer les contrats avec commission pour cette agence et période
+    const contracts = await prisma.rentalContract.findMany({
+      where: {
+        agencyId,
+        commissionAmount: { not: null },
+        currentStartDate: { gte: new Date(startDate) },
+        currentEndDate: { lte: new Date(endDate) },
+        status: { in: ['ACTIVE', 'COMPLETED'] }
+      },
+      include: {
+        fleetVehicle: { include: { vehicle: true } },
+        customer: true
+      },
+      orderBy: { currentStartDate: 'asc' }
+    })
+    
+    // Calculer les totaux
+    const totalHT = contracts.reduce((sum, c) => sum + (Number(c.subtotal || 0) + Number(c.optionsTotal || 0) - Number(c.discountAmount || 0)), 0)
+    const totalCommission = contracts.reduce((sum, c) => sum + (Number(c.commissionAmount) || 0), 0)
+    
+    const report = {
+      agency: {
+        name: agency.name,
+        code: agency.code,
+        agencyType: agency.agencyType,
+        commissionRate: agency.commissionRate
+      },
+      period: { startDate, endDate },
+      contracts: contracts.map(c => ({
+        contractNumber: c.contractNumber,
+        vehicleNumber: c.fleetVehicle?.vehicleNumber,
+        vehicleName: c.fleetVehicle?.vehicle?.name,
+        customer: `${c.customer?.firstName} ${c.customer?.lastName}`,
+        startDate: c.currentStartDate,
+        endDate: c.currentEndDate,
+        totalHT: Number(c.subtotal || 0) + Number(c.optionsTotal || 0) - Number(c.discountAmount || 0),
+        commissionRate: c.commissionRate,
+        commissionAmount: c.commissionAmount
+      })),
+      totals: {
+        contractsCount: contracts.length,
+        totalHT: Math.round(totalHT * 100) / 100,
+        totalCommission: Math.round(totalCommission * 100) / 100
+      }
+    }
+    
+    // Envoyer par email si demandé
+    if (sendEmail && agency.email) {
+      // TODO: Implémenter l'envoi d'email avec le rapport
+      // Pour l'instant on retourne juste le rapport
+    }
+    
+    res.json(report)
+  } catch (error) {
+    console.error('Commission report error:', error)
+    res.status(500).json({ error: 'Failed to generate commission report' })
+  }
+})
+
+// Route pour obtenir les commissions en attente
+app.get('/api/commissions/pending', async (req, res) => {
+  try {
+    const { agencyId } = req.query
+    
+    const where: any = {
+      commissionAmount: { not: null },
+      commissionStatus: 'PENDING'
+    }
+    if (agencyId) where.agencyId = agencyId
+    
+    const contracts = await prisma.rentalContract.findMany({
+      where,
+      include: {
+        agency: true,
+        fleetVehicle: { include: { vehicle: true } },
+        customer: true
+      },
+      orderBy: { currentStartDate: 'desc' }
+    })
+    
+    res.json(contracts)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch pending commissions' })
+  }
+})
+
+// Route pour marquer une commission comme payée
+app.put('/api/commissions/:contractId/paid', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.update({
+      where: { id: req.params.contractId },
+      data: { commissionStatus: 'PAID' }
+    })
+    res.json(contract)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update commission status' })
+  }
+})

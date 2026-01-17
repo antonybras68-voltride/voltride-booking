@@ -29,6 +29,7 @@ model Agency {
   closedOnSunday    Boolean     @default(false)
   agencyType        AgencyType  @default(OWN)
   commissionRate    Float?
+  commissionEmail   String?
   bookings          Booking[]
   inventory         Inventory[]
   fleetVehicles     Fleet[]

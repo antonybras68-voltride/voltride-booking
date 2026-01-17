@@ -966,7 +966,7 @@ export default function App() {
           </button>
           <select value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)} className="border rounded-lg px-3 py-2">
             <option value="">{t[lang].allAgencies}</option>
-            {agencies.map(a => <option key={a.id} value={a.id}>{a.city}</option>)}
+            {allAgencies.map((a: any) => <option key={a.id} value={a.id}>{getName(a.name, lang)} {a.agencyType && a.agencyType !== 'OWN' ? (a.agencyType === 'PARTNER' ? '(P)' : '(F)') : ''}</option>)}
           </select>
           <div className="flex-1" />
           <span className="text-sm text-gray-500">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
@@ -1822,6 +1822,8 @@ export default function App() {
                             <th className="text-center py-2 px-3">ADMIN</th>
                             <th className="text-center py-2 px-3">MANAGER</th>
                             <th className="text-center py-2 px-3">OPERATOR</th>
+                            <th className="text-center py-2 px-3">COLLABORATOR</th>
+                            <th className="text-center py-2 px-3">FRANCHISEE</th>
                           </tr>
                         </thead>
                         <tbody>

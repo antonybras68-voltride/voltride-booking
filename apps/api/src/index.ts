@@ -1209,9 +1209,19 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
     })
     
     res.json(contract)
-  } catch (error) {
-    console.error('Check-out error:', error)
-    res.status(500).json({ error: 'Failed to process check-out', details: (error as Error).message })
+  } catch (error: any) {
+    console.error('=== CHECK-OUT ERROR ===')
+    console.error('Error name:', error?.name)
+    console.error('Error message:', error?.message)
+    console.error('Error code:', error?.code)
+    console.error('Error meta:', error?.meta)
+    console.error('Full error:', JSON.stringify(error, null, 2))
+    res.status(500).json({ 
+      error: 'Failed to process check-out', 
+      details: error?.message,
+      code: error?.code,
+      meta: error?.meta
+    })
   }
 })
 

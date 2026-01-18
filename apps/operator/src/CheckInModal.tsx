@@ -421,66 +421,6 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                 {uploading && <p className="text-blue-600 text-sm mt-2">⏳ Upload en cours...</p>}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Dégâts existants (cliquez sur le schéma)</label>
-                <div className="flex gap-2 mb-2 text-sm">
-                  <span className="px-2 py-1 bg-red-100 text-red-700 rounded">❌ Clic = Cassé</span>
-                  <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">🟠 Shift+Clic = Rayure</span>
-                </div>
-                <div className="relative bg-white rounded-xl border-2 cursor-crosshair overflow-hidden"
-                  onClick={handleDamageClick}
-                  style={{ height: '280px' }}>
-                  {/* Vehicle schema SVG - top view with 4 sides */}
-                  <svg viewBox="0 0 400 280" className="w-full h-full">
-                    {/* Background grid */}
-                    <defs>
-                      <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" strokeWidth="0.5"/>
-                      </pattern>
-                    </defs>
-                    <rect width="400" height="280" fill="url(#grid)"/>
-                    
-                    {/* Vehicle body - top view */}
-                    <g transform="translate(200, 140)">
-                      {/* Main body */}
-                      <rect x="-60" y="-90" width="120" height="180" rx="20" fill="#e5e7eb" stroke="#9ca3af" strokeWidth="2"/>
-                      
-                      {/* Windshield */}
-                      <path d="M -45 -70 L 45 -70 L 40 -40 L -40 -40 Z" fill="#bfdbfe" stroke="#9ca3af" strokeWidth="1"/>
-                      
-                      {/* Rear window */}
-                      <path d="M -40 50 L 40 50 L 45 75 L -45 75 Z" fill="#bfdbfe" stroke="#9ca3af" strokeWidth="1"/>
-                      
-                      {/* Side mirrors */}
-                      <ellipse cx="-65" cy="-50" rx="8" ry="5" fill="#9ca3af"/>
-                      <ellipse cx="65" cy="-50" rx="8" ry="5" fill="#9ca3af"/>
-                      
-                      {/* Wheels */}
-                      <rect x="-70" y="-65" width="15" height="30" rx="3" fill="#374151"/>
-                      <rect x="55" y="-65" width="15" height="30" rx="3" fill="#374151"/>
-                      <rect x="-70" y="35" width="15" height="30" rx="3" fill="#374151"/>
-                      <rect x="55" y="35" width="15" height="30" rx="3" fill="#374151"/>
-                    </g>
-                    
-                    {/* Labels */}
-                    <text x="200" y="25" textAnchor="middle" className="text-xs" fill="#6b7280" fontSize="12">AVANT</text>
-                    <text x="200" y="270" textAnchor="middle" className="text-xs" fill="#6b7280" fontSize="12">ARRIÈRE</text>
-                    <text x="30" y="145" textAnchor="middle" className="text-xs" fill="#6b7280" fontSize="12" transform="rotate(-90, 30, 145)">GAUCHE</text>
-                    <text x="370" y="145" textAnchor="middle" className="text-xs" fill="#6b7280" fontSize="12" transform="rotate(90, 370, 145)">DROITE</text>
-                  </svg>
-                  
-                  {/* Damage markers */}
-                  {damages.map(d => (
-                    <div key={d.id} onClick={e => { e.stopPropagation(); removeDamage(d.id) }}
-                      className={'absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer text-lg hover:scale-125 transition-transform ' +
-                        (d.type === 'broken' ? 'text-red-500' : 'text-orange-500')}
-                      style={{ left: d.x + '%', top: d.y + '%' }}>
-                      {d.type === 'broken' ? '❌' : '🟠'}
-                    </div>
-                  ))}
-                </div>
-                {damages.length > 0 && <p className="text-xs text-gray-500 mt-1">{damages.length} dégât(s) marqué(s) - cliquez dessus pour supprimer</p>}
-              </div>
             </div>
           )}
 

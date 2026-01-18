@@ -1172,6 +1172,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
         commissionStatus: commissionRate ? 'PENDING' : undefined
       }
     })
+    console.log('Contract created:', contract.id)
     
     // Mettre à jour la réservation
     await prisma.booking.update({
@@ -1183,6 +1184,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
         assignedAt: new Date()
       }
     })
+    console.log('Booking updated')
     
     // Mettre à jour le véhicule
     await prisma.fleet.update({
@@ -1192,6 +1194,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
         currentMileage: req.body.startMileage
       }
     })
+    console.log('Fleet updated')
     
     // Créer l'inspection de départ
     await prisma.fleetInspection.create({
@@ -1207,6 +1210,8 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
         customerSignedAt: req.body.customerSignature ? new Date() : null
       }
     })
+    console.log('Inspection created')
+    console.log('=== CHECK-OUT SUCCESS ===')
     
     res.json(contract)
   } catch (error: any) {

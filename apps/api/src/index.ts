@@ -2822,7 +2822,7 @@ app.put('/api/bookings/:id/assign', async (req, res) => {
 app.put('/api/bookings/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { startDate, endDate, startTime, endTime, fleetVehicleId, status } = req.body
+    const { startDate, endDate, startTime, endTime, fleetVehicleId, status, checkedIn, checkedInAt, checkedOut, checkedOutAt } = req.body
     
     const updateData: any = {}
     if (startDate) updateData.startDate = new Date(startDate)
@@ -2835,6 +2835,10 @@ app.put('/api/bookings/:id', async (req, res) => {
       updateData.assignedAt = fleetVehicleId ? new Date() : null
     }
     if (status) updateData.status = status
+    if (checkedIn !== undefined) updateData.checkedIn = checkedIn
+    if (checkedInAt) updateData.checkedInAt = new Date(checkedInAt)
+    if (checkedOut !== undefined) updateData.checkedOut = checkedOut
+    if (checkedOutAt) updateData.checkedOutAt = new Date(checkedOutAt)
     
     const booking = await prisma.booking.update({
       where: { id },

@@ -218,6 +218,11 @@ model Booking {
   reallocations         ReservationReallocation[]
   isReallocated         Boolean         @default(false)
   reallocatedAt         DateTime?
+  checkedIn             Boolean         @default(false)
+  checkedInAt           DateTime?
+  checkedOut            Boolean         @default(false)
+  checkedOutAt          DateTime?
+  paidAmount            Float           @default(0)
   conflictingExtensions ContractExtension[] @relation("ConflictingBooking")
 }
 

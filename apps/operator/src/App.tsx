@@ -639,7 +639,7 @@ export default function App() {
   
   // Vehicles currently rented (for checkout)
   const rentedBookings = bookings.filter(b => 
-    b.status === 'CHECKED_IN' && 
+    b.checkedIn && !b.checkedOut && 
     (!selectedAgency || b.agencyId === selectedAgency)
   )
 

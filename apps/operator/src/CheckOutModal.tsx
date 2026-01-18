@@ -46,6 +46,14 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
   const [extraKmCharge, setExtraKmCharge] = useState(0)
   const [extraKmCount, setExtraKmCount] = useState(0)
   
+  // Documents manquants
+  const [missingDocs, setMissingDocs] = useState<string[]>([])
+  const [idCardUrl, setIdCardUrl] = useState('')
+  const [idCardVersoUrl, setIdCardVersoUrl] = useState('')
+  const [licenseUrl, setLicenseUrl] = useState('')
+  const [licenseVersoUrl, setLicenseVersoUrl] = useState('')
+  const [uploadingDoc, setUploadingDoc] = useState(false)
+  
   const isMotorRent = brand === 'MOTOR-RENT'
 
   useEffect(() => {

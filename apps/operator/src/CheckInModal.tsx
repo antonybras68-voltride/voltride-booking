@@ -73,6 +73,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   
   // Step 4 - Documents
   const [idCardUrl, setIdCardUrl] = useState('')
+  const [idCardVersoUrl, setIdCardVersoUrl] = useState('')
   const [licenseUrl, setLicenseUrl] = useState('')
   const [licenseVersoUrl, setLicenseVersoUrl] = useState('')
   
@@ -274,8 +275,8 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
       case 2: return photos.front && photos.left && photos.right && photos.rear
       case 3: return true
       case 4: 
-        const needsLicense = fleetVehicle?.vehicle?.hasPlate
-        return idCardUrl && (!needsLicense || (licenseUrl && licenseVersoUrl))
+        // Documents non-obligatoires au check-in
+        return true
       case 5: return termsAccepted && rgpdAccepted && signature
       case 6: return locationPaid && depositPaid
       default: return true
@@ -302,6 +303,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
         damageSchema: damages,
         equipmentChecklist: equipment.filter(e => e.checked),
         customerIdCardUrl: idCardUrl,
+        customerIdCardVersoUrl: idCardVersoUrl,
         customerLicenseUrl: licenseUrl,
         customerLicenseVersoUrl: licenseVersoUrl,
         paymentMethod,

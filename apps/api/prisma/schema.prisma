@@ -731,8 +731,10 @@ model RentalContract {
   photoCounter         String?
   damageSchema         Json?
   equipmentChecklist   Json?
-  customerIdCardUrl    String?
-  customerLicenseUrl   String?
+  customerIdCardUrl      String?
+  customerIdCardVersoUrl String?
+  customerLicenseUrl     String?
+  customerLicenseVersoUrl String?
   termsAcceptedAt      DateTime?
   termsLanguage        String?
   totalMileage         Int?

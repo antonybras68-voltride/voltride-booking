@@ -74,6 +74,16 @@ export const api = {
     return res.json()
   },
   createContract: async (data) => {
+    // Si on a un bookingId, utiliser la route check-out
+    if (data.bookingId) {
+      const res = await fetch(API_URL + '/api/bookings/' + data.bookingId + '/check-out', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      return res.json()
+    }
+    // Sinon, créer un contrat walk-in
     const res = await fetch(API_URL + '/api/contracts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -1076,6 +1076,9 @@ app.get('/api/fleet/:id', async (req, res) => {
 
 // ============== BOOKING CHECK-OUT (Départ client) ==============
 app.post('/api/bookings/:id/check-out', async (req, res) => {
+  console.log('=== CHECK-OUT START ===')
+  console.log('Booking ID:', req.params.id)
+  console.log('Body keys:', Object.keys(req.body))
   try {
     const booking = await prisma.booking.findUnique({
       where: { id: req.params.id },
@@ -1109,6 +1112,13 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
     }
     
     // Créer le contrat
+    console.log('Creating contract with:', {
+      contractNumber,
+      bookingId: booking.id,
+      fleetVehicleId: req.body.fleetVehicleId,
+      totalDays,
+      depositAmount: fleetVehicle.vehicle?.deposit
+    })
     const contract = await prisma.rentalContract.create({
       data: {
         contractNumber,

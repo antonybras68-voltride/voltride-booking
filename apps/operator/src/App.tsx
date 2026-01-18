@@ -752,6 +752,85 @@ export default function App() {
     }
   }
 
+  // Créer un contrat depuis une réservation
+  const createContractFromBooking = async (booking) => {
+    if (!booking.fleetVehicleId) {
+      alert(lang === 'fr' ? 'Veuillez d\'abord assigner un véhicule' : 'Por favor asigne un vehículo primero')
+      return
+    }
+    
+    const assignedVehicle = fleet.find(f => f.id === booking.fleetVehicleId)
+    if (!assignedVehicle) {
+      alert(lang === 'fr' ? 'Véhicule non trouvé' : 'Vehículo no encontrado')
+      return
+    }
+    
+    // Calculer le nombre de jours
+    const start = new Date(booking.startDate)
+    const end = new Date(booking.endDate)
+    const totalDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)))
+    
+    // Calculer les montants
+    const subtotal = booking.totalPrice || 0
+    const optionsTotal = booking.options?.reduce((sum, opt) => sum + (opt.totalPrice || 0), 0) || 0
+    const taxRate = 21
+    const taxAmount = Math.round((subtotal + optionsTotal) * taxRate) / 100
+    const totalAmount = subtotal + optionsTotal + taxAmount
+    const depositAmount = booking.depositAmount || assignedVehicle.vehicle?.deposit || 100
+    const dailyRate = totalDays > 0 ? Math.round(subtotal / totalDays * 100) / 100 : subtotal
+    
+    try {
+      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/contracts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          fleetVehicleId: booking.fleetVehicleId,
+          agencyId: booking.agencyId,
+          customer: {
+            firstName: booking.customer?.firstName,
+            lastName: booking.customer?.lastName,
+            email: booking.customer?.email,
+            phone: booking.customer?.phone,
+            address: booking.customer?.address,
+            postalCode: booking.customer?.postalCode,
+            city: booking.customer?.city,
+            country: booking.customer?.country || 'ES',
+            language: booking.language || 'es'
+          },
+          startDate: booking.startDate,
+          endDate: booking.endDate,
+          source: booking.source || 'WIDGET',
+          dailyRate,
+          totalDays,
+          subtotal,
+          optionsTotal,
+          taxRate,
+          taxAmount,
+          totalAmount,
+          depositAmount
+        })
+      })
+      
+      const contract = await res.json()
+      
+      if (contract.error) {
+        throw new Error(contract.error)
+      }
+      
+      alert(lang === 'fr' 
+        ? `✅ Contrat ${contract.contractNumber} créé avec succès!` 
+        : `✅ Contrato ${contract.contractNumber} creado con éxito!`)
+      
+      setShowBookingDetail(false)
+      loadData()
+      
+    } catch (error) {
+      console.error('Erreur création contrat:', error)
+      alert(lang === 'fr' ? '❌ Erreur lors de la création du contrat' : '❌ Error al crear el contrato')
+    }
+  }
+
   // Right click context menu
   const handleContextMenu = (e, booking) => {
     e.preventDefault()
@@ -2896,21 +2975,27 @@ export default function App() {
             </div>
             
             {/* Footer avec actions */}
-            <div className="p-4 border-t bg-gray-50 flex gap-3 rounded-b-2xl">
-              {!selectedBookingDetail.checkedIn && selectedBookingDetail.fleetVehicleId && (
-                <button onClick={() => { setShowBookingDetail(false); setCheckInBooking(selectedBookingDetail); setShowCheckIn(true) }}
-                  className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
-                  ✅ Faire le check-in
-                </button>
-              )}
+            <div className="p-4 border-t bg-gray-50 flex flex-wrap gap-3 rounded-b-2xl">
               {!selectedBookingDetail.fleetVehicleId && (
                 <button onClick={() => { setShowBookingDetail(false); openAssignModal(selectedBookingDetail) }}
-                  className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                  🚲 Assigner un véhicule
+                  className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                  🚲 Assigner véhicule
+                </button>
+              )}
+              {!selectedBookingDetail.checkedIn && selectedBookingDetail.fleetVehicleId && (
+                <button onClick={() => { setShowBookingDetail(false); setCheckInBooking(selectedBookingDetail); setShowCheckIn(true) }}
+                  className="py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+                  ✅ Check-in
+                </button>
+              )}
+              {selectedBookingDetail.fleetVehicleId && !selectedBookingDetail.contract && (
+                <button onClick={() => createContractFromBooking(selectedBookingDetail)}
+                  className="py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">
+                  📄 Créer contrat
                 </button>
               )}
               <button onClick={() => setShowBookingDetail(false)}
-                className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                className="py-2 px-4 bg-gray-200 rounded-lg hover:bg-gray-300 ml-auto">
                 Fermer
               </button>
             </div>

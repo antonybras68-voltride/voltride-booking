@@ -516,29 +516,53 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
           {/* STEP 4: Documents */}
           {step === 4 && (
             <div className="space-y-4">
+              <div className="p-3 bg-blue-50 rounded-xl text-blue-700 text-sm">
+                ℹ️ Documents <strong>facultatifs maintenant</strong>, mais <strong>obligatoires au retour</strong> pour rembourser la caution.
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Carte d'identité <span className="text-red-500">*</span>
+                  Carte d'identité <span className="text-gray-400 text-xs">(optionnel)</span>
                 </label>
-                <label className={'block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ' +
-                  (idCardUrl ? 'border-green-500' : 'border-orange-300 hover:border-orange-400')}>
-                  <input type="file" accept="image/*" capture="environment" className="hidden"
-                    onChange={async e => {
-                      const file = e.target.files?.[0]
-                      if (file) {
-                        const url = await uploadPhoto(file)
-                        if (url) setIdCardUrl(url)
-                      }
-                    }} />
-                  {idCardUrl ? (
-                    <img src={idCardUrl} className="w-full h-full object-contain" />
-                  ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                      <span className="text-3xl">🪪</span>
-                      <span>Photographier la CNI</span>
-                    </div>
-                  )}
-                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className={'block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ' +
+                    (idCardUrl ? 'border-green-500' : 'border-gray-300 hover:border-gray-400')}>
+                    <input type="file" accept="image/*" capture="environment" className="hidden"
+                      onChange={async e => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          const url = await uploadPhoto(file)
+                          if (url) setIdCardUrl(url)
+                        }
+                      }} />
+                    {idCardUrl ? (
+                      <img src={idCardUrl} className="w-full h-full object-contain" />
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                        <span className="text-2xl">🪪</span>
+                        <span className="text-sm">Recto</span>
+                      </div>
+                    )}
+                  </label>
+                  <label className={'block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ' +
+                    (idCardVersoUrl ? 'border-green-500' : 'border-gray-300 hover:border-gray-400')}>
+                    <input type="file" accept="image/*" capture="environment" className="hidden"
+                      onChange={async e => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          const url = await uploadPhoto(file)
+                          if (url) setIdCardVersoUrl(url)
+                        }
+                      }} />
+                    {idCardVersoUrl ? (
+                      <img src={idCardVersoUrl} className="w-full h-full object-contain" />
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                        <span className="text-2xl">🪪</span>
+                        <span className="text-sm">Verso</span>
+                      </div>
+                    )}
+                  </label>
+                </div>
               </div>
 
               {fleetVehicle?.vehicle?.hasPlate && (

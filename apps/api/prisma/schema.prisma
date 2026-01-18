@@ -8,112 +8,112 @@ datasource db {
 }
 
 model Agency {
-  id                String                 @id @default(cuid())
-  code              String                 @unique
+  id                String      @id @default(cuid())
+  code              String      @unique
   name              Json
   address           String
   city              String
   postalCode        String
-  country           String                 @default("ES")
+  country           String      @default("ES")
   phone             String
   email             String
-  brand             String                 @default("VOLTRIDE")
-  isActive          Boolean                @default(true)
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-  closingTimeSummer String                 @default("19:00")
-  closingTimeWinter String                 @default("16:00")
-  openingTime       String                 @default("10:00")
-  summerEndDate     String                 @default("09-30")
-  summerStartDate   String                 @default("04-01")
-  closedOnSunday    Boolean                @default(false)
-  agencyType        AgencyType             @default(OWN)
+  brand             String      @default("VOLTRIDE")
+  isActive          Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  closingTimeSummer String      @default("19:00")
+  closingTimeWinter String      @default("16:00")
+  openingTime       String      @default("10:00")
+  summerEndDate     String      @default("09-30")
+  summerStartDate   String      @default("04-01")
+  closedOnSunday    Boolean     @default(false)
+  agencyType        AgencyType  @default(OWN)
   commissionRate    Float?
   commissionEmail   String?
-  showStockUrgency  Boolean                @default(false)
-  closures          AgencyClosure[]
-  schedulePeriods   AgencySchedulePeriod[]
+  showStockUrgency  Boolean     @default(false)
   bookings          Booking[]
-  extensionSettings ExtensionSettings?
-  fleetVehicles     Fleet[]
   inventory         Inventory[]
+  fleetVehicles     Fleet[]
   contracts         RentalContract[]
+  extensionSettings ExtensionSettings?
+  schedulePeriods   AgencySchedulePeriod[]
+  closures          AgencyClosure[]
 }
 
 model Category {
-  id                  String                    @id @default(cuid())
-  code                String                    @unique
-  name                Json
-  brand               String                    @default("VOLTRIDE")
-  bookingFee          Float                     @default(0)
-  createdAt           DateTime                  @default(now())
-  updatedAt           DateTime                  @updatedAt
-  closingTimeSummer   String                    @default("19:00")
-  closingTimeWinter   String                    @default("16:00")
-  openingTime         String                    @default("10:00")
-  summerEndDate       String                    @default("09-30")
-  summerStartDate     String                    @default("04-01")
+  id                String           @id @default(cuid())
+  code              String           @unique
+  name              Json
+  brand             String           @default("VOLTRIDE")
+  bookingFee        Float            @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  closingTimeSummer String           @default("19:00")
+  closingTimeWinter String           @default("16:00")
+  openingTime       String           @default("10:00")
+  summerEndDate     String           @default("09-30")
+  summerStartDate   String           @default("04-01")
+  options           OptionCategory[]
+  vehicles          Vehicle[]
   numberingCategoryId String?
   numberingCategory   VehicleNumberingCategory? @relation(fields: [numberingCategoryId], references: [id])
-  options             OptionCategory[]
-  vehicles            Vehicle[]
 }
 
 model Vehicle {
-  id                 String                     @id @default(cuid())
-  sku                String                     @unique
-  name               Json
-  description        Json
-  deposit            Float
-  hasPlate           Boolean                    @default(false)
-  imageUrl           String?
-  categoryId         String
-  isActive           Boolean                    @default(true)
-  createdAt          DateTime                   @default(now())
-  updatedAt          DateTime                   @updatedAt
-  helmetIncluded     Boolean                    @default(true)
-  kmIncluded         Json?                      @default("{}")
-  licenseType        Json?                      @default("{}")
-  fuelChargeEmpty    Float                      @default(20)
-  fuelChargeHalf     Float                      @default(10)
-  fuelChargeQuarter  Float                      @default(5)
-  fuelChargeThreeQ   Float                      @default(15)
-  extraKmPrice       Float?                     @default(0.15)
-  kmIncludedPerDay   Int?                       @default(100)
-  bookingItems       BookingItem[]
-  fleetVehicles      Fleet[]
-  inventory          Inventory[]
-  pricing            Pricing[]
-  rentalOptions      RentalOption[]
-  category           Category                   @relation(fields: [categoryId], references: [id])
-  sparePartTemplates VehicleSparePartTemplate[]
+  id             String        @id @default(cuid())
+  sku            String        @unique
+  name           Json
+  description    Json
+  deposit        Float
+  hasPlate       Boolean       @default(false)
+  imageUrl       String?
+  categoryId     String
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  helmetIncluded Boolean       @default(true)
+  kmIncluded     Json?         @default("{}")
+  licenseType    Json?         @default("{}")
+  kmIncludedPerDay Int?          @default(100)
+  extraKmPrice     Float?        @default(0.15)
+  fuelChargeQuarter    Float    @default(5)
+  fuelChargeHalf       Float    @default(10)
+  fuelChargeThreeQ     Float    @default(15)
+  fuelChargeEmpty      Float    @default(20)
+  bookingItems   BookingItem[]
+  inventory      Inventory[]
+  pricing        Pricing[]
+  category       Category      @relation(fields: [categoryId], references: [id])
+  fleetVehicles         Fleet[]
+  sparePartTemplates    VehicleSparePartTemplate[]
+  rentalOptions         RentalOption[]
 }
 
 model Pricing {
-  id            String   @id @default(cuid())
-  vehicleId     String
-  day1          Float    @default(0)
-  day2          Float    @default(0)
-  day3          Float    @default(0)
-  day4          Float    @default(0)
-  day5          Float    @default(0)
-  day6          Float    @default(0)
-  day7          Float    @default(0)
-  day8          Float    @default(0)
-  day9          Float    @default(0)
-  day10         Float    @default(0)
-  day11         Float    @default(0)
-  day12         Float    @default(0)
-  day13         Float    @default(0)
+  id         String   @id @default(cuid())
+  vehicleId  String
+  day1       Float    @default(0)
+  day2       Float    @default(0)
+  day3       Float    @default(0)
+  day4       Float    @default(0)
+  day5       Float    @default(0)
+  day6       Float    @default(0)
+  day7       Float    @default(0)
+  day8       Float    @default(0)
+  day9       Float    @default(0)
+  day10      Float    @default(0)
+  day11      Float    @default(0)
+  day12      Float    @default(0)
+  day13      Float    @default(0)
   day14         Float    @default(0)
-  extraHour1    Float    @default(0)
-  extraHour2    Float    @default(0)
-  extraHour3    Float    @default(0)
-  extraHour4    Float    @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
   extraDayPrice Float    @default(0)
-  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  extraHour1 Float    @default(0)
+  extraHour2 Float    @default(0)
+  extraHour3 Float    @default(0)
+  extraHour4 Float    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 }
 
 model Inventory {
@@ -125,7 +125,6 @@ model Inventory {
   updatedAt DateTime @updatedAt
   agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
   @@unique([vehicleId, agencyId])
 }
 
@@ -133,16 +132,12 @@ model Option {
   id                String           @id @default(cuid())
   code              String           @unique
   name              Json
+  description       Json?
   maxQuantity       Int              @default(10)
   isActive          Boolean          @default(true)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   day1              Float            @default(0)
-  day10             Float            @default(0)
-  day11             Float            @default(0)
-  day12             Float            @default(0)
-  day13             Float            @default(0)
-  day14             Float            @default(0)
   day2              Float            @default(0)
   day3              Float            @default(0)
   day4              Float            @default(0)
@@ -151,10 +146,14 @@ model Option {
   day7              Float            @default(0)
   day8              Float            @default(0)
   day9              Float            @default(0)
+  day10             Float            @default(0)
+  day11             Float            @default(0)
+  day12             Float            @default(0)
+  day13             Float            @default(0)
+  day14             Float            @default(0)
   includedByDefault Boolean          @default(false)
-  imageUrl          String?
-  description       Json?
   sortOrder         Int              @default(0)
+  imageUrl          String?
   bookingOptions    BookingOption[]
   categories        OptionCategory[]
 }
@@ -165,62 +164,66 @@ model OptionCategory {
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   option     Option   @relation(fields: [optionId], references: [id], onDelete: Cascade)
-
   @@unique([optionId, categoryId])
 }
 
 model Customer {
-  id                    String           @id @default(cuid())
-  firstName             String
-  lastName              String
-  email                 String
-  phone                 String
-  address               String?
-  postalCode            String?
-  city                  String?
-  country               String           @default("ES")
-  language              String           @default("es")
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-  documentsVerified     Boolean          @default(false)
-  idDocumentExpiry      DateTime?
-  idDocumentUrl         String?
-  licenseDocumentExpiry DateTime?
-  licenseDocumentUrl    String?
-  bookings              Booking[]
-  contracts             RentalContract[]
+  id         String    @id @default(cuid())
+  firstName  String
+  lastName   String
+  email      String
+  phone      String
+  address    String?
+  postalCode String?
+  city       String?
+  country    String    @default("ES")
+  language   String    @default("es")
+  idDocumentUrl       String?   // URL photo pièce d'identité
+  idDocumentExpiry    DateTime? // Date d'expiration
+  licenseDocumentUrl  String?   // URL photo permis de conduire
+  licenseDocumentExpiry DateTime? // Date d'expiration permis
+  documentsVerified   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  bookings   Booking[]
+  contracts  RentalContract[]
 }
 
 model Booking {
-  id                    String                    @id @default(cuid())
-  reference             String                    @unique
-  agencyId              String
-  customerId            String
-  startDate             DateTime
-  endDate               DateTime
-  startTime             String
-  endTime               String
-  totalPrice            Float
-  depositAmount         Float
-  status                String                    @default("PENDING")
-  language              String                    @default("es")
-  createdAt             DateTime                  @default(now())
-  updatedAt             DateTime                  @updatedAt
-  assignedAt            DateTime?
-  assignmentType        AssignmentType?
+  id            String          @id @default(cuid())
+  reference     String          @unique
+  agencyId      String
+  customerId    String
+  startDate     DateTime
+  endDate       DateTime
+  startTime     String
+  endTime       String
+  totalPrice    Float
+  depositAmount Float
+  status        String          @default("PENDING")
+  language      String          @default("es")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  agency        Agency          @relation(fields: [agencyId], references: [id])
+  customer      Customer        @relation(fields: [customerId], references: [id])
+  items         BookingItem[]
+  options       BookingOption[]
   fleetVehicleId        String?
-  isReallocated         Boolean                   @default(false)
-  reallocatedAt         DateTime?
-  autoAssign            Boolean                   @default(true)
-  source                BookingSource             @default(WIDGET)
-  agency                Agency                    @relation(fields: [agencyId], references: [id])
-  customer              Customer                  @relation(fields: [customerId], references: [id])
-  fleetVehicle          Fleet?                    @relation(fields: [fleetVehicleId], references: [id])
-  items                 BookingItem[]
-  options               BookingOption[]
-  conflictingExtensions ContractExtension[]       @relation("ConflictingBooking")
+  fleetVehicle          Fleet?          @relation(fields: [fleetVehicleId], references: [id])
+  assignmentType        AssignmentType?
+  assignedAt            DateTime?
+  source                BookingSource   @default(WIDGET)
+  autoAssign            Boolean         @default(true)
   contract              RentalContract?
   reallocations         ReservationReallocation[]
+  isReallocated         Boolean         @default(false)
+  reallocatedAt         DateTime?
+  checkedIn             Boolean         @default(false)
+  checkedInAt           DateTime?
+  checkedOut            Boolean         @default(false)
+  checkedOutAt          DateTime?
+  paidAmount            Float           @default(0)
+  conflictingExtensions ContractExtension[] @relation("ConflictingBooking")
 }
 
 model BookingItem {
@@ -248,820 +251,87 @@ model BookingOption {
 }
 
 model VehicleNumberingCategory {
-  id             String              @id @default(cuid())
-  code           String              @unique
-  prefix         String
-  name           String
-  description    String?
-  lastNumber     Int                 @default(0)
-  numberPadding  Int                 @default(3)
-  inspectionType InspectionPhotoType @default(FULL)
-  isActive       Boolean             @default(true)
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  categories     Category[]
-}
-
-model Fleet {
-  id                       String                    @id @default(cuid())
-  vehicleNumber            String                    @unique
-  licensePlate             String?
-  chassisNumber            String                    @unique
-  vehicleId                String
-  agencyId                 String
-  year                     Int?
-  color                    String?
-  purchaseDate             DateTime?
-  purchasePrice            Decimal?                  @db.Decimal(10, 2)
-  currentMileage           Int                       @default(0)
-  lastMileageUpdate        DateTime                  @default(now())
-  totalRentalDays          Int                       @default(0)
-  totalRentals             Int                       @default(0)
-  maintenanceIntervalType  MaintenanceIntervalType   @default(KILOMETERS)
-  maintenanceIntervalKm    Int?                      @default(1000)
-  maintenanceIntervalDays  Int?                      @default(30)
-  lastMaintenanceDate      DateTime?
-  lastMaintenanceMileage   Int?
-  nextMaintenanceDate      DateTime?
-  nextMaintenanceMileage   Int?
-  itvDate                  DateTime?
-  itvExpiryDate            DateTime?
-  insuranceCompany         String?
-  insurancePolicyNumber    String?
-  insuranceExpiryDate      DateTime?
-  status                   FleetStatus               @default(AVAILABLE)
-  condition                VehicleCondition          @default(GOOD)
-  notes                    String?
-  isActive                 Boolean                   @default(true)
-  createdAt                DateTime                  @default(now())
-  updatedAt                DateTime                  @updatedAt
-  brand                    String?
-  engineSize               String?
-  model                    String?
-  locationCode             String?
-  bookings                 Booking[]
-  alternativeForExtensions ContractExtension[]       @relation("AlternativeVehicle")
-  agency                   Agency                    @relation(fields: [agencyId], references: [id])
-  vehicle                  Vehicle                   @relation(fields: [vehicleId], references: [id])
-  contractFields           FleetContractField[]
-  damages                  FleetDamage[]
-  documents                FleetDocument[]
-  equipment                FleetEquipment[]
-  inspections              FleetInspection[]
-  spareParts               FleetSparePart[]
-  maintenanceRecords       MaintenanceRecord[]
-  mileageLogs              MileageLog[]
-  contracts                RentalContract[]
-  newInReallocations       ReservationReallocation[] @relation("NewVehicle")
-  originalInReallocations  ReservationReallocation[] @relation("OriginalVehicle")
-
-  @@index([vehicleId])
-  @@index([agencyId])
-  @@index([status])
-  @@index([itvExpiryDate])
-  @@index([insuranceExpiryDate])
-}
-
-model FleetDocument {
-  id             String       @id @default(cuid())
-  fleetId        String
-  type           DocumentType
-  name           String
-  fileUrl        String
-  fileType       String
-  fileSizeBytes  Int?
-  thumbnailUrl   String?
-  issueDate      DateTime?
-  expiryDate     DateTime?
-  sendToCustomer Boolean      @default(false)
-  description    String?
-  uploadedBy     String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  fleet          Fleet        @relation(fields: [fleetId], references: [id], onDelete: Cascade)
-
-  @@index([fleetId])
-  @@index([type])
-  @@index([sendToCustomer])
-}
-
-model FleetSparePart {
-  id                String              @id @default(cuid())
-  fleetId           String
-  name              String
-  partNumber        String?
-  category          SparePartCategory
-  location          DamageLocation
-  price             Decimal             @db.Decimal(10, 2)
-  laborCost         Decimal?            @db.Decimal(10, 2)
-  totalCost         Decimal             @db.Decimal(10, 2)
-  quantityInStock   Int                 @default(0)
-  minimumStock      Int                 @default(1)
-  supplierName      String?
-  supplierRef       String?
-  lastPurchasePrice Decimal?            @db.Decimal(10, 2)
-  lastPurchaseDate  DateTime?
-  isActive          Boolean             @default(true)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  deductions        ContractDeduction[]
-  fleet             Fleet               @relation(fields: [fleetId], references: [id], onDelete: Cascade)
-
-  @@index([fleetId])
-  @@index([category])
-}
-
-model VehicleSparePartTemplate {
-  id               String            @id @default(cuid())
-  vehicleId        String
-  name             String
-  partNumber       String?
-  category         SparePartCategory
-  location         DamageLocation
-  defaultPrice     Decimal           @db.Decimal(10, 2)
-  defaultLaborCost Decimal?          @db.Decimal(10, 2)
-  isActive         Boolean           @default(true)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  vehicle          Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  @@index([vehicleId])
-}
-
-model FleetDamage {
-  id             String           @id @default(cuid())
-  fleetId        String
-  description    String
-  location       DamageLocation
-  locationDetail String?
-  severity       DamageSeverity   @default(MINOR)
-  photoUrl       String
-  photoThumbnail String?
-  reportedAt     DateTime         @default(now())
-  reportedBy     String?
-  inspectionId   String?
-  contractId     String?
-  isResolved     Boolean          @default(false)
-  resolvedAt     DateTime?
-  resolvedBy     String?
-  resolutionNote String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  fleet          Fleet            @relation(fields: [fleetId], references: [id], onDelete: Cascade)
-  inspection     FleetInspection? @relation(fields: [inspectionId], references: [id])
-
-  @@index([fleetId])
-  @@index([isResolved])
-}
-
-model FleetInspection {
-  id                 String            @id @default(cuid())
-  fleetId            String
-  contractId         String?
-  type               InspectionType
-  mileage            Int
-  condition          VehicleCondition
-  fuelLevel          FuelLevel?
-  customerSignature  String?
-  customerSignedAt   DateTime?
-  customerIpAddress  String?
-  customerDeviceInfo String?
-  operatorId         String
-  operatorNotes      String?
-  inspectedAt        DateTime          @default(now())
-  isDeleted          Boolean           @default(false)
-  deletedAt          DateTime?
-  deletedBy          String?
-  deleteReason       String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  damages            FleetDamage[]
-  contract           RentalContract?   @relation(fields: [contractId], references: [id])
-  fleet              Fleet             @relation(fields: [fleetId], references: [id], onDelete: Cascade)
-  photos             InspectionPhoto[]
-
-  @@index([fleetId])
-  @@index([contractId])
-  @@index([type])
-  @@index([isDeleted])
-}
-
-model InspectionPhoto {
-  id              String          @id @default(cuid())
-  inspectionId    String
-  angle           PhotoAngle
-  photoUrl        String
-  photoThumbnail  String?
-  isValid         Boolean         @default(true)
-  rejectionReason String?
-  createdAt       DateTime        @default(now())
-  inspection      FleetInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
-
-  @@unique([inspectionId, angle])
-  @@index([inspectionId])
-}
-
-model MaintenanceRecord {
-  id              String              @id @default(cuid())
-  fleetId         String
-  type            MaintenanceType
-  description     String
-  mileage         Int
-  laborCost       Decimal?            @db.Decimal(10, 2)
-  partsCost       Decimal?            @db.Decimal(10, 2)
-  totalCost       Decimal?            @db.Decimal(10, 2)
-  performedBy     String?
-  invoiceNumber   String?
-  invoiceUrl      String?
-  scheduledDate   DateTime?
-  startedAt       DateTime?
-  completedAt     DateTime?
-  status          MaintenanceStatus   @default(SCHEDULED)
-  partsReplaced   Json?
-  technicianId    String?
-  technicianNotes String?
-  priority        MaintenancePriority @default(NORMAL)
-  notes           String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  fleet           Fleet               @relation(fields: [fleetId], references: [id], onDelete: Cascade)
-
-  @@index([fleetId])
-  @@index([status])
-  @@index([priority])
-  @@index([scheduledDate])
-}
-
-model MileageLog {
-  id              String        @id @default(cuid())
-  fleetId         String
-  previousMileage Int
-  newMileage      Int
-  difference      Int
-  source          MileageSource
-  referenceId     String?
-  recordedBy      String?
-  recordedAt      DateTime      @default(now())
-  notes           String?
-  fleet           Fleet         @relation(fields: [fleetId], references: [id], onDelete: Cascade)
-
-  @@index([fleetId])
-  @@index([recordedAt])
-}
-
-model RentalContract {
-  id                      String              @id @default(cuid())
-  contractNumber          String              @unique
-  bookingId               String?             @unique
-  fleetVehicleId          String
-  agencyId                String
-  customerId              String
-  originalStartDate       DateTime
-  originalEndDate         DateTime
-  currentStartDate        DateTime
-  currentEndDate          DateTime
-  actualStartDate         DateTime?
-  actualEndDate           DateTime?
-  source                  ContractSource
-  dailyRate               Decimal             @db.Decimal(10, 2)
-  totalDays               Int
-  subtotal                Decimal             @db.Decimal(10, 2)
-  optionsTotal            Decimal             @default(0) @db.Decimal(10, 2)
-  discountAmount          Decimal             @default(0) @db.Decimal(10, 2)
-  discountReason          String?
-  taxRate                 Decimal             @default(21) @db.Decimal(5, 2)
-  taxAmount               Decimal             @db.Decimal(10, 2)
-  totalAmount             Decimal             @db.Decimal(10, 2)
-  depositAmount           Decimal             @db.Decimal(10, 2)
-  depositMethod           PaymentMethod?
-  depositReference        String?
-  depositStatus           DepositStatus       @default(PENDING)
-  depositCapturedAt       DateTime?
-  depositReleasedAt       DateTime?
-  totalDeductions         Decimal             @default(0) @db.Decimal(10, 2)
-  deductionNotes          String?
-  finalDepositRefund      Decimal?            @db.Decimal(10, 2)
-  paymentStatus           PaymentStatus       @default(PENDING)
-  paidAmount              Decimal             @default(0) @db.Decimal(10, 2)
-  paymentMethod           PaymentMethod?
-  paymentReference        String?
-  customerSignature       String?
-  customerSignedAt        DateTime?
-  customerIpAddress       String?
-  customerDeviceInfo      String?
-  operatorSignature       String?
-  operatorSignedAt        DateTime?
-  operatorId              String?
-  documentsSentAt         DateTime?
-  documentsSentTo         String?
-  startMileage            Int?
-  endMileage              Int?
-  totalMileage            Int?
-  status                  ContractStatus      @default(DRAFT)
-  internalNotes           String?
-  customerNotes           String?
-  contractPdfUrl          String?
-  extensionAccessToken    String?             @unique @default(cuid())
-  createdAt               DateTime            @default(now())
-  updatedAt               DateTime            @updatedAt
-  customerIdCardUrl       String?
-  customerLicenseUrl      String?
-  damageSchema            Json?
-  endFuelLevel            String?
-  equipmentChecklist      Json?
-  fuelCharge              Decimal?            @db.Decimal(10, 2)
-  photoCounter            String?
-  photoFront              String?
-  photoLeft               String?
-  photoRear               String?
-  photoRight              String?
-  startFuelLevel          String?
-  termsAcceptedAt         DateTime?
-  termsLanguage           String?
-  commissionAmount        Decimal?            @db.Decimal(10, 2)
-  commissionRate          Float?
-  commissionStatus        CommissionStatus    @default(PENDING)
-  commissionType          CommissionType?
-  customerIdCardVersoUrl  String?
-  customerLicenseVersoUrl String?
-  deductions              ContractDeduction[]
-  extensions              ContractExtension[]
-  contractOptions         ContractOption[]
-  payments                ContractPayment[]
-  inspections             FleetInspection[]
-  agency                  Agency              @relation(fields: [agencyId], references: [id])
-  booking                 Booking?            @relation(fields: [bookingId], references: [id])
-  customer                Customer            @relation(fields: [customerId], references: [id])
-  fleetVehicle            Fleet               @relation(fields: [fleetVehicleId], references: [id])
-
-  @@index([fleetVehicleId])
-  @@index([customerId])
-  @@index([agencyId])
-  @@index([status])
-  @@index([currentStartDate, currentEndDate])
-}
-
-model ContractDeduction {
-  id             String          @id @default(cuid())
-  contractId     String
-  type           DeductionType
-  sparePartId    String?
-  description    String
-  quantity       Int             @default(1)
-  unitPrice      Decimal         @db.Decimal(10, 2)
-  totalPrice     Decimal         @db.Decimal(10, 2)
-  photoUrls      Json?
-  validatedBy    String?
-  validatedAt    DateTime?
-  customerAgreed Boolean         @default(false)
-  notes          String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  equipmentId    String?
-  contract       RentalContract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  equipment      FleetEquipment? @relation(fields: [equipmentId], references: [id])
-  sparePart      FleetSparePart? @relation(fields: [sparePartId], references: [id])
-
-  @@index([contractId])
-  @@index([type])
-}
-
-model ContractOption {
-  id              String         @id @default(cuid())
-  contractId      String
-  rentalOptionId  String
-  name            String
-  quantity        Int            @default(1)
-  dailyPrice      Decimal        @db.Decimal(10, 2)
-  totalPrice      Decimal        @db.Decimal(10, 2)
-  returnedAt      DateTime?
-  returnCondition String?
-  createdAt       DateTime       @default(now())
-  contract        RentalContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  rentalOption    RentalOption   @relation(fields: [rentalOptionId], references: [id])
-
-  @@index([contractId])
-}
-
-model RentalOption {
-  id              String           @id @default(cuid())
+  id              String    @id @default(cuid())
+  code            String    @unique
+  prefix          String
   name            String
   description     String?
-  dailyPrice      Decimal          @db.Decimal(10, 2)
-  depositPrice    Decimal          @db.Decimal(10, 2)
-  vehicleId       String?
-  totalQuantity   Int              @default(0)
-  availableQty    Int              @default(0)
-  imageUrl        String?
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  contractOptions ContractOption[]
-  vehicle         Vehicle?         @relation(fields: [vehicleId], references: [id])
-
-  @@index([vehicleId])
-}
-
-model ContractPayment {
-  id              String                   @id @default(cuid())
-  contractId      String
-  type            PaymentType
-  amount          Decimal                  @db.Decimal(10, 2)
-  currency        String                   @default("EUR")
-  method          PaymentMethod
-  reference       String?
-  stripePaymentId String?
-  stripeStatus    String?
-  status          PaymentTransactionStatus
-  initiatedAt     DateTime                 @default(now())
-  completedAt     DateTime?
-  failedAt        DateTime?
-  failureReason   String?
-  refundedAmount  Decimal?                 @db.Decimal(10, 2)
-  refundedAt      DateTime?
-  refundReason    String?
-  processedBy     String?
-  notes           String?
-  createdAt       DateTime                 @default(now())
-  updatedAt       DateTime                 @updatedAt
-  contract        RentalContract           @relation(fields: [contractId], references: [id], onDelete: Cascade)
-
-  @@index([contractId])
-  @@index([type])
-  @@index([status])
-}
-
-model ContractExtension {
-  id                         String                      @id @default(cuid())
-  extensionNumber            String                      @unique
-  contractId                 String
-  previousEndDate            DateTime
-  requestedEndDate           DateTime
-  approvedEndDate            DateTime?
-  additionalDays             Int
-  requestSource              ExtensionRequestSource
-  requestedAt                DateTime                    @default(now())
-  requestedBy                String?
-  availabilityStatus         ExtensionAvailabilityStatus @default(PENDING_CHECK)
-  availabilityCheckedAt      DateTime?
-  currentVehicleAvailable    Boolean                     @default(false)
-  conflictingBookingId       String?
-  solutionType               ExtensionSolutionType?
-  alternativeVehicleId       String?
-  reallocationId             String?                     @unique
-  dailyRate                  Decimal                     @db.Decimal(10, 2)
-  subtotal                   Decimal                     @db.Decimal(10, 2)
-  taxRate                    Decimal                     @default(21) @db.Decimal(5, 2)
-  taxAmount                  Decimal                     @db.Decimal(10, 2)
-  totalAmount                Decimal                     @db.Decimal(10, 2)
-  stripePaymentLinkId        String?
-  stripePaymentLinkUrl       String?
-  stripePaymentLinkExpiresAt DateTime?
-  stripeSessionId            String?
-  stripePaymentIntentId      String?
-  paymentStatus              PaymentStatus               @default(PENDING)
-  paidAt                     DateTime?
-  paidAmount                 Decimal?                    @db.Decimal(10, 2)
-  accessToken                String                      @unique @default(cuid())
-  accessTokenExpiresAt       DateTime?
-  customerSignature          String?
-  customerSignedAt           DateTime?
-  customerIpAddress          String?
-  customerDeviceInfo         String?
-  operatorId                 String?
-  operatorSignature          String?
-  operatorSignedAt           DateTime?
-  amendmentPdfUrl            String?
-  status                     ExtensionStatus             @default(PENDING_AVAILABILITY_CHECK)
-  rejectionReason            String?
-  cancelledAt                DateTime?
-  cancelledBy                String?
-  cancellationReason         String?
-  customerNotifiedAt         DateTime?
-  operatorNotifiedAt         DateTime?
-  notes                      String?
-  internalNotes              String?
-  createdAt                  DateTime                    @default(now())
-  updatedAt                  DateTime                    @updatedAt
-  alternativeVehicle         Fleet?                      @relation("AlternativeVehicle", fields: [alternativeVehicleId], references: [id])
-  conflictingBooking         Booking?                    @relation("ConflictingBooking", fields: [conflictingBookingId], references: [id])
-  contract                   RentalContract              @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  reallocation               ReservationReallocation?    @relation(fields: [reallocationId], references: [id])
-
-  @@index([contractId])
-  @@index([status])
-  @@index([accessToken])
-}
-
-model ReservationReallocation {
-  id                 String             @id @default(cuid())
-  bookingId          String
-  originalVehicleId  String
-  newVehicleId       String
-  reason             ReallocationReason
-  performedBy        String
-  performedAt        DateTime           @default(now())
-  customerNotified   Boolean            @default(false)
-  customerNotifiedAt DateTime?
-  customerAccepted   Boolean?
-  customerAcceptedAt DateTime?
-  notes              String?
-  isReverted         Boolean            @default(false)
-  revertedAt         DateTime?
-  revertedBy         String?
-  revertReason       String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  extension          ContractExtension?
-  booking            Booking            @relation(fields: [bookingId], references: [id])
-  newVehicle         Fleet              @relation("NewVehicle", fields: [newVehicleId], references: [id])
-  originalVehicle    Fleet              @relation("OriginalVehicle", fields: [originalVehicleId], references: [id])
-
-  @@index([bookingId])
-  @@index([originalVehicleId])
-  @@index([newVehicleId])
-}
-
-model StripePaymentLink {
-  id                   String                   @id @default(cuid())
-  referenceType        PaymentLinkReferenceType
-  referenceId          String
-  stripePaymentLinkId  String                   @unique
-  stripePaymentLinkUrl String
-  stripePriceId        String?
-  stripeProductId      String?
-  amount               Decimal                  @db.Decimal(10, 2)
-  currency             String                   @default("EUR")
-  createdAt            DateTime                 @default(now())
-  expiresAt            DateTime
-  isUsed               Boolean                  @default(false)
-  usedAt               DateTime?
-  stripeSessionId      String?
-  createdBy            String?
-  sentToEmail          String?
-  sentAt               DateTime?
-  sentBy               String?
-  description          String?
-  internalNotes        String?
-
-  @@index([referenceType, referenceId])
-  @@index([stripePaymentLinkId])
-}
-
-model ExtensionSettings {
-  id                           String   @id @default(cuid())
-  agencyId                     String?  @unique
-  selfServiceEnabled           Boolean  @default(true)
-  maxSelfServiceDays           Int      @default(7)
-  minHoursBeforeEnd            Int      @default(2)
-  maxDaysBeforeEnd             Int      @default(3)
-  autoReallocationEnabled      Boolean  @default(false)
-  canReallocateOnlineBookings  Boolean  @default(false)
-  canReallocatePhoneBookings   Boolean  @default(true)
-  canReallocatePartnerBookings Boolean  @default(false)
-  notifyReallocatedCustomer    Boolean  @default(true)
-  requireReallocatedAcceptance Boolean  @default(false)
-  paymentLinkExpirationHours   Int      @default(24)
-  paymentReminderHours         Int      @default(6)
-  useSameRate                  Boolean  @default(true)
-  useCurrentRate               Boolean  @default(false)
-  extensionSurchargePercent    Decimal? @db.Decimal(5, 2)
-  createdAt                    DateTime @default(now())
-  updatedAt                    DateTime @updatedAt
-  agency                       Agency?  @relation(fields: [agencyId], references: [id])
-}
-
-model StripeWebhookEvent {
-  id              String    @id @default(cuid())
-  stripeEventId   String    @unique
-  type            String
-  payload         Json
-  processedAt     DateTime?
-  processingError String?
-  referenceType   String?
-  referenceId     String?
-  receivedAt      DateTime  @default(now())
-
-  @@index([stripeEventId])
-  @@index([type])
-  @@index([receivedAt])
-}
-
-model AvailabilityEvent {
-  id             String                @id @default(cuid())
-  eventType      AvailabilityEventType
-  vehicleId      String
-  agencyId       String
-  fleetVehicleId String?
-  startDate      DateTime
-  endDate        DateTime
-  referenceType  String
-  referenceId    String
-  quantityChange Int
-  source         EventSource
-  createdAt      DateTime              @default(now())
-
-  @@index([vehicleId, agencyId])
-  @@index([startDate, endDate])
-  @@index([referenceType, referenceId])
-}
-
-model BrandSettings {
-  id                    String   @id @default(cuid())
-  brand                 String   @unique
-  name                  String
-  legalName             String?
-  logoUrl               String?
-  primaryColor          String?
-  secondaryColor        String?
-  email                 String?
-  phone                 String?
-  website               String?
-  address               String?
-  city                  String?
-  postalCode            String?
-  country               String   @default("ES")
-  taxId                 String?
-  stripePublishableKey  String?
-  stripeSecretKey       String?
-  stripeWebhookSecret   String?
-  stripeAccountId       String?
-  contractTemplateUrl   String?
-  invoiceTemplateUrl    String?
-  termsAndConditionsUrl String?
-  privacyPolicyUrl      String?
-  emailFromName         String?
-  emailFromAddress      String?
-  isActive              Boolean  @default(true)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  cgvComplete           Json?
-  cgvResume             Json?
-  mentionsLegales       Json?
-  rgpd                  Json?
-}
-
-model TabletSession {
-  id            String    @id @default(cuid())
-  sessionId     String    @unique
-  bookingId     String?
-  agencyId      String
-  type          String    @default("checkin")
-  status        String    @default("pending")
-  language      String    @default("fr")
-  customerName  String?
-  cgvText       String?
-  rgpdText      String?
-  signature     String?
-  termsAccepted Boolean   @default(false)
-  rgpdAccepted  Boolean   @default(false)
-  signedAt      DateTime?
-  expiresAt     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-}
-
-model WalkinSession {
-  id          String    @id @default(cuid())
-  sessionId   String    @unique
-  agencyId    String
-  status      String    @default("pending")
-  language    String    @default("fr")
-  firstName   String?
-  lastName    String?
-  email       String?
-  phone       String?
-  phonePrefix String?   @default("+34")
-  address     String?
-  city        String?
-  postalCode  String?
-  country     String?   @default("ES")
-  brand       String?
-  completedAt DateTime?
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model FleetEquipment {
-  id          String              @id @default(cuid())
-  fleetId     String
-  name        String
-  description String?
-  quantity    Int                 @default(1)
-  price       Decimal             @db.Decimal(10, 2)
-  condition   String              @default("GOOD")
-  isIncluded  Boolean             @default(true)
-  isActive    Boolean             @default(true)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  deductions  ContractDeduction[]
-  fleet       Fleet               @relation(fields: [fleetId], references: [id], onDelete: Cascade)
-
-  @@index([fleetId])
-}
-
-model FleetContractField {
-  id             String   @id @default(cuid())
-  fleetId        String
-  fieldName      String
-  displayOrder   Int      @default(0)
-  showInContract Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  fleet          Fleet    @relation(fields: [fleetId], references: [id], onDelete: Cascade)
-
-  @@unique([fleetId, fieldName])
-  @@index([fleetId])
-}
-
-model AppSettings {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  value     Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model User {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  password    String
-  firstName   String
-  lastName    String
-  role        UserRole  @default(OPERATOR)
-  brands      String[]
-  agencyIds   String[]
-  isActive    Boolean   @default(true)
-  lastLoginAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  language    String    @default("es")
-}
-
-model RolePermission {
-  id         String   @id @default(cuid())
-  role       UserRole
-  permission String
-  allowed    Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([role, permission])
-}
-
-model AgencySchedulePeriod {
-  id                String   @id @default(cuid())
-  agencyId          String
-  name              String
-  startDate         DateTime
-  endDate           DateTime
-  isDefault         Boolean  @default(false)
-  mondayOpen        String?
-  mondayClose       String?
-  mondayIsClosed    Boolean  @default(false)
-  tuesdayOpen       String?
-  tuesdayClose      String?
-  tuesdayIsClosed   Boolean  @default(false)
-  wednesdayOpen     String?
-  wednesdayClose    String?
-  wednesdayIsClosed Boolean  @default(false)
-  thursdayOpen      String?
-  thursdayClose     String?
-  thursdayIsClosed  Boolean  @default(false)
-  fridayOpen        String?
-  fridayClose       String?
-  fridayIsClosed    Boolean  @default(false)
-  saturdayOpen      String?
-  saturdayClose     String?
-  saturdayIsClosed  Boolean  @default(false)
-  sundayOpen        String?
-  sundayClose       String?
-  sundayIsClosed    Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  agency            Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-
-  @@index([agencyId])
-  @@index([startDate, endDate])
-}
-
-model AgencyClosure {
-  id        String   @id @default(cuid())
-  agencyId  String
-  startDate DateTime
-  endDate   DateTime
-  reason    String
-  createdAt DateTime @default(now())
-  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-
-  @@index([agencyId])
-  @@index([startDate, endDate])
+  lastNumber      Int       @default(0)
+  numberPadding   Int       @default(3)
+  inspectionType  InspectionPhotoType @default(FULL)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  categories      Category[]
 }
 
 enum InspectionPhotoType {
   FULL
   SIMPLE
+}
+
+model Fleet {
+  id                      String    @id @default(cuid())
+  vehicleNumber           String    @unique
+  licensePlate            String?
+  chassisNumber           String    @unique
+  vehicleId               String
+  vehicle                 Vehicle   @relation(fields: [vehicleId], references: [id])
+  agencyId                String
+  agency                  Agency    @relation(fields: [agencyId], references: [id])
+  locationCode            String?   // Code de localisation physique (V01, V02, M01, M02, etc.)
+  year                    Int?
+  color                   String?
+  purchaseDate            DateTime?
+  purchasePrice           Decimal?  @db.Decimal(10, 2)
+  currentMileage          Int       @default(0)
+  lastMileageUpdate       DateTime  @default(now())
+  totalRentalDays         Int       @default(0)
+  totalRentals            Int       @default(0)
+  maintenanceIntervalType MaintenanceIntervalType @default(KILOMETERS)
+  maintenanceIntervalKm   Int?      @default(1000)
+  maintenanceIntervalDays Int?      @default(30)
+  lastMaintenanceDate     DateTime?
+  lastMaintenanceMileage  Int?
+  nextMaintenanceDate     DateTime?
+  nextMaintenanceMileage  Int?
+  itvDate                 DateTime?
+  itvExpiryDate           DateTime?
+  insuranceCompany        String?
+  insurancePolicyNumber   String?
+  insuranceExpiryDate     DateTime?
+  status                  FleetStatus @default(AVAILABLE)
+  condition               VehicleCondition @default(GOOD)
+  notes                   String?
+  isActive                Boolean   @default(true)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  documents               FleetDocument[]
+  damages                 FleetDamage[]
+  inspections             FleetInspection[]
+  maintenanceRecords      MaintenanceRecord[]
+  mileageLogs             MileageLog[]
+  spareParts              FleetSparePart[]
+  contracts               RentalContract[]
+  bookings                Booking[]
+  alternativeForExtensions ContractExtension[] @relation("AlternativeVehicle")
+  originalInReallocations  ReservationReallocation[] @relation("OriginalVehicle")
+  newInReallocations       ReservationReallocation[] @relation("NewVehicle")
+  
+  // Additional vehicle info
+  brand                    String?
+  model                    String?
+  engineSize               String?   // Cylindrée
+  
+  // Relations to new models
+  equipment                FleetEquipment[]
+  contractFields           FleetContractField[]
+  
+  @@index([vehicleId])
+  @@index([agencyId])
+  @@index([status])
+  @@index([itvExpiryDate])
+  @@index([insuranceExpiryDate])
 }
 
 enum FleetStatus {
@@ -1097,22 +367,43 @@ enum BookingSource {
   MANUAL
   BACKOFFICE
 }
-
 enum AgencyType {
-  OWN
-  PARTNER
-  FRANCHISE
+  OWN        // Tes propres agences
+  PARTNER    // Hotels/Campings - commission a REVERSER
+  FRANCHISE  // Franchises - commission a PRELEVER
 }
 
 enum CommissionType {
-  REVERSAL
-  DEDUCTION
+  REVERSAL    // A reverser au partenaire (PARTNER)
+  DEDUCTION   // A prelever du franchise (FRANCHISE)
 }
 
 enum CommissionStatus {
-  PENDING
-  CALCULATED
-  PAID
+  PENDING     // En attente
+  CALCULATED  // Calculee
+  PAID        // Payee/Prelevee
+}
+
+model FleetDocument {
+  id              String       @id @default(cuid())
+  fleetId         String
+  fleet           Fleet        @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  type            DocumentType
+  name            String
+  fileUrl         String
+  fileType        String
+  fileSizeBytes   Int?
+  thumbnailUrl    String?
+  issueDate       DateTime?
+  expiryDate      DateTime?
+  sendToCustomer  Boolean      @default(false)
+  description     String?
+  uploadedBy      String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  @@index([fleetId])
+  @@index([type])
+  @@index([sendToCustomer])
 }
 
 enum DocumentType {
@@ -1128,6 +419,47 @@ enum DocumentType {
   OTHER
 }
 
+model FleetSparePart {
+  id                String    @id @default(cuid())
+  fleetId           String
+  fleet             Fleet     @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  name              String
+  partNumber        String?
+  category          SparePartCategory
+  location          DamageLocation
+  price             Decimal   @db.Decimal(10, 2)
+  laborCost         Decimal?  @db.Decimal(10, 2)
+  totalCost         Decimal   @db.Decimal(10, 2)
+  quantityInStock   Int       @default(0)
+  minimumStock      Int       @default(1)
+  supplierName      String?
+  supplierRef       String?
+  lastPurchasePrice Decimal?  @db.Decimal(10, 2)
+  lastPurchaseDate  DateTime?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deductions        ContractDeduction[]
+  @@index([fleetId])
+  @@index([category])
+}
+
+model VehicleSparePartTemplate {
+  id               String    @id @default(cuid())
+  vehicleId        String
+  vehicle          Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  name             String
+  partNumber       String?
+  category         SparePartCategory
+  location         DamageLocation
+  defaultPrice     Decimal   @db.Decimal(10, 2)
+  defaultLaborCost Decimal?  @db.Decimal(10, 2)
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  @@index([vehicleId])
+}
+
 enum SparePartCategory {
   BODY
   MIRROR
@@ -1139,6 +471,31 @@ enum SparePartCategory {
   BATTERY
   ACCESSORY
   OTHER
+}
+
+model FleetDamage {
+  id              String           @id @default(cuid())
+  fleetId         String
+  fleet           Fleet            @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  description     String
+  location        DamageLocation
+  locationDetail  String?
+  severity        DamageSeverity   @default(MINOR)
+  photoUrl        String
+  photoThumbnail  String?
+  reportedAt      DateTime         @default(now())
+  reportedBy      String?
+  inspectionId    String?
+  inspection      FleetInspection? @relation(fields: [inspectionId], references: [id])
+  contractId      String?
+  isResolved      Boolean          @default(false)
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  resolutionNote  String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  @@index([fleetId])
+  @@index([isResolved])
 }
 
 enum DamageLocation {
@@ -1170,6 +527,37 @@ enum DamageSeverity {
   CRITICAL
 }
 
+model FleetInspection {
+  id                 String           @id @default(cuid())
+  fleetId            String
+  fleet              Fleet            @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  contractId         String?
+  contract           RentalContract?  @relation(fields: [contractId], references: [id])
+  type               InspectionType
+  mileage            Int
+  condition          VehicleCondition
+  fuelLevel          FuelLevel?
+  photos             InspectionPhoto[]
+  damages            FleetDamage[]
+  customerSignature  String?
+  customerSignedAt   DateTime?
+  customerIpAddress  String?
+  customerDeviceInfo String?
+  operatorId         String
+  operatorNotes      String?
+  inspectedAt        DateTime         @default(now())
+  isDeleted          Boolean          @default(false)
+  deletedAt          DateTime?
+  deletedBy          String?
+  deleteReason       String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  @@index([fleetId])
+  @@index([contractId])
+  @@index([type])
+  @@index([isDeleted])
+}
+
 enum InspectionType {
   CHECK_OUT
   CHECK_IN
@@ -1185,12 +573,56 @@ enum FuelLevel {
   FULL
 }
 
+model InspectionPhoto {
+  id              String          @id @default(cuid())
+  inspectionId    String
+  inspection      FleetInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  angle           PhotoAngle
+  photoUrl        String
+  photoThumbnail  String?
+  isValid         Boolean         @default(true)
+  rejectionReason String?
+  createdAt       DateTime        @default(now())
+  @@unique([inspectionId, angle])
+  @@index([inspectionId])
+}
+
 enum PhotoAngle {
   FRONT
   LEFT
   REAR
   RIGHT
   DASHBOARD
+}
+
+model MaintenanceRecord {
+  id              String              @id @default(cuid())
+  fleetId         String
+  fleet           Fleet               @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  type            MaintenanceType
+  description     String
+  mileage         Int
+  laborCost       Decimal?            @db.Decimal(10, 2)
+  partsCost       Decimal?            @db.Decimal(10, 2)
+  totalCost       Decimal?            @db.Decimal(10, 2)
+  performedBy     String?
+  invoiceNumber   String?
+  invoiceUrl      String?
+  scheduledDate   DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  status          MaintenanceStatus   @default(SCHEDULED)
+  partsReplaced   Json?
+  technicianId    String?
+  technicianNotes String?
+  priority        MaintenancePriority @default(NORMAL)
+  notes           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  @@index([fleetId])
+  @@index([status])
+  @@index([priority])
+  @@index([scheduledDate])
 }
 
 enum MaintenanceType {
@@ -1219,12 +651,120 @@ enum MaintenancePriority {
   URGENT
 }
 
+model MileageLog {
+  id              String        @id @default(cuid())
+  fleetId         String
+  fleet           Fleet         @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  previousMileage Int
+  newMileage      Int
+  difference      Int
+  source          MileageSource
+  referenceId     String?
+  recordedBy      String?
+  recordedAt      DateTime      @default(now())
+  notes           String?
+  @@index([fleetId])
+  @@index([recordedAt])
+}
+
 enum MileageSource {
   CHECK_OUT
   CHECK_IN
   MAINTENANCE
   MANUAL
   INVENTORY
+}
+
+model RentalContract {
+  id                   String            @id @default(cuid())
+  contractNumber       String            @unique
+  bookingId            String?           @unique
+  booking              Booking?          @relation(fields: [bookingId], references: [id])
+  fleetVehicleId       String
+  fleetVehicle         Fleet             @relation(fields: [fleetVehicleId], references: [id])
+  agencyId             String
+  agency               Agency            @relation(fields: [agencyId], references: [id])
+  customerId           String
+  customer             Customer          @relation(fields: [customerId], references: [id])
+  originalStartDate    DateTime
+  originalEndDate      DateTime
+  currentStartDate     DateTime
+  currentEndDate       DateTime
+  actualStartDate      DateTime?
+  actualEndDate        DateTime?
+  source               ContractSource
+  dailyRate            Decimal           @db.Decimal(10, 2)
+  totalDays            Int
+  subtotal             Decimal           @db.Decimal(10, 2)
+  optionsTotal         Decimal           @db.Decimal(10, 2) @default(0)
+  discountAmount       Decimal           @db.Decimal(10, 2) @default(0)
+  discountReason       String?
+  taxRate              Decimal           @db.Decimal(5, 2) @default(21)
+  taxAmount            Decimal           @db.Decimal(10, 2)
+  totalAmount          Decimal           @db.Decimal(10, 2)
+  depositAmount        Decimal           @db.Decimal(10, 2)
+  depositMethod        PaymentMethod?
+  depositReference     String?
+  depositStatus        DepositStatus     @default(PENDING)
+  depositCapturedAt    DateTime?
+  depositReleasedAt    DateTime?
+  totalDeductions      Decimal           @db.Decimal(10, 2) @default(0)
+  deductionNotes       String?
+  finalDepositRefund   Decimal?          @db.Decimal(10, 2)
+  paymentStatus        PaymentStatus     @default(PENDING)
+  paidAmount           Decimal           @db.Decimal(10, 2) @default(0)
+  paymentMethod        PaymentMethod?
+  paymentReference     String?
+  customerSignature    String?
+  customerSignedAt     DateTime?
+  customerIpAddress    String?
+  customerDeviceInfo   String?
+  operatorSignature    String?
+  operatorSignedAt     DateTime?
+  operatorId           String?
+  documentsSentAt      DateTime?
+  documentsSentTo      String?
+  startMileage         Int?
+  endMileage           Int?
+  startFuelLevel       String?
+  endFuelLevel         String?
+  fuelCharge           Decimal?          @db.Decimal(10, 2)
+  photoFront           String?
+  photoLeft            String?
+  photoRight           String?
+  photoRear            String?
+  photoCounter         String?
+  damageSchema         Json?
+  equipmentChecklist   Json?
+  customerIdCardUrl    String?
+  customerLicenseUrl   String?
+  termsAcceptedAt      DateTime?
+  termsLanguage        String?
+  totalMileage         Int?
+  status               ContractStatus    @default(DRAFT)
+  internalNotes        String?
+  customerNotes        String?
+  contractPdfUrl       String?
+  extensionAccessToken String?           @unique @default(cuid())
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  inspections          FleetInspection[]
+  deductions           ContractDeduction[]
+  extensions           ContractExtension[]
+  contractOptions      ContractOption[]
+  payments             ContractPayment[]
+  
+  // Commissions partenaires/franchises
+  commissionRate       Float?
+  commissionAmount     Decimal?          @db.Decimal(10, 2)
+  commissionType       CommissionType?
+  commissionStatus     CommissionStatus  @default(PENDING)
+  
+  @@index([fleetVehicleId])
+  @@index([customerId])
+  @@index([agencyId])
+  @@index([status])
+  @@index([currentStartDate, currentEndDate])
 }
 
 enum ContractSource {
@@ -1267,6 +807,30 @@ enum PaymentMethod {
   OTHER
 }
 
+model ContractDeduction {
+  id           String          @id @default(cuid())
+  contractId   String
+  contract     RentalContract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  type         DeductionType
+  sparePartId  String?
+  sparePart    FleetSparePart? @relation(fields: [sparePartId], references: [id])
+  equipmentId  String?
+  equipment    FleetEquipment? @relation(fields: [equipmentId], references: [id])
+  description  String
+  quantity     Int             @default(1)
+  unitPrice    Decimal         @db.Decimal(10, 2)
+  totalPrice   Decimal         @db.Decimal(10, 2)
+  photoUrls    Json?
+  validatedBy  String?
+  validatedAt  DateTime?
+  customerAgreed Boolean       @default(false)
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  @@index([contractId])
+  @@index([type])
+}
+
 enum DeductionType {
   DAMAGE
   MISSING_PART
@@ -1275,6 +839,68 @@ enum DeductionType {
   CLEANING
   FUEL
   OTHER
+}
+
+model ContractOption {
+  id              String         @id @default(cuid())
+  contractId      String
+  contract        RentalContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  rentalOptionId  String
+  rentalOption    RentalOption   @relation(fields: [rentalOptionId], references: [id])
+  name            String
+  quantity        Int            @default(1)
+  dailyPrice      Decimal        @db.Decimal(10, 2)
+  totalPrice      Decimal        @db.Decimal(10, 2)
+  returnedAt      DateTime?
+  returnCondition String?
+  createdAt       DateTime       @default(now())
+  @@index([contractId])
+}
+
+model RentalOption {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  dailyPrice      Decimal          @db.Decimal(10, 2)
+  depositPrice    Decimal          @db.Decimal(10, 2)
+  vehicleId       String?
+  vehicle         Vehicle?         @relation(fields: [vehicleId], references: [id])
+  totalQuantity   Int              @default(0)
+  availableQty    Int              @default(0)
+  imageUrl        String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  contractOptions ContractOption[]
+  @@index([vehicleId])
+}
+
+model ContractPayment {
+  id              String                   @id @default(cuid())
+  contractId      String
+  contract        RentalContract           @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  type            PaymentType
+  amount          Decimal                  @db.Decimal(10, 2)
+  currency        String                   @default("EUR")
+  method          PaymentMethod
+  reference       String?
+  stripePaymentId String?
+  stripeStatus    String?
+  status          PaymentTransactionStatus
+  initiatedAt     DateTime                 @default(now())
+  completedAt     DateTime?
+  failedAt        DateTime?
+  failureReason   String?
+  refundedAmount  Decimal?                 @db.Decimal(10, 2)
+  refundedAt      DateTime?
+  refundReason    String?
+  processedBy     String?
+  notes           String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  @@index([contractId])
+  @@index([type])
+  @@index([status])
 }
 
 enum PaymentType {
@@ -1292,6 +918,67 @@ enum PaymentTransactionStatus {
   FAILED
   CANCELLED
   REFUNDED
+}
+
+model ContractExtension {
+  id                      String                      @id @default(cuid())
+  extensionNumber         String                      @unique
+  contractId              String
+  contract                RentalContract              @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  previousEndDate         DateTime
+  requestedEndDate        DateTime
+  approvedEndDate         DateTime?
+  additionalDays          Int
+  requestSource           ExtensionRequestSource
+  requestedAt             DateTime                    @default(now())
+  requestedBy             String?
+  availabilityStatus      ExtensionAvailabilityStatus @default(PENDING_CHECK)
+  availabilityCheckedAt   DateTime?
+  currentVehicleAvailable Boolean                     @default(false)
+  conflictingBookingId    String?
+  conflictingBooking      Booking?                    @relation("ConflictingBooking", fields: [conflictingBookingId], references: [id])
+  solutionType            ExtensionSolutionType?
+  alternativeVehicleId    String?
+  alternativeVehicle      Fleet?                      @relation("AlternativeVehicle", fields: [alternativeVehicleId], references: [id])
+  reallocationId          String?                     @unique
+  reallocation            ReservationReallocation?    @relation(fields: [reallocationId], references: [id])
+  dailyRate               Decimal                     @db.Decimal(10, 2)
+  subtotal                Decimal                     @db.Decimal(10, 2)
+  taxRate                 Decimal                     @db.Decimal(5, 2) @default(21)
+  taxAmount               Decimal                     @db.Decimal(10, 2)
+  totalAmount             Decimal                     @db.Decimal(10, 2)
+  stripePaymentLinkId     String?
+  stripePaymentLinkUrl    String?
+  stripePaymentLinkExpiresAt DateTime?
+  stripeSessionId         String?
+  stripePaymentIntentId   String?
+  paymentStatus           PaymentStatus               @default(PENDING)
+  paidAt                  DateTime?
+  paidAmount              Decimal?                    @db.Decimal(10, 2)
+  accessToken             String                      @unique @default(cuid())
+  accessTokenExpiresAt    DateTime?
+  customerSignature       String?
+  customerSignedAt        DateTime?
+  customerIpAddress       String?
+  customerDeviceInfo      String?
+  operatorId              String?
+  operatorSignature       String?
+  operatorSignedAt        DateTime?
+  amendmentPdfUrl         String?
+  status                  ExtensionStatus             @default(PENDING_AVAILABILITY_CHECK)
+  rejectionReason         String?
+  cancelledAt             DateTime?
+  cancelledBy             String?
+  cancellationReason      String?
+  customerNotifiedAt      DateTime?
+  operatorNotifiedAt      DateTime?
+  notes                   String?
+  internalNotes           String?
+  createdAt               DateTime                    @default(now())
+  updatedAt               DateTime                    @updatedAt
+  @@index([contractId])
+  @@index([status])
+  @@index([accessToken])
 }
 
 enum ExtensionRequestSource {
@@ -1334,6 +1021,34 @@ enum ExtensionStatus {
   FAILED
 }
 
+model ReservationReallocation {
+  id                 String             @id @default(cuid())
+  bookingId          String
+  booking            Booking            @relation(fields: [bookingId], references: [id])
+  originalVehicleId  String
+  originalVehicle    Fleet              @relation("OriginalVehicle", fields: [originalVehicleId], references: [id])
+  newVehicleId       String
+  newVehicle         Fleet              @relation("NewVehicle", fields: [newVehicleId], references: [id])
+  reason             ReallocationReason
+  extension          ContractExtension?
+  performedBy        String
+  performedAt        DateTime           @default(now())
+  customerNotified   Boolean            @default(false)
+  customerNotifiedAt DateTime?
+  customerAccepted   Boolean?
+  customerAcceptedAt DateTime?
+  notes              String?
+  isReverted         Boolean            @default(false)
+  revertedAt         DateTime?
+  revertedBy         String?
+  revertReason       String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  @@index([bookingId])
+  @@index([originalVehicleId])
+  @@index([newVehicleId])
+}
+
 enum ReallocationReason {
   EXTENSION_REQUEST
   MAINTENANCE_REQUIRED
@@ -1342,12 +1057,93 @@ enum ReallocationReason {
   OPERATIONAL
 }
 
+model StripePaymentLink {
+  id                   String                   @id @default(cuid())
+  referenceType        PaymentLinkReferenceType
+  referenceId          String
+  stripePaymentLinkId  String                   @unique
+  stripePaymentLinkUrl String
+  stripePriceId        String?
+  stripeProductId      String?
+  amount               Decimal                  @db.Decimal(10, 2)
+  currency             String                   @default("EUR")
+  createdAt            DateTime                 @default(now())
+  expiresAt            DateTime
+  isUsed               Boolean                  @default(false)
+  usedAt               DateTime?
+  stripeSessionId      String?
+  createdBy            String?
+  sentToEmail          String?
+  sentAt               DateTime?
+  sentBy               String?
+  description          String?
+  internalNotes        String?
+  @@index([referenceType, referenceId])
+  @@index([stripePaymentLinkId])
+}
+
 enum PaymentLinkReferenceType {
   CONTRACT_EXTENSION
   CONTRACT_DEPOSIT
   CONTRACT_RENTAL
   DAMAGE_PAYMENT
   OTHER
+}
+
+model ExtensionSettings {
+  id                           String   @id @default(cuid())
+  agencyId                     String?  @unique
+  agency                       Agency?  @relation(fields: [agencyId], references: [id])
+  selfServiceEnabled           Boolean  @default(true)
+  maxSelfServiceDays           Int      @default(7)
+  minHoursBeforeEnd            Int      @default(2)
+  maxDaysBeforeEnd             Int      @default(3)
+  autoReallocationEnabled      Boolean  @default(false)
+  canReallocateOnlineBookings  Boolean  @default(false)
+  canReallocatePhoneBookings   Boolean  @default(true)
+  canReallocatePartnerBookings Boolean  @default(false)
+  notifyReallocatedCustomer    Boolean  @default(true)
+  requireReallocatedAcceptance Boolean  @default(false)
+  paymentLinkExpirationHours   Int      @default(24)
+  paymentReminderHours         Int      @default(6)
+  useSameRate                  Boolean  @default(true)
+  useCurrentRate               Boolean  @default(false)
+  extensionSurchargePercent    Decimal? @db.Decimal(5, 2)
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+}
+
+model StripeWebhookEvent {
+  id              String    @id @default(cuid())
+  stripeEventId   String    @unique
+  type            String
+  payload         Json
+  processedAt     DateTime?
+  processingError String?
+  referenceType   String?
+  referenceId     String?
+  receivedAt      DateTime  @default(now())
+  @@index([stripeEventId])
+  @@index([type])
+  @@index([receivedAt])
+}
+
+model AvailabilityEvent {
+  id             String                @id @default(cuid())
+  eventType      AvailabilityEventType
+  vehicleId      String
+  agencyId       String
+  fleetVehicleId String?
+  startDate      DateTime
+  endDate        DateTime
+  referenceType  String
+  referenceId    String
+  quantityChange Int
+  source         EventSource
+  createdAt      DateTime              @default(now())
+  @@index([vehicleId, agencyId])
+  @@index([startDate, endDate])
+  @@index([referenceType, referenceId])
 }
 
 enum AvailabilityEventType {
@@ -1364,11 +1160,232 @@ enum EventSource {
   MAINTENANCE
 }
 
+model BrandSettings {
+  id                     String   @id @default(cuid())
+  brand                  String   @unique
+  name                   String
+  legalName              String?
+  logoUrl                String?
+  primaryColor           String?
+  secondaryColor         String?
+  email                  String?
+  phone                  String?
+  website                String?
+  address                String?
+  city                   String?
+  postalCode             String?
+  country                String   @default("ES")
+  taxId                  String?
+  stripePublishableKey   String?
+  stripeSecretKey        String?
+  stripeWebhookSecret    String?
+  stripeAccountId        String?
+  contractTemplateUrl    String?
+  invoiceTemplateUrl     String?
+  termsAndConditionsUrl  String?
+  privacyPolicyUrl       String?
+  emailFromName          String?
+  emailFromAddress       String?
+  
+  // CGV et documents légaux (JSON avec fr/es/en)
+  cgvResume              Json?    // { fr: "...", es: "...", en: "..." }
+  cgvComplete            Json?    // { fr: "...", es: "...", en: "..." }
+  rgpd                   Json?    // { fr: "...", es: "...", en: "..." }
+  mentionsLegales        Json?    // { fr: "...", es: "...", en: "..." }
+  
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+// Tablet sessions for signature
+model TabletSession {
+  id            String   @id @default(cuid())
+  sessionId     String   @unique
+  bookingId     String?
+  agencyId      String
+  type          String   @default("checkin") // checkin, checkout, contract
+  status        String   @default("pending") // pending, active, signed, expired
+  language      String   @default("fr")
+  customerName  String?
+  cgvText       String?  @db.Text
+  rgpdText      String?  @db.Text
+  signature     String?  @db.Text
+  termsAccepted Boolean  @default(false)
+  rgpdAccepted  Boolean  @default(false)
+  signedAt      DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Walk-in customer data (temporary storage)
+model WalkinSession {
+  id            String   @id @default(cuid())
+  sessionId     String   @unique
+  agencyId      String
+  status        String   @default("pending") // pending, completed, expired
+  language      String   @default("fr")
+  
+  // Customer data filled by client
+  firstName     String?
+  lastName      String?
+  email         String?
+  phone         String?
+  phonePrefix   String?  @default("+34")
+  address       String?
+  city          String?
+  postalCode    String?
+  country       String?  @default("ES")
+  
+  // Brand info
+  brand         String?  // VOLTRIDE or MOTOR-RENT
+  
+  completedAt   DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Equipment provided with fleet vehicle
+model FleetEquipment {
+  id              String    @id @default(cuid())
+  fleetId         String
+  fleet           Fleet     @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  quantity        Int       @default(1)
+  price           Decimal   @db.Decimal(10, 2)
+  condition       String    @default("GOOD") // GOOD, FAIR, POOR
+  isIncluded      Boolean   @default(true)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deductions      ContractDeduction[]
+  @@index([fleetId])
+}
+
+// Contract display fields configuration per fleet
+model FleetContractField {
+  id              String    @id @default(cuid())
+  fleetId         String
+  fleet           Fleet     @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  fieldName       String    // vehicleNumber, licensePlate, brand, model, etc.
+  displayOrder    Int       @default(0)
+  showInContract  Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  @@unique([fleetId, fieldName])
+  @@index([fleetId])
+}
+
+model AppSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============== USERS & AUTHENTICATION ==============
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String   // Hashed password
+  firstName     String
+  lastName      String
+  role          UserRole @default(OPERATOR)
+  brands        String[] // ['VOLTRIDE', 'MOTOR-RENT']
+  agencyIds     String[] // IDs des agences autorisées
+  language      String   @default("es") // fr, es
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 enum UserRole {
-  ADMIN
-  MANAGER
-  OPERATOR
-  ACCOUNTANT
-  COLLABORATOR
-  FRANCHISEE
+  ADMIN        // Acces total
+  MANAGER      // Gestion agences assignees
+  OPERATOR     // Check-in/out, reservations
+  ACCOUNTANT   // Lecture seule, factures
+  COLLABORATOR // Partenaire externe (hotel/camping)
+  FRANCHISEE   // Franchise - gere sa franchise
+}
+
+// ============== ROLE PERMISSIONS ==============
+model RolePermission {
+  id          String   @id @default(cuid())
+  role        UserRole
+  permission  String   // ex: 'dashboard', 'planning', 'fleet', etc.
+  allowed     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([role, permission])
+}
+
+// ============== AGENCY SCHEDULE ==============
+model AgencySchedulePeriod {
+  id              String    @id @default(cuid())
+  agencyId        String
+  agency          Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  name            String    // Ex: "Été 2025", "Hiver 2025-2026"
+  startDate       DateTime
+  endDate         DateTime
+  isDefault       Boolean   @default(false)
+  
+  // Lundi
+  mondayOpen      String?   // "10:00"
+  mondayClose     String?   // "19:00"
+  mondayIsClosed  Boolean   @default(false)
+  
+  // Mardi
+  tuesdayOpen     String?
+  tuesdayClose    String?
+  tuesdayIsClosed Boolean   @default(false)
+  
+  // Mercredi
+  wednesdayOpen   String?
+  wednesdayClose  String?
+  wednesdayIsClosed Boolean @default(false)
+  
+  // Jeudi
+  thursdayOpen    String?
+  thursdayClose   String?
+  thursdayIsClosed Boolean  @default(false)
+  
+  // Vendredi
+  fridayOpen      String?
+  fridayClose     String?
+  fridayIsClosed  Boolean   @default(false)
+  
+  // Samedi
+  saturdayOpen    String?
+  saturdayClose   String?
+  saturdayIsClosed Boolean  @default(false)
+  
+  // Dimanche
+  sundayOpen      String?
+  sundayClose     String?
+  sundayIsClosed  Boolean   @default(true)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([agencyId])
+  @@index([startDate, endDate])
+}
+
+model AgencyClosure {
+  id          String    @id @default(cuid())
+  agencyId    String
+  agency      Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  startDate   DateTime
+  endDate     DateTime
+  reason      String    // "Vacances", "Travaux", "Jour férié"
+  createdAt   DateTime  @default(now())
+  
+  @@index([agencyId])
+  @@index([startDate, endDate])
 }

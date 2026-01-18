@@ -126,6 +126,24 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
     setUploadingDoc(false)
   }
 
+  // Upload document manquant
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingDoc(true)
+    try {
+      const url = await api.uploadImage(file, `checkout/${booking.id}/docs`)
+      if (url) {
+        if (type === 'idCardRecto') setIdCardUrl(url)
+        if (type === 'idCardVerso') setIdCardVersoUrl(url)
+        if (type === 'licenseRecto') setLicenseUrl(url)
+        if (type === 'licenseVerso') setLicenseVersoUrl(url)
+        setMissingDocs(prev => prev.filter(d => d !== type))
+      }
+    } catch (err) { alert('Erreur upload') }
+    setUploadingDoc(false)
+  }
+
   // Photo validation handlers
   const validateCurrentPhoto = (isValid: boolean) => {
     if (isValid) {

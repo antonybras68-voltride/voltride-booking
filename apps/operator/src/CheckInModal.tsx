@@ -101,7 +101,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   // Calculations
   const locationAmount = booking?.totalPrice || 0
   const paidOnline = booking?.paidAmount || 0
-  const depositAmount = booking?.depositAmount || fleetVehicle?.vehicle?.deposit || 100
+  const depositAmount = fleetVehicle?.vehicle?.deposit || 500  // Caution/garantie du véhicule
   const subtotal = Math.max(0, locationAmount - paidOnline - discount - optionsDiscount)
   const totalToPay = subtotal // Prices already include TVA
 
@@ -760,7 +760,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
 
               <div className="p-4 border-2 rounded-xl">
                 <div className="flex justify-between mb-3">
-                  <span className="font-medium">Caution</span>
+                  <span className="font-medium">Caution / Garantie véhicule</span>
                   <span className="text-xl font-bold">{depositAmount.toFixed(2)}€</span>
                 </div>
                 <div className="flex gap-2 mb-3">

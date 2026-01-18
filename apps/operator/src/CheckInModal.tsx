@@ -39,8 +39,37 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   const [photos, setPhotos] = useState({ front: '', left: '', right: '', rear: '', counter: '' })
   const [damages, setDamages] = useState([])
   
-  // Step 3 - Equipment
-  const [equipment, setEquipment] = useState(DEFAULT_EQUIPMENT.map(e => ({ ...e, checked: false, qty: 1 })))
+  // Step 3 - Equipment (options de la réservation)
+  const [equipment, setEquipment] = useState(() => {
+    // Récupérer les options de la réservation et les pré-cocher
+    const bookingOptions = booking?.options || []
+    if (bookingOptions.length > 0) {
+      return bookingOptions.map(opt => ({
+        id: opt.option?.id || opt.optionId,
+        name: opt.option?.name?.fr || opt.option?.name || 'Option',
+        nameEs: opt.option?.name?.es || opt.option?.name || 'Opción',
+        nameEn: opt.option?.name?.en || opt.option?.name || 'Option',
+        checked: true, // Pré-coché car sélectionné lors de la réservation
+        qty: opt.quantity || 1,
+        unitPrice: opt.unitPrice || 0,
+        totalPrice: opt.totalPrice || 0,
+        fromBooking: true // Pour identifier les options de la réservation
+      }))
+    }
+    // Fallback sur les équipements par défaut si pas d'options
+    return DEFAULT_EQUIPMENT.map(e => ({ ...e, checked: false, qty: 1, unitPrice: 0, totalPrice: 0, fromBooking: false }))
+  })
+  
+  // Calculer la réduction si des options sont décochées
+  const [optionsDiscount, setOptionsDiscount] = useState(0)
+  
+  // Mettre à jour la réduction quand les options changent
+  const updateOptionsDiscount = (newEquipment) => {
+    const uncheckedTotal = newEquipment
+      .filter(e => e.fromBooking && !e.checked)
+      .reduce((sum, e) => sum + (e.totalPrice || 0), 0)
+    setOptionsDiscount(uncheckedTotal)
+  }
   
   // Step 4 - Documents
   const [idCardUrl, setIdCardUrl] = useState('')
@@ -72,7 +101,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   const locationAmount = booking?.totalPrice || 0
   const paidOnline = booking?.paidAmount || 0
   const depositAmount = booking?.depositAmount || fleetVehicle?.vehicle?.deposit || 100
-  const subtotal = Math.max(0, locationAmount - paidOnline - discount)
+  const subtotal = Math.max(0, locationAmount - paidOnline - discount - optionsDiscount)
   const totalToPay = subtotal // Prices already include TVA
 
   // Upload photo
@@ -424,31 +453,61 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
             </div>
           )}
 
-          {/* STEP 3: Equipment */}
+          {/* STEP 3: Equipment/Options */}
           {step === 3 && (
             <div className="space-y-3">
-              <p className="text-gray-600 mb-4">Cochez les équipements fournis au client :</p>
+              <p className="text-gray-600 mb-4">
+                {equipment.some(e => e.fromBooking) 
+                  ? (lang === 'fr' ? 'Options sélectionnées lors de la réservation :' : 'Opciones seleccionadas durante la reserva:')
+                  : (lang === 'fr' ? 'Cochez les équipements fournis au client :' : 'Marque los equipos entregados al cliente:')}
+              </p>
               {equipment.map((item, i) => (
                 <label key={item.id} className={'flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ' +
-                  (item.checked ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300')}>
+                  (item.checked ? 'border-green-500 bg-green-50' : 'border-orange-300 bg-orange-50')}>
                   <input type="checkbox" checked={item.checked} className="w-5 h-5 accent-green-600"
                     onChange={e => {
                       const newEquip = [...equipment]
                       newEquip[i].checked = e.target.checked
                       setEquipment(newEquip)
+                      updateOptionsDiscount(newEquip)
                     }} />
-                  <span className="flex-1 font-medium">{item['name' + (lang === 'fr' ? '' : lang.charAt(0).toUpperCase() + lang.slice(1))] || item.name}</span>
-                  {item.checked && (
-                    <input type="number" min="1" value={item.qty} className="w-16 border rounded px-2 py-1 text-center"
-                      onClick={e => e.stopPropagation()}
-                      onChange={e => {
-                        const newEquip = [...equipment]
-                        newEquip[i].qty = parseInt(e.target.value) || 1
-                        setEquipment(newEquip)
-                      }} />
-                  )}
+                  <div className="flex-1">
+                    <span className="font-medium">{typeof item.name === 'object' ? (item.name[lang] || item.name.fr || item.name.es) : item['name' + (lang === 'fr' ? '' : lang.charAt(0).toUpperCase() + lang.slice(1))] || item.name}</span>
+                    {item.fromBooking && !item.checked && (
+                      <span className="ml-2 text-xs text-orange-600">({lang === 'fr' ? 'sera déduit' : 'se deducirá'})</span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    {item.fromBooking && item.totalPrice > 0 && (
+                      <span className={item.checked ? 'text-green-600 font-medium' : 'text-orange-600 line-through'}>
+                        {item.totalPrice.toFixed(2)}€
+                      </span>
+                    )}
+                    {item.checked && !item.fromBooking && (
+                      <input type="number" min="1" value={item.qty} className="w-16 border rounded px-2 py-1 text-center"
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => {
+                          const newEquip = [...equipment]
+                          newEquip[i].qty = parseInt(e.target.value) || 1
+                          setEquipment(newEquip)
+                        }} />
+                    )}
+                    {item.fromBooking && (
+                      <span className="text-gray-500 text-sm ml-2">x{item.qty}</span>
+                    )}
+                  </div>
                 </label>
               ))}
+              
+              {/* Afficher la réduction si des options sont décochées */}
+              {optionsDiscount > 0 && (
+                <div className="mt-4 p-3 bg-orange-100 rounded-xl text-orange-700">
+                  <div className="flex justify-between font-medium">
+                    <span>{lang === 'fr' ? 'Options annulées - À déduire :' : 'Opciones canceladas - A deducir:'}</span>
+                    <span>-{optionsDiscount.toFixed(2)}€</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -629,6 +688,12 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   <div className="flex justify-between text-green-600">
                     <span>Payé en ligne</span>
                     <span>-{paidOnline.toFixed(2)}€</span>
+                  </div>
+                )}
+                {optionsDiscount > 0 && (
+                  <div className="flex justify-between text-orange-600">
+                    <span>Options annulées</span>
+                    <span>-{optionsDiscount.toFixed(2)}€</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2 pt-2 border-t">

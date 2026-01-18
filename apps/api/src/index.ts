@@ -1773,64 +1773,7 @@ app.get('/api/fleet/available', async (req, res) => {
   }
 })
 
-app.get('/api/fleet/:id', async (req, res) => {
-  try {
-    const fleetVehicle = await prisma.fleet.findUnique({
-      where: { id: req.params.id },
-      include: { vehicle: { include: { category: true, pricing: true } }, agency: true, documents: true, damages: true, inspections: { orderBy: { inspectedAt: 'desc' }, take: 10 }, maintenanceRecords: { orderBy: { createdAt: 'desc' }, take: 10 }, spareParts: true }
-    })
-    if (!fleetVehicle) return res.status(404).json({ error: 'Fleet vehicle not found' })
-    res.json(fleetVehicle)
-  } catch (error) { res.status(500).json({ error: 'Failed to fetch fleet vehicle' }) }
-})
 
-app.post('/api/fleet', async (req, res) => {
-  try {
-    // Get the vehicle to find its category and numbering
-    const vehicle = await prisma.vehicle.findUnique({ where: { id: req.body.vehicleId }, include: { category: { include: { numberingCategory: true } } } })
-    if (!vehicle) return res.status(400).json({ error: 'Vehicle type not found' })
-    
-    let vehicleNumber = req.body.vehicleNumber
-    
-    // Auto-generate vehicle number if not provided
-    if (!vehicleNumber && vehicle.category.numberingCategory) {
-      const nc = vehicle.category.numberingCategory
-      const newNumber = nc.lastNumber + 1
-      vehicleNumber = nc.prefix + String(newNumber).padStart(nc.numberPadding, '0')
-      
-      // Update lastNumber
-      await prisma.vehicleNumberingCategory.update({ where: { id: nc.id }, data: { lastNumber: newNumber } })
-    }
-    
-    if (!vehicleNumber) return res.status(400).json({ error: 'Vehicle number required (no numbering category configured)' })
-    
-    const fleetVehicle = await prisma.fleet.create({
-      data: {
-        vehicleNumber,
-        licensePlate: req.body.licensePlate,
-        locationCode: req.body.locationCode,
-        chassisNumber: req.body.chassisNumber,
-        vehicleId: req.body.vehicleId,
-        agencyId: req.body.agencyId,
-        year: req.body.year,
-        color: req.body.color,
-        purchaseDate: req.body.purchaseDate ? new Date(req.body.purchaseDate) : null,
-        purchasePrice: req.body.purchasePrice,
-        currentMileage: req.body.currentMileage || 0,
-        itvDate: req.body.itvDate ? new Date(req.body.itvDate) : null,
-        itvExpiryDate: req.body.itvExpiryDate ? new Date(req.body.itvExpiryDate) : null,
-        insuranceCompany: req.body.insuranceCompany,
-        insurancePolicyNumber: req.body.insurancePolicyNumber,
-        insuranceExpiryDate: req.body.insuranceExpiryDate ? new Date(req.body.insuranceExpiryDate) : null,
-        status: req.body.status || 'AVAILABLE',
-        condition: req.body.condition || 'GOOD',
-        notes: req.body.notes,
-      },
-      include: { vehicle: { include: { category: true, pricing: true } }, agency: true }
-    })
-    res.json(fleetVehicle)
-  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create fleet vehicle' }) }
-})
 
 app.put('/api/fleet/:id/status', async (req, res) => {
   try {
@@ -1839,47 +1782,10 @@ app.put('/api/fleet/:id/status', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to update fleet status' }) }
 })
 
-app.delete('/api/fleet/:id', async (req, res) => {
-  try {
-    await prisma.fleet.update({ where: { id: req.params.id }, data: { isActive: false } })
-    res.json({ success: true })
-  } catch (error) { res.status(500).json({ error: 'Failed to delete fleet vehicle' }) }
-})
 
 // ============== FLEET DOCUMENTS ==============
-app.get('/api/fleet/:fleetId/documents', async (req, res) => {
-  try {
-    const documents = await prisma.fleetDocument.findMany({ where: { fleetId: req.params.fleetId }, orderBy: { createdAt: 'desc' } })
-    res.json(documents)
-  } catch (error) { res.status(500).json({ error: 'Failed to fetch documents' }) }
-})
 
-app.post('/api/fleet/:fleetId/documents', async (req, res) => {
-  try {
-    const document = await prisma.fleetDocument.create({
-      data: {
-        fleetId: req.params.fleetId,
-        type: req.body.type,
-        name: req.body.name,
-        fileUrl: req.body.fileUrl,
-        fileType: req.body.fileType,
-        fileSizeBytes: req.body.fileSizeBytes,
-        thumbnailUrl: req.body.thumbnailUrl,
-        issueDate: req.body.issueDate ? new Date(req.body.issueDate) : null,
-        expiryDate: req.body.expiryDate ? new Date(req.body.expiryDate) : null,
-        sendToCustomer: req.body.sendToCustomer || false,
-        description: req.body.description,
-        uploadedBy: req.body.uploadedBy
-      }
-    })
-    res.json(document)
-  } catch (error) { res.status(500).json({ error: 'Failed to create document' }) }
-})
 
-app.delete('/api/fleet/documents/:id', async (req, res) => {
-  try { await prisma.fleetDocument.delete({ where: { id: req.params.id } }); res.json({ success: true }) }
-  catch (error) { res.status(500).json({ error: 'Failed to delete document' }) }
-})
 
 // ============== FLEET DAMAGES ==============
 app.get('/api/fleet/:fleetId/damages', async (req, res) => {
@@ -2018,12 +1924,6 @@ app.post('/api/inspections/:id/sign', async (req, res) => {
 })
 
 // ============== MAINTENANCE RECORDS ==============
-app.get('/api/fleet/:fleetId/maintenance', async (req, res) => {
-  try {
-    const records = await prisma.maintenanceRecord.findMany({ where: { fleetId: req.params.fleetId }, orderBy: { createdAt: 'desc' } })
-    res.json(records)
-  } catch (error) { res.status(500).json({ error: 'Failed to fetch maintenance records' }) }
-})
 
 app.get('/api/maintenance', async (req, res) => {
   try {
@@ -2042,39 +1942,6 @@ app.get('/api/maintenance', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to fetch maintenance records' }) }
 })
 
-app.post('/api/fleet/:fleetId/maintenance', async (req, res) => {
-  try {
-    const fleet = await prisma.fleet.findUnique({ where: { id: req.params.fleetId } })
-    if (!fleet) return res.status(404).json({ error: 'Fleet vehicle not found' })
-    
-    const record = await prisma.maintenanceRecord.create({
-      data: {
-        fleetId: req.params.fleetId,
-        type: req.body.type,
-        description: req.body.description,
-        mileage: req.body.mileage || fleet.currentMileage,
-        laborCost: req.body.laborCost,
-        partsCost: req.body.partsCost,
-        totalCost: req.body.totalCost,
-        performedBy: req.body.performedBy,
-        invoiceNumber: req.body.invoiceNumber,
-        invoiceUrl: req.body.invoiceUrl,
-        scheduledDate: req.body.scheduledDate ? new Date(req.body.scheduledDate) : null,
-        status: req.body.status || 'SCHEDULED',
-        priority: req.body.priority || 'NORMAL',
-        technicianId: req.body.technicianId,
-        notes: req.body.notes,
-      }
-    })
-    
-    // Update fleet status if maintenance is starting
-    if (req.body.status === 'IN_PROGRESS') {
-      await prisma.fleet.update({ where: { id: req.params.fleetId }, data: { status: 'MAINTENANCE' } })
-    }
-    
-    res.json(record)
-  } catch (error) { res.status(500).json({ error: 'Failed to create maintenance record' }) }
-})
 
 app.put('/api/maintenance/:id', async (req, res) => {
   try {
@@ -2117,34 +1984,7 @@ app.put('/api/maintenance/:id', async (req, res) => {
 })
 
 // ============== SPARE PARTS ==============
-app.get('/api/fleet/:fleetId/spare-parts', async (req, res) => {
-  try {
-    const parts = await prisma.fleetSparePart.findMany({ where: { fleetId: req.params.fleetId, isActive: true }, orderBy: { name: 'asc' } })
-    res.json(parts)
-  } catch (error) { res.status(500).json({ error: 'Failed to fetch spare parts' }) }
-})
 
-app.post('/api/fleet/:fleetId/spare-parts', async (req, res) => {
-  try {
-    const part = await prisma.fleetSparePart.create({
-      data: {
-        fleetId: req.params.fleetId,
-        name: req.body.name,
-        partNumber: req.body.partNumber,
-        category: req.body.category,
-        location: req.body.location,
-        price: req.body.price,
-        laborCost: req.body.laborCost || 0,
-        totalCost: req.body.price + (req.body.laborCost || 0),
-        quantityInStock: req.body.quantityInStock || 0,
-        minimumStock: req.body.minimumStock || 1,
-        supplierName: req.body.supplierName,
-        supplierRef: req.body.supplierRef
-      }
-    })
-    res.json(part)
-  } catch (error) { res.status(500).json({ error: 'Failed to create spare part' }) }
-})
 
 app.put('/api/spare-parts/:id', async (req, res) => {
   try {
@@ -2362,29 +2202,6 @@ app.post('/api/contracts', async (req, res) => {
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create contract' }) }
 })
 
-app.put('/api/contracts/:id', async (req, res) => {
-  try {
-    const contract = await prisma.rentalContract.update({
-      where: { id: req.params.id },
-      data: {
-        dailyRate: req.body.dailyRate,
-        totalDays: req.body.totalDays,
-        subtotal: req.body.subtotal,
-        optionsTotal: req.body.optionsTotal,
-        discountAmount: req.body.discountAmount,
-        discountReason: req.body.discountReason,
-        taxAmount: req.body.taxAmount,
-        totalAmount: req.body.totalAmount,
-        depositAmount: req.body.depositAmount,
-        depositMethod: req.body.depositMethod,
-        internalNotes: req.body.internalNotes,
-        customerNotes: req.body.customerNotes
-      },
-      include: { fleetVehicle: { include: { vehicle: true } }, agency: true, customer: true }
-    })
-    res.json(contract)
-  } catch (error) { res.status(500).json({ error: 'Failed to update contract' }) }
-})
 
 app.put('/api/contracts/:id/status', async (req, res) => {
   try {
@@ -2515,47 +2332,7 @@ app.post('/api/contracts/:id/check-in', async (req, res) => {
 
 // ============== BOOKING CHECK-OUT (Départ client) ==============
 // ============== CONTRACT DEDUCTIONS ==============
-app.get('/api/contracts/:contractId/deductions', async (req, res) => {
-  try {
-    const deductions = await prisma.contractDeduction.findMany({
-      where: { contractId: req.params.contractId },
-      include: { sparePart: true },
-      orderBy: { createdAt: 'desc' }
-    })
-    res.json(deductions)
-  } catch (error) { res.status(500).json({ error: 'Failed to fetch deductions' }) }
-})
 
-app.post('/api/contracts/:contractId/deductions', async (req, res) => {
-  try {
-    const deduction = await prisma.contractDeduction.create({
-      data: {
-        contractId: req.params.contractId,
-        type: req.body.type,
-        sparePartId: req.body.sparePartId,
-        description: req.body.description,
-        quantity: req.body.quantity || 1,
-        unitPrice: req.body.unitPrice,
-        totalPrice: req.body.totalPrice,
-        photoUrls: req.body.photoUrls,
-        validatedBy: req.body.validatedBy,
-        validatedAt: new Date(),
-        notes: req.body.notes,
-      }
-    })
-    
-    // Update contract total deductions
-    const allDeductions = await prisma.contractDeduction.findMany({ where: { contractId: req.params.contractId } })
-    const totalDeductions = allDeductions.reduce((sum, d) => sum + Number(d.totalPrice), 0)
-    
-    const contract = await prisma.rentalContract.update({
-      where: { id: req.params.contractId },
-      data: { totalDeductions, finalDepositRefund: { decrement: Number(req.body.totalPrice) } }
-    })
-    
-    res.json({ deduction, contract })
-  } catch (error) { res.status(500).json({ error: 'Failed to create deduction' }) }
-})
 
 app.put('/api/deductions/:id/customer-agree', async (req, res) => {
   try {
@@ -3122,58 +2899,12 @@ app.get('/api/customers/search', async (req, res) => {
 console.log('Booking assignment and operator routes loaded')
 
 // ============== DELETE FLEET VEHICLE ==============
-app.delete('/api/fleet/:id', async (req, res) => {
-  try {
-    // First delete related records
-    await prisma.fleetDocument.deleteMany({ where: { fleetId: req.params.id } })
-    await prisma.fleetDamage.deleteMany({ where: { fleetId: req.params.id } })
-    await prisma.maintenanceRecord.deleteMany({ where: { fleetId: req.params.id } })
-    await prisma.fleetSparePart.deleteMany({ where: { fleetId: req.params.id } })
-    
-    // Then delete the fleet vehicle
-    await prisma.fleet.delete({ where: { id: req.params.id } })
-    res.json({ success: true })
-  } catch (e: any) {
-    console.error(e)
-    res.status(500).json({ error: 'Failed to delete fleet vehicle' })
-  }
-})
 
 // ============== DELETE DOCUMENT ==============
-app.delete('/api/fleet/documents/:id', async (req, res) => {
-  try {
-    await prisma.fleetDocument.delete({ where: { id: req.params.id } })
-    res.json({ success: true })
-  } catch (e: any) {
-    console.error(e)
-    res.status(500).json({ error: 'Failed to delete document' })
-  }
-})
 
 // ============== DELETE SPARE PART ==============
-app.delete('/api/fleet/spare-parts/:id', async (req, res) => {
-  try {
-    await prisma.fleetSparePart.delete({ where: { id: req.params.id } })
-    res.json({ success: true })
-  } catch (e: any) {
-    console.error(e)
-    res.status(500).json({ error: 'Failed to delete spare part' })
-  }
-})
 
 // ============== UPDATE SPARE PART ==============
-app.put('/api/fleet/spare-parts/:id', async (req, res) => {
-  try {
-    const part = await prisma.fleetSparePart.update({
-      where: { id: req.params.id },
-      data: req.body
-    })
-    res.json(part)
-  } catch (e: any) {
-    console.error(e)
-    res.status(500).json({ error: 'Failed to update spare part' })
-  }
-})
 
 console.log('Delete and update routes loaded')
 

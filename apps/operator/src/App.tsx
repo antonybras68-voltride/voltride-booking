@@ -2988,12 +2988,7 @@ export default function App() {
                   ✅ Check-in
                 </button>
               )}
-              {selectedBookingDetail.fleetVehicleId && !selectedBookingDetail.contract && (
-                <button onClick={() => createContractFromBooking(selectedBookingDetail)}
-                  className="py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">
-                  📄 Créer contrat
-                </button>
-              )}
+
               <button onClick={() => setShowBookingDetail(false)}
                 className="py-2 px-4 bg-gray-200 rounded-lg hover:bg-gray-300 ml-auto">
                 Fermer

@@ -101,8 +101,9 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   // Calculations
   const locationAmount = booking?.totalPrice || 0
   const paidOnline = booking?.paidAmount || 0
+  const reservationAmount = booking?.depositAmount || 0  // Montant de réservation (acompte)
   const depositAmount = fleetVehicle?.vehicle?.deposit || 500  // Caution/garantie du véhicule
-  const subtotal = Math.max(0, locationAmount - paidOnline - discount - optionsDiscount)
+  const subtotal = Math.max(0, locationAmount - paidOnline - reservationAmount - discount - optionsDiscount)
   const totalToPay = subtotal // Prices already include TVA
 
   // Upload photo
@@ -714,6 +715,12 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   <div className="flex justify-between text-green-600">
                     <span>Payé en ligne</span>
                     <span>-{paidOnline.toFixed(2)}€</span>
+                  </div>
+                )}
+                {reservationAmount > 0 && (
+                  <div className="flex justify-between text-blue-600">
+                    <span>Acompte de réservation</span>
+                    <span>-{reservationAmount.toFixed(2)}€</span>
                   </div>
                 )}
                 {optionsDiscount > 0 && (

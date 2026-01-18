@@ -1105,7 +1105,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
     if (agency.agencyType === 'PARTNER' || agency.agencyType === 'FRANCHISE') {
       commissionRate = agency.commissionRate || 0
       commissionAmount = Math.round(booking.totalPrice * commissionRate * 100) / 100
-      commissionType = agency.agencyType === 'PARTNER' ? 'REVERSAL' : 'DEDUCTION'
+      commissionType = agency.agencyType === 'PARTNER' ? 'REVERSAL' as const : 'DEDUCTION' as const
     }
     
     // Créer le contrat
@@ -1137,7 +1137,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
         depositCapturedAt: req.body.depositStatus === 'CAPTURED' ? new Date() : null,
         paymentMethod: req.body.paymentMethod || 'CARD',
         paymentStatus: req.body.paymentStatus || 'PENDING',
-        paidAmount: booking.paidAmount || 0,
+        paidAmount: 0,  // Le paiement est géré séparément
         startMileage: req.body.startMileage,
         startFuelLevel: req.body.startFuelLevel,
         photoFront: req.body.photoFront,
@@ -1191,6 +1191,8 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
         type: 'CHECK_OUT',
         mileage: req.body.startMileage,
         fuelLevel: req.body.startFuelLevel,
+        condition: 'GOOD',
+        operatorId: req.body.operatorId || 'system',
         customerSignature: req.body.customerSignature,
         customerSignedAt: req.body.customerSignature ? new Date() : null
       }
@@ -1199,7 +1201,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
     res.json(contract)
   } catch (error) {
     console.error('Check-out error:', error)
-    res.status(500).json({ error: 'Failed to process check-out', details: error.message })
+    res.status(500).json({ error: 'Failed to process check-out', details: (error as Error).message })
   }
 })
 
@@ -2542,7 +2544,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
     if (agency.agencyType === 'PARTNER' || agency.agencyType === 'FRANCHISE') {
       commissionRate = agency.commissionRate || 0
       commissionAmount = Math.round(booking.totalPrice * commissionRate * 100) / 100
-      commissionType = agency.agencyType === 'PARTNER' ? 'REVERSAL' : 'DEDUCTION'
+      commissionType = agency.agencyType === 'PARTNER' ? 'REVERSAL' as const : 'DEDUCTION' as const
     }
     
     // Créer le contrat
@@ -2574,7 +2576,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
         depositCapturedAt: req.body.depositStatus === 'CAPTURED' ? new Date() : null,
         paymentMethod: req.body.paymentMethod || 'CARD',
         paymentStatus: req.body.paymentStatus || 'PENDING',
-        paidAmount: booking.paidAmount || 0,
+        paidAmount: 0,  // Le paiement est géré séparément
         startMileage: req.body.startMileage,
         startFuelLevel: req.body.startFuelLevel,
         photoFront: req.body.photoFront,
@@ -2628,6 +2630,8 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
         type: 'CHECK_OUT',
         mileage: req.body.startMileage,
         fuelLevel: req.body.startFuelLevel,
+        condition: 'GOOD',
+        operatorId: req.body.operatorId || 'system',
         customerSignature: req.body.customerSignature,
         customerSignedAt: req.body.customerSignature ? new Date() : null
       }
@@ -2636,7 +2640,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
     res.json(contract)
   } catch (error) {
     console.error('Check-out error:', error)
-    res.status(500).json({ error: 'Failed to process check-out', details: error.message })
+    res.status(500).json({ error: 'Failed to process check-out', details: (error as Error).message })
   }
 })
 

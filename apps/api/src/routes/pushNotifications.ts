@@ -37,7 +37,7 @@ router.post('/send', async (req: Request, res: Response) => {
     if (!title || !body) return res.status(400).json({ error: 'Title et body requis' });
     const payload = { title, body, icon: '/icon-192.png', data };
     const result = userId ? await pushNotificationService.sendToUser(userId, payload) : await pushNotificationService.sendToAll(payload);
-    res.json({ success: true, ...result });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Erreur envoi' });
   }

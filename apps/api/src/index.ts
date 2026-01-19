@@ -1946,7 +1946,8 @@ app.post('/api/push/test', async (req, res) => {
   try {
     const { endpoint } = req.body
     const sub = await prisma.pushSubscription.findUnique({ where: { endpoint } })
-    await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify({ title: 'Test OK!', body: 'Les notifications fonctionnent', icon: '/icon-192.png' }))
+    if (!sub) return res.status(404).json({ error: "Not found" })
+    await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify({ title: "Test OK!", body: "Les notifications fonctionnent", icon: "/icon-192.png" }))
     res.json({ success: true })
   } catch (error) { console.error('Push test error:', error); res.status(500).json({ error: 'Failed to send test' }) }
 })

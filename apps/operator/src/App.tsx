@@ -272,6 +272,7 @@ export default function App() {
   const [bookingAssignFilter, setBookingAssignFilter] = useState('ALL')
   const [bookingSourceFilter, setBookingSourceFilter] = useState('ALL')
   const [fleetStatusFilter, setFleetStatusFilter] = useState('ALL')
+  const [fleetSearch, setFleetSearch] = useState('')
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
   const [selectedCheckoutBooking, setSelectedCheckoutBooking] = useState(null)
   const [newBookingData, setNewBookingData] = useState(null)
@@ -1913,6 +1914,11 @@ export default function App() {
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Flotte</h2>
+                <div className="flex-1 mx-4 max-w-md">
+                  <input type="text" value={fleetSearch} onChange={(e) => setFleetSearch(e.target.value)} 
+                    placeholder={lang === 'fr' ? 'Rechercher (n°, modèle, plaque...)' : 'Buscar (n°, modelo, matrícula...)'} 
+                    className="w-full border rounded-lg px-3 py-2" />
+                </div>
                 {user?.role !== 'COLLABORATOR' && (
                   <button onClick={() => setShowNewFleet(true)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
@@ -1940,7 +1946,18 @@ export default function App() {
                 ))}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredFleet.filter(f => fleetStatusFilter === 'ALL' || f.status === fleetStatusFilter).map(f => (
+                {filteredFleet.filter(f => {
+                  if (fleetStatusFilter !== 'ALL' && f.status !== fleetStatusFilter) return false;
+                  if (fleetSearch) {
+                    const search = fleetSearch.toLowerCase();
+                    const matchNumber = (f.vehicleNumber || '').toLowerCase().includes(search);
+                    const matchPlate = (f.licensePlate || '').toLowerCase().includes(search);
+                    const matchModel = (f.vehicle?.name?.fr || f.vehicle?.name?.es || '').toLowerCase().includes(search);
+                    const matchBrand = (f.brand || '').toLowerCase().includes(search);
+                    if (!matchNumber && !matchPlate && !matchModel && !matchBrand) return false;
+                  }
+                  return true;
+                }).map(f => (
                   <div key={f.id} className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition cursor-pointer"
                     onClick={() => handleFleetClick(f, 'view')}>
                     <div className="flex items-center gap-3">

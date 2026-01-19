@@ -1485,27 +1485,14 @@ app.post('/api/contracts/:id/extend', async (req, res) => {
     const newEnd = new Date(newEndDate)
     const additionalDays = Math.ceil((newEnd.getTime() - new Date(oldEndDate).getTime()) / (1000 * 60 * 60 * 24))
     
-    // Créer l'extension
-    await prisma.contractExtension.create({
-      data: {
-        contractId: id,
-        previousEndDate: oldEndDate,
-        newEndDate: newEnd,
-        additionalDays,
-        additionalAmount: additionalAmount || 0,
-        reason: reason || 'Extension demandée',
-        status: 'APPROVED',
-        approvedAt: new Date()
-      }
-    })
-    
-    // Mettre à jour le contrat
+    // Mettre à jour le contrat directement (sans créer d'extension complexe)
     const updatedContract = await prisma.rentalContract.update({
       where: { id },
       data: {
         currentEndDate: newEnd,
         totalDays: contract.totalDays + additionalDays,
-        totalAmount: (contract.totalAmount || 0) + (additionalAmount || 0)
+        totalAmount: Number(contract.totalAmount || 0) + Number(additionalAmount || 0),
+        customerNotes: (contract.customerNotes || '') + '\n[Extension ' + new Date().toLocaleDateString('fr-FR') + '] ' + (reason || 'Extension') + ' - +' + additionalDays + ' jours, +' + (additionalAmount || 0) + '€'
       }
     })
     

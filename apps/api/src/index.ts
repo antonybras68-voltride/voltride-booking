@@ -1471,6 +1471,50 @@ app.delete('/api/contracts/:id', async (req, res) => {
   }
 })
 
+
+// Extension de contrat (avenant)
+app.post('/api/contracts/:id/extend', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { newEndDate, additionalAmount, reason } = req.body
+    
+    const contract = await prisma.rentalContract.findUnique({ where: { id } })
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+    
+    const oldEndDate = contract.currentEndDate
+    const newEnd = new Date(newEndDate)
+    const additionalDays = Math.ceil((newEnd.getTime() - new Date(oldEndDate).getTime()) / (1000 * 60 * 60 * 24))
+    
+    // Créer l'extension
+    await prisma.contractExtension.create({
+      data: {
+        contractId: id,
+        previousEndDate: oldEndDate,
+        newEndDate: newEnd,
+        additionalDays,
+        additionalAmount: additionalAmount || 0,
+        reason: reason || 'Extension demandée',
+        status: 'APPROVED',
+        approvedAt: new Date()
+      }
+    })
+    
+    // Mettre à jour le contrat
+    const updatedContract = await prisma.rentalContract.update({
+      where: { id },
+      data: {
+        currentEndDate: newEnd,
+        totalDays: contract.totalDays + additionalDays,
+        totalAmount: (contract.totalAmount || 0) + (additionalAmount || 0)
+      }
+    })
+    
+    res.json(updatedContract)
+  } catch (e: any) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to extend contract' })
+  }
+})
 // ============== SETTINGS ==============
 
 // Get settings

@@ -3216,6 +3216,63 @@ export default function App() {
         </div>
       )}
 
+      {/* Extension Contract Modal */}
+      {showExtensionModal && extensionContract && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowExtensionModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl font-bold mb-4">{lang === 'fr' ? 'Avenant - Extension de contrat' : 'Extensión de contrato'}</h2>
+            <div className="space-y-4">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="font-medium">{extensionContract.contractNumber}</p>
+                <p className="text-sm text-gray-600">{extensionContract.customer?.firstName} {extensionContract.customer?.lastName}</p>
+                <p className="text-sm text-gray-600">{extensionContract.fleetVehicle?.vehicleNumber}</p>
+                <p className="text-sm text-gray-500">
+                  {lang === 'fr' ? 'Fin actuelle:' : 'Fin actual:'} {new Date(extensionContract.currentEndDate).toLocaleDateString('fr-FR')}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Nouvelle date de fin' : 'Nueva fecha de fin'}</label>
+                <input type="date" id="extensionDate" 
+                  defaultValue={new Date(new Date(extensionContract.currentEndDate).getTime() + 86400000).toISOString().split('T')[0]}
+                  min={new Date(new Date(extensionContract.currentEndDate).getTime() + 86400000).toISOString().split('T')[0]}
+                  className="w-full border-2 rounded-xl p-3" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Montant supplémentaire (€)' : 'Importe adicional (€)'}</label>
+                <input type="number" id="extensionAmount" defaultValue="0" min="0" step="0.01" className="w-full border-2 rounded-xl p-3" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Motif' : 'Motivo'}</label>
+                <textarea id="extensionReason" rows={2} className="w-full border-2 rounded-xl p-3" placeholder={lang === 'fr' ? 'Extension demandée par le client...' : 'Extensión solicitada por el cliente...'}></textarea>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowExtensionModal(false)} className="flex-1 py-2 bg-gray-200 rounded-xl hover:bg-gray-300">
+                {lang === 'fr' ? 'Annuler' : 'Cancelar'}
+              </button>
+              <button onClick={async () => {
+                const newEndDate = (document.getElementById('extensionDate') as HTMLInputElement).value
+                const amount = parseFloat((document.getElementById('extensionAmount') as HTMLInputElement).value) || 0
+                const reason = (document.getElementById('extensionReason') as HTMLTextAreaElement).value
+                try {
+                  await fetch(API_URL + '/api/contracts/' + extensionContract.id + '/extend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ newEndDate, additionalAmount: amount, reason })
+                  })
+                  setShowExtensionModal(false)
+                  setExtensionContract(null)
+                  loadContracts()
+                  alert(lang === 'fr' ? 'Extension enregistrée!' : '¡Extensión registrada!')
+                } catch (e) { console.error(e); alert('Erreur') }
+              }} className="flex-1 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700">
+                {lang === 'fr' ? "Valider l'avenant" : 'Validar extensión'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

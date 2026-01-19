@@ -842,7 +842,7 @@ export default function App() {
   }
 
   // Long press for tablet (opens context menu)
-  const longPressTimer = React.useRef(null)
+  const longPressTimer = useRef(null)
   const handleTouchStart = (e, booking) => {
     const touch = e.touches[0]
     longPressTimer.current = setTimeout(() => {

@@ -387,11 +387,16 @@ export default function App() {
     try {
       const method = editingCustomer ? 'PUT' : 'POST'
       const url = editingCustomer ? API_URL + '/api/customers/' + editingCustomer.id : API_URL + '/api/customers'
-      await fetch(url, {
+      const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(customerData)
       })
+      const data = await res.json()
+      if (data.error === 'duplicate') {
+        alert(data.message + '\n\nClient existant: ' + data.existingCustomer.firstName + ' ' + data.existingCustomer.lastName)
+        return
+      }
       loadCustomers()
       setShowCustomerModal(false)
       setEditingCustomer(null)

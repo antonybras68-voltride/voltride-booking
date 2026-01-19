@@ -272,6 +272,99 @@ app.delete("/api/customers/:id", async (req, res) => {
   }
 });
 
+// Créer un client (avec vérification doublons)
+app.post('/api/customers', async (req, res) => {
+  try {
+    const { email, phone } = req.body
+    
+    // Vérifier si un client existe déjà avec cet email ou téléphone
+    const existingCustomer = await prisma.customer.findFirst({
+      where: {
+        OR: [
+          { email: email },
+          { phone: phone }
+        ]
+      }
+    })
+    
+    if (existingCustomer) {
+      return res.status(400).json({ 
+        error: 'duplicate',
+        message: existingCustomer.email === email ? 'Un client avec cet email existe déjà' : 'Un client avec ce téléphone existe déjà',
+        existingCustomer
+      })
+    }
+    
+    const customer = await prisma.customer.create({
+      data: {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        phone: req.body.phone,
+        address: req.body.address,
+        postalCode: req.body.postalCode,
+        city: req.body.city,
+        country: req.body.country || 'ES',
+        language: req.body.language || 'es'
+      }
+    })
+    res.json(customer)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to create customer' })
+  }
+})
+
+// Modifier un client
+app.put('/api/customers/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { email, phone } = req.body
+    
+    // Vérifier si un autre client existe avec cet email ou téléphone
+    const existingCustomer = await prisma.customer.findFirst({
+      where: {
+        AND: [
+          { id: { not: id } },
+          {
+            OR: [
+              { email: email },
+              { phone: phone }
+            ]
+          }
+        ]
+      }
+    })
+    
+    if (existingCustomer) {
+      return res.status(400).json({ 
+        error: 'duplicate',
+        message: existingCustomer.email === email ? 'Un client avec cet email existe déjà' : 'Un client avec ce téléphone existe déjà',
+        existingCustomer
+      })
+    }
+    
+    const customer = await prisma.customer.update({
+      where: { id },
+      data: {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        phone: req.body.phone,
+        address: req.body.address,
+        postalCode: req.body.postalCode,
+        city: req.body.city,
+        country: req.body.country,
+        language: req.body.language
+      }
+    })
+    res.json(customer)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to update customer' })
+  }
+})
+
 // ============== BOOKINGS ==============
 app.get('/api/bookings', async (req, res) => {
   try {

@@ -1452,6 +1452,24 @@ app.put('/api/contracts/:id', async (req, res) => {
   }
 })
 
+// Supprimer un contrat
+app.delete('/api/contracts/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    await prisma.fleetInspection.deleteMany({ where: { contractId: id } })
+    await prisma.contractDeduction.deleteMany({ where: { contractId: id } })
+    await prisma.contractExtension.deleteMany({ where: { contractId: id } })
+    const contract = await prisma.rentalContract.findUnique({ where: { id } })
+    if (contract?.fleetVehicleId) {
+      await prisma.fleet.update({ where: { id: contract.fleetVehicleId }, data: { status: 'AVAILABLE' } })
+    }
+    await prisma.rentalContract.delete({ where: { id } })
+    res.json({ success: true })
+  } catch (e: any) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to delete contract' })
+  }
+})
 
 // ============== SETTINGS ==============
 

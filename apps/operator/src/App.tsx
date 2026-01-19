@@ -313,6 +313,9 @@ export default function App() {
   const [usersList, setUsersList] = useState<any[]>([])
   const [contracts, setContracts] = useState<any[]>([])
   const [contractsFilter, setContractsFilter] = useState({ startDate: "", endDate: "", status: "" })
+  const [contractSearch, setContractSearch] = useState("")
+  const [showExtensionModal, setShowExtensionModal] = useState(false)
+  const [extensionContract, setExtensionContract] = useState<any>(null)
   const [showNewUserModal, setShowNewUserModal] = useState(false)
   const [editingUser, setEditingUser] = useState<any>(null)
 
@@ -412,6 +415,14 @@ export default function App() {
     } catch (e) { console.error(e) }
   }
 
+  // Supprimer un contrat
+  const deleteContract = async (contractId: string) => {
+    if (!confirm(lang === 'fr' ? 'Supprimer ce contrat ?' : '¿Eliminar este contrato?')) return
+    try {
+      await fetch(API_URL + '/api/contracts/' + contractId, { method: 'DELETE' })
+      loadContracts()
+    } catch (e) { console.error(e) }
+  }
   // Charger les utilisateurs
   const loadUsers = async () => {
     try {
@@ -2384,6 +2395,10 @@ export default function App() {
           {!loading && tab === 'contracts' && (
             <div className="space-y-4">
               <div className="bg-white rounded-xl shadow p-4 flex flex-wrap gap-4 items-end">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'fr' ? 'Rechercher' : 'Buscar'}</label>
+                  <input type="text" value={contractSearch} onChange={(e) => setContractSearch(e.target.value)} placeholder={lang === 'fr' ? 'Client, véhicule, n° contrat...' : 'Cliente, vehículo, n° contrato...'} className="border rounded-lg px-3 py-2 w-full" />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].from}</label>
                   <input type="date" value={contractsFilter.startDate} onChange={(e) => setContractsFilter({...contractsFilter, startDate: e.target.value})} className="border rounded-lg px-3 py-2" />
@@ -2419,6 +2434,13 @@ export default function App() {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {contracts.filter(c => {
+                      if (contractSearch) {
+                        const search = contractSearch.toLowerCase();
+                        const matchClient = (c.customer?.firstName + ' ' + c.customer?.lastName).toLowerCase().includes(search);
+                        const matchVehicle = (c.fleetVehicle?.vehicleNumber || '').toLowerCase().includes(search);
+                        const matchNumber = (c.contractNumber || '').toLowerCase().includes(search);
+                        if (!matchClient && !matchVehicle && !matchNumber) return false;
+                      }
                       if (contractsFilter.status && c.status !== contractsFilter.status) return false;
                       if (contractsFilter.startDate && new Date(c.currentStartDate) < new Date(contractsFilter.startDate)) return false;
                       if (contractsFilter.endDate && new Date(c.currentEndDate) > new Date(contractsFilter.endDate)) return false;
@@ -2434,6 +2456,10 @@ export default function App() {
                         <td className="px-4 py-3 space-x-2">
                           <a href={API_URL + '/api/contracts/' + contract.id + '/pdf'} target="_blank" className="text-blue-600 hover:underline text-sm">PDF</a>
                           <a href={API_URL + '/api/contracts/' + contract.id + '/invoice-pdf'} target="_blank" className="text-green-600 hover:underline text-sm">{t[lang].invoices}</a>
+                          {contract.status === 'ACTIVE' && (
+                            <button onClick={() => { setExtensionContract(contract); setShowExtensionModal(true) }} className="text-orange-600 hover:underline text-sm">{lang === 'fr' ? 'Avenant' : 'Extensión'}</button>
+                          )}
+                          <button onClick={() => deleteContract(contract.id)} className="text-red-600 hover:underline text-sm">{lang === 'fr' ? 'Supprimer' : 'Eliminar'}</button>
                         </td>
                       </tr>
                     ))}
@@ -2446,6 +2472,10 @@ export default function App() {
           {!loading && tab === 'invoices' && (
             <div className="space-y-4">
               <div className="bg-white rounded-xl shadow p-4 flex flex-wrap gap-4 items-end">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'fr' ? 'Rechercher' : 'Buscar'}</label>
+                  <input type="text" value={contractSearch} onChange={(e) => setContractSearch(e.target.value)} placeholder={lang === 'fr' ? 'Client, véhicule, n° contrat...' : 'Cliente, vehículo, n° contrato...'} className="border rounded-lg px-3 py-2 w-full" />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].from}</label>
                   <input type="date" value={contractsFilter.startDate} onChange={(e) => setContractsFilter({...contractsFilter, startDate: e.target.value})} className="border rounded-lg px-3 py-2" />

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const VAPID_PUBLIC_KEY = 'BKRoMFhD4-MNKJzdSoMuzQtq7vZvCQSi7OkVRAL1Yd3EoaTi3Tm5PzAJkgbQnhDgOKHc7bjhYMEtpQlIN51LS9w';
-const API_URL = import.meta.env.VITE_API_URL || 'https://api-production-e70c.up.railway.app';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api-voltrideandmotorrent-production.up.railway.app';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -29,10 +29,10 @@ export function usePushNotifications() {
     setState(s => ({ ...s, loading: true, error: null }));
     try {
       const perm = await Notification.requestPermission();
-      if (perm !== 'granted') return setState(s => ({ ...s, permission: perm, loading: false, error: 'Permission refusee' })), null;
+      if (perm !== 'granted') { setState(s => ({ ...s, permission: perm, loading: false, error: 'Permission refusee' })); return null; }
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
-      await fetch(`${API_URL}/api/push/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub }) });
+      await fetch(API_URL + '/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub }) });
       setState(s => ({ ...s, isSubscribed: true, permission: 'granted', loading: false }));
       return sub;
     } catch { setState(s => ({ ...s, loading: false, error: 'Erreur' })); return null; }
@@ -43,7 +43,10 @@ export function usePushNotifications() {
     try {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
-      if (sub) { await fetch(`${API_URL}/api/push/unsubscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }); await sub.unsubscribe(); }
+      if (sub) { 
+        await fetch(API_URL + '/api/push/unsubscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }); 
+        await sub.unsubscribe(); 
+      }
       setState(s => ({ ...s, isSubscribed: false, loading: false }));
     } catch { setState(s => ({ ...s, loading: false })); }
   }, []);

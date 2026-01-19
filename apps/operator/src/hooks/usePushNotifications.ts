@@ -1,173 +1,57 @@
 import { useState, useEffect, useCallback } from 'react';
 
-// Clé publique VAPID (tu devras la générer côté serveur)
-// Pour l'instant on met un placeholder
-const VAPID_PUBLIC_KEY = 'YOUR_VAPID_PUBLIC_KEY_HERE';
+const VAPID_PUBLIC_KEY = 'BKRoMFhD4-MNKJzdSoMuzQtq7vZvCQSi7OkVRAL1Yd3EoaTi3Tm5PzAJkgbQnhDgOKHc7bjhYMEtpQlIN51LS9w';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api-production-e70c.up.railway.app';
 
-interface PushNotificationState {
-  isSupported: boolean;
-  isSubscribed: boolean;
-  subscription: PushSubscription | null;
-  permission: NotificationPermission;
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
 }
 
 export function usePushNotifications() {
-  const [state, setState] = useState<PushNotificationState>({
-    isSupported: false,
-    isSubscribed: false,
-    subscription: null,
-    permission: 'default'
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState({ isSupported: false, isSubscribed: false, permission: 'default' as NotificationPermission, loading: false, error: null as string | null });
 
-  // Vérifie le support et l'état actuel
   useEffect(() => {
-    const checkSupport = async () => {
+    (async () => {
       const isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
-      
-      if (!isSupported) {
-        setState(prev => ({ ...prev, isSupported: false }));
-        return;
-      }
-
-      const permission = Notification.permission;
-      let subscription: PushSubscription | null = null;
-
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        subscription = await registration.pushManager.getSubscription();
-      } catch (err) {
-        console.error('Erreur vérification subscription:', err);
-      }
-
-      setState({
-        isSupported: true,
-        isSubscribed: !!subscription,
-        subscription,
-        permission
-      });
-    };
-
-    checkSupport();
+      if (!isSupported) return setState(s => ({ ...s, isSupported: false }));
+      let isSubscribed = false;
+      try { const reg = await navigator.serviceWorker.ready; isSubscribed = !!(await reg.pushManager.getSubscription()); } catch {}
+      setState({ isSupported: true, isSubscribed, permission: Notification.permission, loading: false, error: null });
+    })();
   }, []);
 
-  // Demande la permission et s'abonne
   const subscribe = useCallback(async () => {
-    if (!state.isSupported) {
-      setError('Les notifications push ne sont pas supportées');
-      return null;
-    }
-
-    setLoading(true);
-    setError(null);
-
+    setState(s => ({ ...s, loading: true, error: null }));
     try {
-      // Demande la permission
-      const permission = await Notification.requestPermission();
-      
-      if (permission !== 'granted') {
-        setError('Permission refusée');
-        setState(prev => ({ ...prev, permission }));
-        setLoading(false);
-        return null;
-      }
-
-      // S'abonne aux notifications push
-      const registration = await navigator.serviceWorker.ready;
-      
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      });
-
-      setState(prev => ({
-        ...prev,
-        isSubscribed: true,
-        subscription,
-        permission: 'granted'
-      }));
-
-      // Envoie la subscription au serveur (à implémenter)
-      console.log('Subscription:', JSON.stringify(subscription));
-      // await sendSubscriptionToServer(subscription);
-
-      setLoading(false);
-      return subscription;
-
-    } catch (err) {
-      console.error('Erreur subscription:', err);
-      setError('Erreur lors de l\'abonnement');
-      setLoading(false);
-      return null;
-    }
-  }, [state.isSupported]);
-
-  // Se désabonne
-  const unsubscribe = useCallback(async () => {
-    if (!state.subscription) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      await state.subscription.unsubscribe();
-      
-      setState(prev => ({
-        ...prev,
-        isSubscribed: false,
-        subscription: null
-      }));
-
-      // Notifie le serveur (à implémenter)
-      // await removeSubscriptionFromServer(state.subscription);
-
-      setLoading(false);
-    } catch (err) {
-      console.error('Erreur désabonnement:', err);
-      setError('Erreur lors du désabonnement');
-      setLoading(false);
-    }
-  }, [state.subscription]);
-
-  // Envoie une notification de test (locale)
-  const sendTestNotification = useCallback(async () => {
-    if (Notification.permission !== 'granted') {
-      setError('Permission non accordée');
-      return;
-    }
-
-    const registration = await navigator.serviceWorker.ready;
-    await registration.showNotification('Test M&V Operator', {
-      body: 'Les notifications fonctionnent ! 🎉',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      vibrate: [200, 100, 200]
-    });
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return setState(s => ({ ...s, permission: perm, loading: false, error: 'Permission refusee' })), null;
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+      await fetch(`${API_URL}/api/push/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub }) });
+      setState(s => ({ ...s, isSubscribed: true, permission: 'granted', loading: false }));
+      return sub;
+    } catch { setState(s => ({ ...s, loading: false, error: 'Erreur' })); return null; }
   }, []);
 
-  return {
-    ...state,
-    loading,
-    error,
-    subscribe,
-    unsubscribe,
-    sendTestNotification
-  };
-}
+  const unsubscribe = useCallback(async () => {
+    setState(s => ({ ...s, loading: true }));
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) { await fetch(`${API_URL}/api/push/unsubscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }); await sub.unsubscribe(); }
+      setState(s => ({ ...s, isSubscribed: false, loading: false }));
+    } catch { setState(s => ({ ...s, loading: false })); }
+  }, []);
 
-// Utilitaire pour convertir la clé VAPID
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
+  const sendTest = useCallback(async () => {
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('Test M&V', { body: 'Notifications OK!', icon: '/icon-192.png' });
+  }, []);
 
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
+  return { ...state, subscribe, unsubscribe, sendTest };
 }

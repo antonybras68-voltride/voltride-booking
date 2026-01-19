@@ -1,3 +1,4 @@
+import webpush from 'web-push';
 import express from 'express'
 import cors from 'cors'
 import { PrismaClient } from '@prisma/client'
@@ -1917,7 +1918,41 @@ app.get('/api/contracts/:id/invoice-pdf', async (req, res) => {
 
 console.log('PDF routes loaded')
 
-app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })
+// ============== PUSH NOTIFICATIONS ==============
+webpush.setVapidDetails(process.env.VAPID_EMAIL || 'mailto:contact@voltride.com', process.env.VAPID_PUBLIC_KEY || '', process.env.VAPID_PRIVATE_KEY || '')
+
+app.get('/api/push/vapid-public-key', (req, res) => { res.json({ publicKey: process.env.VAPID_PUBLIC_KEY }) })
+
+app.post('/api/push/subscribe', async (req, res) => {
+  try {
+    const { subscription, userId } = req.body
+    const existing = await prisma.pushSubscription.findUnique({ where: { endpoint: subscription.endpoint } })
+    const result = existing
+      ? await prisma.pushSubscription.update({ where: { endpoint: subscription.endpoint }, data: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth, userId, userAgent: req.headers['user-agent'] } })
+      : await prisma.pushSubscription.create({ data: { endpoint: subscription.endpoint, p256dh: subscription.keys.p256dh, auth: subscription.keys.auth, userId, userAgent: req.headers['user-agent'] } })
+    res.json({ success: true, subscription: result })
+  } catch (error) { console.error('Push subscribe error:', error); res.status(500).json({ error: 'Failed to subscribe' }) }
+})
+
+app.post('/api/push/unsubscribe', async (req, res) => {
+  try {
+    const { endpoint } = req.body
+    await prisma.pushSubscription.delete({ where: { endpoint } }).catch(() => {})
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: 'Failed to unsubscribe' }) }
+})
+
+app.post('/api/push/test', async (req, res) => {
+  try {
+    const { endpoint } = req.body
+    const sub = await prisma.pushSubscription.findUnique({ where: { endpoint } })
+    await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify({ title: 'Test OK!', body: 'Les notifications fonctionnent', icon: '/icon-192.png' }))
+    res.json({ success: true })
+  } catch (error) { console.error('Push test error:', error); res.status(500).json({ error: 'Failed to send test' }) }
+})
+
+console.log('Push notification routes loaded')
+
 
 // ============== VEHICLE NUMBERING CATEGORIES ==============
 app.get('/api/numbering-categories', async (req, res) => {
@@ -3415,3 +3450,5 @@ app.put('/api/commissions/:contractId/paid', async (req, res) => {
     res.status(500).json({ error: 'Failed to update commission status' })
   }
 })
+
+app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })

@@ -323,7 +323,7 @@ export default function App() {
   })
 
   useEffect(() => { loadData() }, [selectedAgency, brand])
-  useEffect(() => { if (tab === "contracts" || tab === "invoices") loadContracts() }, [tab])
+  useEffect(() => { if (tab === "contracts" || tab === "invoices") loadContracts() }, [tab, brand])
   // Charger les permissions
   const loadPermissions = async () => {
     try {
@@ -418,7 +418,7 @@ export default function App() {
     try {
       const res = await fetch(API_URL + "/api/contracts")
       const data = await res.json()
-      setContracts(Array.isArray(data) ? data : [])
+      setContracts(Array.isArray(data) ? data.filter(c => c.agency?.brand === brand) : [])
     } catch (e) { console.error("Erreur chargement contrats:", e) }
   }
 
@@ -566,7 +566,7 @@ export default function App() {
       // Filtrer selon le role utilisateur
       let filteredAgencies = agenciesData.filter(a => a.brand === brand)
       let filteredFleet = Array.isArray(fleetData) ? fleetData.filter(f => f.agency?.brand === brand || !brand) : []
-      let filteredBookings = Array.isArray(bookingsData) ? bookingsData : []
+      let filteredBookings = Array.isArray(bookingsData) ? bookingsData.filter(b => b.agency?.brand === brand) : []
       
       // COLLABORATOR et FRANCHISEE: ne voir que leur agence
       if (user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE')) {

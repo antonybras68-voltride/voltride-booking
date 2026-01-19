@@ -841,6 +841,25 @@ export default function App() {
     })
   }
 
+  // Long press for tablet (opens context menu)
+  const longPressTimer = React.useRef(null)
+  const handleTouchStart = (e, booking) => {
+    const touch = e.touches[0]
+    longPressTimer.current = setTimeout(() => {
+      setContextMenu({
+        x: touch.clientX,
+        y: touch.clientY,
+        booking
+      })
+    }, 500)
+  }
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
   // Click empty cell = new booking
   const handleCellClick = (fleetVehicle, date) => {
     if (draggedBooking) return
@@ -1484,8 +1503,10 @@ export default function App() {
                                       onDragStart={(e) => handleDragStart(e, cellBooking, 'move')}
                                       onDragEnd={handleDragEnd}
                                       onClick={() => { setSelectedBookingDetail(cellBooking); setShowBookingDetail(true) }}
-                                      onDoubleClick={() => handleDoubleClick(cellBooking)}
+                                      
                                       onContextMenu={(e) => handleContextMenu(e, cellBooking)}
+                                      onTouchStart={(e) => handleTouchStart(e, cellBooking)}
+                                      onTouchEnd={handleTouchEnd}
                                       onMouseEnter={() => setTooltip({ booking: cellBooking, x: 0, y: 0 })}
                                       onMouseLeave={() => setTooltip(null)}
                                       className={'absolute inset-y-1 text-white text-xs flex items-center cursor-grab active:cursor-grabbing transition-all ' + bgColor + (isDragging ? ' opacity-50 scale-95' : '')}

@@ -1849,7 +1849,7 @@ export default function App() {
                           {lang === 'fr' ? 'Assigner' : 'Asignar'}
                         </button>
                       )}
-                      {b.fleetVehicleId && b.status === 'CONFIRMED' && (
+                      {b.fleetVehicleId && b.status === 'CONFIRMED' && !b.checkedIn && (
                         <button onClick={() => { setCheckInBooking(b); setShowCheckIn(true) }} 
                           className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600">
                           Check-in

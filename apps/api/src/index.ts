@@ -3452,4 +3452,55 @@ app.put('/api/commissions/:contractId/paid', async (req, res) => {
   }
 })
 
+
+// ============== NOTIFICATION SETTINGS ==============
+// GET - Récupérer tous les paramètres de notifications
+app.get('/api/notification-settings', async (req, res) => {
+  try {
+    const settings = await prisma.notificationSetting.findMany()
+    res.json(settings)
+  } catch (error) {
+    console.error('Error fetching notification settings:', error)
+    res.status(500).json({ error: 'Failed to fetch notification settings' })
+  }
+})
+
+// POST - Initialiser ou mettre à jour les paramètres
+app.post('/api/notification-settings', async (req, res) => {
+  try {
+    const { notificationType, roleAdmin, roleManager, roleOperator } = req.body
+    const setting = await prisma.notificationSetting.upsert({
+      where: { notificationType },
+      update: { roleAdmin, roleManager, roleOperator },
+      create: { notificationType, roleAdmin, roleManager, roleOperator }
+    })
+    res.json(setting)
+  } catch (error) {
+    console.error('Error saving notification setting:', error)
+    res.status(500).json({ error: 'Failed to save notification setting' })
+  }
+})
+
+// POST - Sauvegarder tous les paramètres en une fois
+app.post('/api/notification-settings/bulk', async (req, res) => {
+  try {
+    const { settings } = req.body // Array of { notificationType, roleAdmin, roleManager, roleOperator }
+    const results = await Promise.all(
+      settings.map((s: any) => 
+        prisma.notificationSetting.upsert({
+          where: { notificationType: s.notificationType },
+          update: { roleAdmin: s.roleAdmin, roleManager: s.roleManager, roleOperator: s.roleOperator },
+          create: { notificationType: s.notificationType, roleAdmin: s.roleAdmin, roleManager: s.roleManager, roleOperator: s.roleOperator }
+        })
+      )
+    )
+    res.json({ success: true, count: results.length })
+  } catch (error) {
+    console.error('Error saving notification settings:', error)
+    res.status(500).json({ error: 'Failed to save notification settings' })
+  }
+})
+
+console.log('Notification settings routes loaded')
+
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })

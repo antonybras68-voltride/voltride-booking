@@ -310,6 +310,19 @@ export default function App() {
   const [settingsTab, setSettingsTab] = useState<'voltride' | 'motorrent'>('voltride')
   const [settingsSection, setSettingsSection] = useState<string>('cgvResume')
   const [settingsMainTab, setSettingsMainTab] = useState<'documents' | 'users' | 'notifications'>('documents')
+  const [notificationSettings, setNotificationSettings] = useState<Record<string, {roleAdmin: boolean, roleManager: boolean, roleOperator: boolean}>>({
+    new_booking: { roleAdmin: true, roleManager: true, roleOperator: true },
+    booking_cancelled: { roleAdmin: true, roleManager: true, roleOperator: false },
+    checkin_imminent: { roleAdmin: true, roleManager: true, roleOperator: true },
+    checkout_imminent: { roleAdmin: true, roleManager: true, roleOperator: true },
+    late_return: { roleAdmin: true, roleManager: true, roleOperator: true },
+    payment_received: { roleAdmin: true, roleManager: true, roleOperator: false },
+    payment_failed: { roleAdmin: true, roleManager: true, roleOperator: false },
+    maintenance_due: { roleAdmin: true, roleManager: true, roleOperator: false },
+    document_expiring: { roleAdmin: true, roleManager: true, roleOperator: false },
+    extension_request: { roleAdmin: true, roleManager: true, roleOperator: false },
+    walkin_waiting: { roleAdmin: true, roleManager: true, roleOperator: true },
+  })
   const [permissions, setPermissions] = useState<any[]>([])
   const [usersList, setUsersList] = useState<any[]>([])
   const [contracts, setContracts] = useState<any[]>([])
@@ -326,7 +339,7 @@ export default function App() {
     return d
   })
 
-  useEffect(() => { loadData() }, [selectedAgency, brand])
+  useEffect(() => { loadData(); loadNotificationSettings() }, [selectedAgency, brand])
   useEffect(() => { if (tab === "contracts" || tab === "invoices") loadContracts() }, [tab, brand])
   // Charger les permissions
   const loadPermissions = async () => {
@@ -432,6 +445,35 @@ export default function App() {
     } catch (e) { console.error('Erreur chargement utilisateurs:', e) }
   }
   const loadContracts = async () => {
+  const loadNotificationSettings = async () => {
+    try {
+      const response = await fetch(API_URL + '/api/notification-settings')
+      const data = await response.json()
+      if (data && data.length > 0) {
+        const settingsMap: Record<string, any> = {}
+        data.forEach((s: any) => {
+          settingsMap[s.notificationType] = { roleAdmin: s.roleAdmin, roleManager: s.roleManager, roleOperator: s.roleOperator }
+        })
+        setNotificationSettings(prev => ({ ...prev, ...settingsMap }))
+      }
+    } catch (e) { console.error('Error loading notification settings:', e) }
+  }
+  const saveNotificationSettings = async () => {
+    try {
+      const settings = Object.entries(notificationSettings).map(([type, roles]) => ({
+        notificationType: type,
+        roleAdmin: roles.roleAdmin,
+        roleManager: roles.roleManager,
+        roleOperator: roles.roleOperator
+      }))
+      await fetch(API_URL + '/api/notification-settings/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings })
+      })
+      alert(lang === 'fr' ? '✅ Paramètres sauvegardés !' : '✅ Ajustes guardados!')
+    } catch (e) { console.error('Error saving notification settings:', e); alert('Erreur lors de la sauvegarde') }
+  }
     try {
       const res = await fetch(API_URL + "/api/contracts")
       const data = await res.json()
@@ -2315,13 +2357,13 @@ export default function App() {
                                 <p className="text-xs text-gray-500">{notif.desc}</p>
                               </td>
                               <td className="text-center py-3 px-4">
-                                <input type="checkbox" defaultChecked className="w-5 h-5 rounded text-blue-600" />
+                                <input type="checkbox" checked={notificationSettings[notif.id]?.roleAdmin ?? true} onChange={(e) => setNotificationSettings(prev => ({...prev, [notif.id]: {...prev[notif.id], roleAdmin: e.target.checked}}))} className="w-5 h-5 rounded text-blue-600" />
                               </td>
                               <td className="text-center py-3 px-4">
-                                <input type="checkbox" defaultChecked className="w-5 h-5 rounded text-blue-600" />
+                                <input type="checkbox" checked={notificationSettings[notif.id]?.roleManager ?? true} onChange={(e) => setNotificationSettings(prev => ({...prev, [notif.id]: {...prev[notif.id], roleManager: e.target.checked}}))} className="w-5 h-5 rounded text-blue-600" />
                               </td>
                               <td className="text-center py-3 px-4">
-                                <input type="checkbox" defaultChecked={['new_booking', 'checkin_imminent', 'checkout_imminent', 'late_return', 'walkin_waiting'].includes(notif.id)} className="w-5 h-5 rounded text-blue-600" />
+                                <input type="checkbox" checked={notificationSettings[notif.id]?.roleOperator ?? false} onChange={(e) => setNotificationSettings(prev => ({...prev, [notif.id]: {...prev[notif.id], roleOperator: e.target.checked}}))} className="w-5 h-5 rounded text-blue-600" />
                               </td>
                             </tr>
                           ))}
@@ -2330,7 +2372,7 @@ export default function App() {
                     </div>
                     
                     <div className="mt-6 flex justify-end">
-                      <button className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-orange-400 text-white rounded-lg hover:opacity-90 font-medium">
+                      <button onClick={() => saveNotificationSettings()} className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-orange-400 text-white rounded-lg hover:opacity-90 font-medium">
                         💾 Sauvegarder les paramètres
                       </button>
                     </div>

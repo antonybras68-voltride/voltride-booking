@@ -1407,3 +1407,16 @@ model PushSubscription {
 
   @@index([userId])
 }
+
+// Notification Settings per Role
+model NotificationSetting {
+  id            String   @id @default(cuid())
+  notificationType String  // new_booking, booking_cancelled, checkin_imminent, etc.
+  roleAdmin     Boolean  @default(true)
+  roleManager   Boolean  @default(true)
+  roleOperator  Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([notificationType])
+}

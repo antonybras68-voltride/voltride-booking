@@ -445,6 +445,13 @@ export default function App() {
     } catch (e) { console.error('Erreur chargement utilisateurs:', e) }
   }
   const loadContracts = async () => {
+    try {
+      const res = await fetch(API_URL + "/api/contracts")
+      const data = await res.json()
+      setContracts(Array.isArray(data) ? data.filter(c => c.agency?.brand === brand) : [])
+    } catch (e) { console.error("Erreur chargement contrats:", e) }
+  }
+
   const loadNotificationSettings = async () => {
     try {
       const response = await fetch(API_URL + '/api/notification-settings')

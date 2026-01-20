@@ -2008,7 +2008,7 @@ async function sendNotificationByType(type: string, title: string, body: string,
     
     // Récupérer les utilisateurs de ces rôles
     const users = await prisma.user.findMany({
-      where: { role: { in: rolesToNotify }, isActive: true }
+      where: { role: { in: rolesToNotify as any }, isActive: true }
     })
     
     let sent = 0

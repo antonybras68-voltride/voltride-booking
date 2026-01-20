@@ -339,7 +339,7 @@ export default function App() {
     return d
   })
 
-  useEffect(() => { loadData(); loadNotificationSettings() }, [selectedAgency, brand])
+  useEffect(() => { loadData() }, [selectedAgency, brand])
   useEffect(() => { if (tab === "contracts" || tab === "invoices") loadContracts() }, [tab, brand])
   // Charger les permissions
   const loadPermissions = async () => {
@@ -474,6 +474,7 @@ export default function App() {
       alert(lang === 'fr' ? '✅ Paramètres sauvegardés !' : '✅ Ajustes guardados!')
     } catch (e) { console.error('Error saving notification settings:', e); alert('Erreur lors de la sauvegarde') }
   }
+  useEffect(() => { loadNotificationSettings() }, [])
     try {
       const res = await fetch(API_URL + "/api/contracts")
       const data = await res.json()

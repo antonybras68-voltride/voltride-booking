@@ -482,12 +482,6 @@ export default function App() {
     } catch (e) { console.error('Error saving notification settings:', e); alert('Erreur lors de la sauvegarde') }
   }
   useEffect(() => { loadNotificationSettings() }, [])
-    try {
-      const res = await fetch(API_URL + "/api/contracts")
-      const data = await res.json()
-      setContracts(Array.isArray(data) ? data.filter(c => c.agency?.brand === brand) : [])
-    } catch (e) { console.error("Erreur chargement contrats:", e) }
-  }
 
   // Vérifier si l'utilisateur a accès à une permission
   const hasPermission = (permissionId: string): boolean => {

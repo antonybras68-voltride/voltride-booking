@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const VAPID_PUBLIC_KEY = 'BKRoMFhD4-MNKJzdSoMuzQtq7vZvCQSi7OkVRAL1Yd3EoaTi3Tm5PzAJkgbQnhDgOKHc7bjhYMEtpQlIN51LS9w';
+const VAPID_PUBLIC_KEY = 'BI8oq0NMfLo2iM3wQuOG5XYwEndPbAVyyu_vlXdfwHUI7IS1USHUWMWx2H6yAq04FObrkEBrG0sV9W8PyGSa7s0';
 const API_URL = import.meta.env.VITE_API_URL || 'https://api-voltrideandmotorrent-production.up.railway.app';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {

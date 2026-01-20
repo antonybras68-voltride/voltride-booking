@@ -855,9 +855,19 @@ export default function App() {
     setDropTarget(null)
   }
 
-  // Double click = quick check-in
+  // Double click = quick check-in (uniquement si la location commence aujourd'hui)
   const handleDoubleClick = (booking) => {
     if (!booking.checkedIn) {
+      const today = new Date().toISOString().split('T')[0]
+      const startDate = booking.startDate?.split('T')[0]
+      
+      if (startDate !== today) {
+        alert(lang === 'fr' 
+          ? 'Le check-in n\'est possible que le jour du début de la location' 
+          : 'El check-in solo es posible el día de inicio del alquiler')
+        return
+      }
+      
       setCheckInBooking(booking)
       setShowCheckIn(true)
     }

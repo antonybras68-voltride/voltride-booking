@@ -26,6 +26,7 @@ export default function App() {
   const [messages, setMessages] = useState<any[]>([])
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [showComposeModal, setShowComposeModal] = useState(false)
+  const [showMessagePanel, setShowMessagePanel] = useState(false)
   const [selectedMessage, setSelectedMessage] = useState<any>(null)
   const [messageTab, setMessageTab] = useState<'inbox' | 'sent'>('inbox')
   const [newMessage, setNewMessage] = useState({ toUserId: '', toRole: '', subject: '', body: '' })
@@ -1252,10 +1253,105 @@ export default function App() {
           </select>
           <div className="flex-1" />
           
+          {/* Message Icon */}
+          <div className="relative mr-2">
+            <button 
+              onClick={() => { setShowMessagePanel(!showMessagePanel); setShowNotifPanel(false); if (!showMessagePanel) loadMessages() }}
+              className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              {unreadMessages > 0 && (
+                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
+                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                </span>
+              )}
+            </button>
+            
+            {/* Message Panel Popup */}
+            {showMessagePanel && (
+              <div className="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-2xl border z-50 max-h-[500px] overflow-hidden">
+                <div className="p-3 border-b flex justify-between items-center bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-t-xl">
+                  <span className="font-bold">💬 Messages</span>
+                  <button 
+                    onClick={() => setShowComposeModal(true)}
+                    className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                  >
+                    ✏️ Nouveau
+                  </button>
+                </div>
+                
+                {/* Tabs */}
+                <div className="flex border-b">
+                  <button 
+                    onClick={() => { setMessageTab('inbox'); loadMessages() }}
+                    className={`flex-1 py-2 text-sm font-medium ${messageTab === 'inbox' ? 'text-green-600 border-b-2 border-green-600' : 'text-gray-500'}`}
+                  >
+                    📥 Reçus {unreadMessages > 0 && <span className="ml-1 bg-red-500 text-white text-xs px-1.5 rounded-full">{unreadMessages}</span>}
+                  </button>
+                  <button 
+                    onClick={() => { setMessageTab('sent'); loadSentMessages() }}
+                    className={`flex-1 py-2 text-sm font-medium ${messageTab === 'sent' ? 'text-green-600 border-b-2 border-green-600' : 'text-gray-500'}`}
+                  >
+                    📤 Envoyés
+                  </button>
+                </div>
+                
+                <div className="max-h-80 overflow-y-auto">
+                  {messages.length === 0 ? (
+                    <div className="p-6 text-center text-gray-400">
+                      <p className="text-3xl mb-2">📭</p>
+                      <p>Aucun message</p>
+                    </div>
+                  ) : (
+                    messages.slice(0, 10).map(msg => (
+                      <div 
+                        key={msg.id}
+                        onClick={() => { setSelectedMessage(msg); setShowMessagePanel(false); setTab('messages'); if (!msg.isRead && messageTab === 'inbox') markMessageRead(msg.id) }}
+                        className={`p-3 border-b cursor-pointer hover:bg-gray-50 ${!msg.isRead && messageTab === 'inbox' ? 'bg-green-50 border-l-4 border-l-green-500' : ''}`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <p className={`text-sm ${!msg.isRead && messageTab === 'inbox' ? 'font-bold text-green-700' : 'font-medium'}`}>
+                            {msg.subject || '(Sans objet)'}
+                          </p>
+                          <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">
+                            {new Date(msg.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 truncate">{msg.body}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {messageTab === 'inbox' ? 'De: ' : 'À: '}
+                          {messageTab === 'inbox' 
+                            ? (usersList.find(u => u.id === msg.fromUserId)?.firstName || 'Utilisateur')
+                            : msg.toUserId 
+                              ? (usersList.find(u => u.id === msg.toUserId)?.firstName || 'Utilisateur')
+                              : msg.toRole || 'Tous'
+                          }
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+                
+                {messages.length > 0 && (
+                  <div className="p-2 border-t bg-gray-50 text-center">
+                    <button 
+                      onClick={() => { setShowMessagePanel(false); setTab('messages') }}
+                      className="text-sm text-green-600 hover:underline"
+                    >
+                      Voir tous les messages →
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Notification Bell */}
           <div className="relative mr-4">
             <button 
-              onClick={() => setShowNotifPanel(!showNotifPanel)}
+              onClick={() => { setShowNotifPanel(!showNotifPanel); setShowMessagePanel(false) }}
               className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

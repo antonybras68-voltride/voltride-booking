@@ -1390,6 +1390,18 @@ model AgencyClosure {
   @@index([startDate, endDate])
 }
 
+
+// ============== NOTIFICATION SETTINGS ==============
+model NotificationSetting {
+  id               String   @id @default(cuid())
+  notificationType String   @unique
+  roleAdmin        Boolean  @default(true)
+  roleManager      Boolean  @default(true)
+  roleOperator     Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
 // ============== PUSH NOTIFICATIONS ==============
 model PushSubscription {
   id        String   @id @default(cuid())

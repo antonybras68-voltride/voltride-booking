@@ -1945,6 +1945,11 @@ app.post('/api/push/unsubscribe', async (req, res) => {
 app.post('/api/push/send', async (req, res) => {
   try {
     const { userId, title, body, data } = req.body
+    
+    // Stocker la notification dans l'historique
+    await prisma.notification.create({
+      data: { userId, title, body, icon: '/icon-192.png', data: data || {} }
+    })
     if (!title || !body) return res.status(400).json({ error: 'Title et body requis' })
     
     const subs = userId 
@@ -1985,6 +1990,57 @@ app.post('/api/push/test', async (req, res) => {
 })
 
 console.log('Push notification routes loaded')
+
+// ============== NOTIFICATIONS HISTORY ==============
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const { userId } = req.query
+    const where = userId ? { userId: userId as string } : {}
+    const notifications = await prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    })
+    res.json(notifications)
+  } catch (error) { res.status(500).json({ error: 'Failed to get notifications' }) }
+})
+
+app.get('/api/notifications/unread-count', async (req, res) => {
+  try {
+    const { userId } = req.query
+    const where = userId ? { userId: userId as string, isRead: false } : { isRead: false }
+    const count = await prisma.notification.count({ where })
+    res.json({ count })
+  } catch (error) { res.status(500).json({ error: 'Failed to count' }) }
+})
+
+app.put('/api/notifications/:id/read', async (req, res) => {
+  try {
+    const notification = await prisma.notification.update({
+      where: { id: req.params.id },
+      data: { isRead: true }
+    })
+    res.json(notification)
+  } catch (error) { res.status(500).json({ error: 'Failed to mark as read' }) }
+})
+
+app.put('/api/notifications/read-all', async (req, res) => {
+  try {
+    const { userId } = req.body
+    const where = userId ? { userId } : {}
+    await prisma.notification.updateMany({ where, data: { isRead: true } })
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: 'Failed to mark all as read' }) }
+})
+
+app.delete('/api/notifications/:id', async (req, res) => {
+  try {
+    await prisma.notification.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: 'Failed to delete' }) }
+})
+
+
 
 
 // ============== VEHICLE NUMBERING CATEGORIES ==============

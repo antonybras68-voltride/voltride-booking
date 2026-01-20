@@ -1448,3 +1448,4 @@ model Message {
   @@index([toRole])
   @@index([createdAt])
 }
+// Regenerate Prisma Tue Jan 20 21:00:35 UTC 2026

@@ -309,7 +309,7 @@ export default function App() {
   })
   const [settingsTab, setSettingsTab] = useState<'voltride' | 'motorrent'>('voltride')
   const [settingsSection, setSettingsSection] = useState<string>('cgvResume')
-  const [settingsMainTab, setSettingsMainTab] = useState<'documents' | 'users'>('documents')
+  const [settingsMainTab, setSettingsMainTab] = useState<'documents' | 'users' | 'notifications'>('documents')
   const [permissions, setPermissions] = useState<any[]>([])
   const [usersList, setUsersList] = useState<any[]>([])
   const [contracts, setContracts] = useState<any[]>([])
@@ -2052,6 +2052,10 @@ export default function App() {
                   className={'px-4 py-2 rounded-lg font-medium ' + (settingsMainTab === 'users' ? 'bg-gradient-to-r from-cyan-500 to-orange-400 text-white' : 'bg-gray-100 hover:bg-gray-200')}>
                   👥 Utilisateurs & Rôles
                 </button>
+                <button onClick={() => setSettingsMainTab('notifications')}
+                  className={'px-4 py-2 rounded-lg font-medium ' + (settingsMainTab === 'notifications' ? 'bg-gradient-to-r from-cyan-500 to-orange-400 text-white' : 'bg-gray-100 hover:bg-gray-200')}>
+                  🔔 Notifications
+                </button>
               </div>
 
               {/* ===== ONGLET DOCUMENTS LÉGAUX ===== */}
@@ -2228,6 +2232,107 @@ export default function App() {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ===== ONGLET NOTIFICATIONS ===== */}
+              {settingsMainTab === 'notifications' && (
+                <div className="space-y-6">
+                  {/* En-tête */}
+                  <div className="bg-gradient-to-r from-blue-50 to-orange-50 rounded-xl p-6">
+                    <h3 className="text-lg font-bold mb-2">🔔 Configuration des Notifications Push</h3>
+                    <p className="text-gray-600 text-sm">Configurez quelles notifications chaque rôle doit recevoir sur l'application mobile.</p>
+                  </div>
+
+                  {/* Activation des notifications pour l'utilisateur actuel */}
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h4 className="font-bold mb-4">📱 Mes notifications</h4>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">Notifications push sur cet appareil</p>
+                        <p className="text-sm text-gray-500">Recevez des alertes en temps réel</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if ('Notification' in window && 'serviceWorker' in navigator) {
+                            const permission = await Notification.requestPermission();
+                            if (permission === 'granted') {
+                              const reg = await navigator.serviceWorker.ready;
+                              const sub = await reg.pushManager.subscribe({
+                                userVisibleOnly: true,
+                                applicationServerKey: new Uint8Array([4,164,104,48,88,67,227,205,40,156,221,74,131,46,205,11,106,238,246,111,9,4,162,236,233,21,68,2,245,97,221,196,161,164,226,221,57,185,63,48,9,146,6,208,158,16,224,56,161,220,237,184,225,96,193,45,165,9,72,55,157,75,75,220].filter((_, i) => i < 65))
+                              });
+                              await fetch(API_URL + '/api/push/subscribe', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ subscription: sub, userId: user?.id })
+                              });
+                              alert('✅ Notifications activées !');
+                            }
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Activer les notifications
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Configuration par rôle */}
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <h4 className="font-bold mb-4">⚙️ Notifications par rôle</h4>
+                    <p className="text-sm text-gray-500 mb-6">Définissez quelles notifications chaque rôle doit recevoir.</p>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-gray-50">
+                            <th className="text-left py-3 px-4">Notification</th>
+                            <th className="text-center py-3 px-4">Admin</th>
+                            <th className="text-center py-3 px-4">Manager</th>
+                            <th className="text-center py-3 px-4">Opérateur</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { id: 'new_booking', label: '🚲 Nouvelle réservation', desc: 'Quand un client réserve en ligne' },
+                            { id: 'booking_cancelled', label: '❌ Réservation annulée', desc: 'Quand un client annule' },
+                            { id: 'checkin_imminent', label: '⏰ Check-in imminent', desc: '30 min avant l\'arrivée du client' },
+                            { id: 'checkout_imminent', label: '⏰ Check-out imminent', desc: '30 min avant le retour prévu' },
+                            { id: 'late_return', label: '⚠️ Retard de retour', desc: 'Client en retard pour rendre le véhicule' },
+                            { id: 'payment_received', label: '💰 Paiement reçu', desc: 'Confirmation de paiement' },
+                            { id: 'payment_failed', label: '💳 Paiement échoué', desc: 'Échec de paiement Stripe' },
+                            { id: 'maintenance_due', label: '🔧 Maintenance à planifier', desc: 'Véhicule atteignant un seuil' },
+                            { id: 'document_expiring', label: '📄 Document expire bientôt', desc: 'ITV ou assurance à renouveler' },
+                            { id: 'extension_request', label: '📅 Demande d\'extension', desc: 'Client demande à prolonger' },
+                            { id: 'walkin_waiting', label: '👥 Client en attente', desc: 'Formulaire walk-in rempli' },
+                          ].map(notif => (
+                            <tr key={notif.id} className="border-b hover:bg-gray-50">
+                              <td className="py-3 px-4">
+                                <p className="font-medium">{notif.label}</p>
+                                <p className="text-xs text-gray-500">{notif.desc}</p>
+                              </td>
+                              <td className="text-center py-3 px-4">
+                                <input type="checkbox" defaultChecked className="w-5 h-5 rounded text-blue-600" />
+                              </td>
+                              <td className="text-center py-3 px-4">
+                                <input type="checkbox" defaultChecked className="w-5 h-5 rounded text-blue-600" />
+                              </td>
+                              <td className="text-center py-3 px-4">
+                                <input type="checkbox" defaultChecked={['new_booking', 'checkin_imminent', 'checkout_imminent', 'late_return', 'walkin_waiting'].includes(notif.id)} className="w-5 h-5 rounded text-blue-600" />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    <div className="mt-6 flex justify-end">
+                      <button className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-orange-400 text-white rounded-lg hover:opacity-90 font-medium">
+                        💾 Sauvegarder les paramètres
+                      </button>
                     </div>
                   </div>
                 </div>

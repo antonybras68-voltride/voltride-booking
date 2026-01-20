@@ -1,18 +1,4 @@
-import re
-
-# Lire le fichier
-with open('apps/api/src/index.ts', 'r', encoding='utf-8') as f:
-    content = f.read()
-
-# Remplacer les backticks et $ échappés
-content = content.replace('\`', '`')
-content = content.replace('\${', '${')
-
-# Sauvegarder
-with open('apps/api/src/index.ts', 'w', encoding='utf-8') as f:
-    f.write(content)
-
-print('Fichier corrigé !')import webpush from 'web-push';
+import webpush from 'web-push';
 import express from 'express'
 import cors from 'cors'
 import { PrismaClient } from '@prisma/client'

@@ -1,4 +1,18 @@
-import webpush from 'web-push';
+import re
+
+# Lire le fichier
+with open('apps/api/src/index.ts', 'r', encoding='utf-8') as f:
+    content = f.read()
+
+# Remplacer les backticks et $ échappés
+content = content.replace('\`', '`')
+content = content.replace('\${', '${')
+
+# Sauvegarder
+with open('apps/api/src/index.ts', 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print('Fichier corrigé !')import webpush from 'web-push';
 import express from 'express'
 import cors from 'cors'
 import { PrismaClient } from '@prisma/client'
@@ -2096,7 +2110,7 @@ app.get('/api/cron/check-notifications', async (req, res) => {
             await sendNotificationByType(
               'checkin_imminent',
               '⏰ Check-in imminent',
-              \`\${booking.customer?.firstName} \${booking.customer?.lastName} arrive dans \${diff} min (\${booking.startTime})\`,
+              `${booking.customer?.firstName} ${booking.customer?.lastName} arrive dans ${diff} min (${booking.startTime})`,
               { bookingId: booking.id, reference: booking.reference }
             )
             results.checkinImminent++
@@ -2123,7 +2137,7 @@ app.get('/api/cron/check-notifications', async (req, res) => {
             await sendNotificationByType(
               'checkout_imminent',
               '⏰ Check-out imminent',
-              \`\${booking.customer?.firstName} \${booking.customer?.lastName} doit rendre dans \${diff} min (\${booking.endTime})\`,
+              `${booking.customer?.firstName} ${booking.customer?.lastName} doit rendre dans ${diff} min (${booking.endTime})`,
               { bookingId: booking.id, reference: booking.reference }
             )
             results.checkoutImminent++
@@ -2153,7 +2167,7 @@ app.get('/api/cron/check-notifications', async (req, res) => {
               await sendNotificationByType(
                 'late_return',
                 '⚠️ Retard de retour',
-                \`\${booking.customer?.firstName} \${booking.customer?.lastName} a \${lateMinutes} min de retard!\`,
+                `${booking.customer?.firstName} ${booking.customer?.lastName} a ${lateMinutes} min de retard!`,
                 { bookingId: booking.id, reference: booking.reference, lateMinutes }
               )
               results.lateReturn++

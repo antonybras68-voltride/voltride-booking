@@ -2049,6 +2049,127 @@ async function sendNotificationByType(type: string, title: string, body: string,
 
 
 
+
+// ============== CRON NOTIFICATIONS (à appeler toutes les 5-10 min) ==============
+app.get('/api/cron/check-notifications', async (req, res) => {
+  try {
+    const now = new Date()
+    const today = now.toISOString().split('T')[0]
+    const currentHour = now.getHours()
+    const currentMinute = now.getMinutes()
+    const results = { checkinImminent: 0, checkoutImminent: 0, lateReturn: 0 }
+    
+    // Récupérer les réservations du jour
+    const todayBookings = await prisma.booking.findMany({
+      where: {
+        OR: [
+          { startDate: { gte: new Date(today), lt: new Date(today + 'T23:59:59') } },
+          { endDate: { gte: new Date(today), lt: new Date(today + 'T23:59:59') } }
+        ],
+        status: { in: ['CONFIRMED', 'CHECKED_IN'] }
+      },
+      include: { customer: true, fleetVehicle: true, agency: true }
+    })
+    
+    for (const booking of todayBookings) {
+      // Parse l'heure de début (format "HH:MM")
+      const [startHour, startMin] = booking.startTime.split(':').map(Number)
+      const [endHour, endMin] = booking.endTime.split(':').map(Number)
+      
+      // Check-in imminent (30 min avant, si pas encore check-in)
+      if (!booking.checkedIn && booking.startDate.toISOString().split('T')[0] === today) {
+        const startMinutes = startHour * 60 + startMin
+        const nowMinutes = currentHour * 60 + currentMinute
+        const diff = startMinutes - nowMinutes
+        
+        if (diff > 0 && diff <= 30) {
+          // Vérifier si notification déjà envoyée (via tag unique)
+          const existing = await prisma.notification.findFirst({
+            where: { 
+              data: { path: ['bookingId'], equals: booking.id },
+              title: { contains: 'Check-in imminent' },
+              createdAt: { gte: new Date(today) }
+            }
+          })
+          
+          if (!existing) {
+            await sendNotificationByType(
+              'checkin_imminent',
+              '⏰ Check-in imminent',
+              \`\${booking.customer?.firstName} \${booking.customer?.lastName} arrive dans \${diff} min (\${booking.startTime})\`,
+              { bookingId: booking.id, reference: booking.reference }
+            )
+            results.checkinImminent++
+          }
+        }
+      }
+      
+      // Check-out imminent (30 min avant, si check-in fait mais pas check-out)
+      if (booking.checkedIn && !booking.checkedOut && booking.endDate.toISOString().split('T')[0] === today) {
+        const endMinutes = endHour * 60 + endMin
+        const nowMinutes = currentHour * 60 + currentMinute
+        const diff = endMinutes - nowMinutes
+        
+        if (diff > 0 && diff <= 30) {
+          const existing = await prisma.notification.findFirst({
+            where: { 
+              data: { path: ['bookingId'], equals: booking.id },
+              title: { contains: 'Check-out imminent' },
+              createdAt: { gte: new Date(today) }
+            }
+          })
+          
+          if (!existing) {
+            await sendNotificationByType(
+              'checkout_imminent',
+              '⏰ Check-out imminent',
+              \`\${booking.customer?.firstName} \${booking.customer?.lastName} doit rendre dans \${diff} min (\${booking.endTime})\`,
+              { bookingId: booking.id, reference: booking.reference }
+            )
+            results.checkoutImminent++
+          }
+        }
+      }
+      
+      // Retard de retour (si heure de fin dépassée et pas check-out)
+      if (booking.checkedIn && !booking.checkedOut && booking.endDate.toISOString().split('T')[0] === today) {
+        const endMinutes = endHour * 60 + endMin
+        const nowMinutes = currentHour * 60 + currentMinute
+        
+        if (nowMinutes > endMinutes) {
+          const lateMinutes = nowMinutes - endMinutes
+          
+          // Envoyer notification toutes les 15 min de retard
+          if (lateMinutes % 15 < 5) {
+            const existing = await prisma.notification.findFirst({
+              where: { 
+                data: { path: ['bookingId'], equals: booking.id },
+                title: { contains: 'Retard' },
+                createdAt: { gte: new Date(Date.now() - 10 * 60 * 1000) } // 10 min
+              }
+            })
+            
+            if (!existing) {
+              await sendNotificationByType(
+                'late_return',
+                '⚠️ Retard de retour',
+                \`\${booking.customer?.firstName} \${booking.customer?.lastName} a \${lateMinutes} min de retard!\`,
+                { bookingId: booking.id, reference: booking.reference, lateMinutes }
+              )
+              results.lateReturn++
+            }
+          }
+        }
+      }
+    }
+    
+    res.json({ success: true, checked: todayBookings.length, notifications: results })
+  } catch (error) { 
+    console.error('Cron notifications error:', error)
+    res.status(500).json({ error: 'Failed to check notifications' }) 
+  }
+})
+
 // ============== INTERNAL MESSAGING ==============
 app.get('/api/messages', async (req, res) => {
   try {

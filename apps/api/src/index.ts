@@ -1991,6 +1991,55 @@ app.post('/api/push/test', async (req, res) => {
 
 console.log('Push notification routes loaded')
 
+// ============== NOTIFICATION HELPER ==============
+async function sendNotificationByType(type: string, title: string, body: string, data?: any) {
+  try {
+    // Récupérer les paramètres de notification pour ce type
+    const setting = await prisma.notificationSetting.findUnique({ where: { notificationType: type } })
+    if (!setting) return { sent: 0 }
+    
+    // Déterminer les rôles à notifier
+    const rolesToNotify: string[] = []
+    if (setting.roleAdmin) rolesToNotify.push('ADMIN')
+    if (setting.roleManager) rolesToNotify.push('MANAGER')
+    if (setting.roleOperator) rolesToNotify.push('OPERATOR')
+    
+    if (rolesToNotify.length === 0) return { sent: 0 }
+    
+    // Récupérer les utilisateurs de ces rôles
+    const users = await prisma.user.findMany({
+      where: { role: { in: rolesToNotify }, isActive: true }
+    })
+    
+    let sent = 0
+    for (const user of users) {
+      // Créer la notification dans l'historique
+      await prisma.notification.create({
+        data: { userId: user.id, title, body, icon: '/icon-192.png', data: data || {} }
+      })
+      
+      // Envoyer push notification
+      const subs = await prisma.pushSubscription.findMany({ where: { userId: user.id } })
+      for (const sub of subs) {
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            JSON.stringify({ title, body, icon: '/icon-192.png', data })
+          )
+          sent++
+        } catch (e: any) {
+          if (e.statusCode === 410 || e.statusCode === 404) {
+            await prisma.pushSubscription.delete({ where: { endpoint: sub.endpoint } }).catch(() => {})
+          }
+        }
+      }
+    }
+    return { sent, users: users.length }
+  } catch (e) { console.error('sendNotificationByType error:', e); return { sent: 0, error: e } }
+}
+
+
+
 
 // ============== INTERNAL MESSAGING ==============
 app.get('/api/messages', async (req, res) => {

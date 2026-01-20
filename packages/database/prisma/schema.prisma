@@ -1430,3 +1430,21 @@ model Notification {
   @@index([userId])
   @@index([createdAt])
 }
+
+// ============== INTERNAL MESSAGING ==============
+model Message {
+  id          String   @id @default(cuid())
+  fromUserId  String
+  toUserId    String?  // null = message à tous
+  toRole      String?  // ADMIN, MANAGER, OPERATOR = message à un rôle
+  subject     String?
+  body        String
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+  
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([toRole])
+  @@index([createdAt])
+}

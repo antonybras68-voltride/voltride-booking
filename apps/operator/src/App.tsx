@@ -22,6 +22,14 @@ export default function App() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifPanel, setShowNotifPanel] = useState(false)
   
+  // Messaging
+  const [messages, setMessages] = useState<any[]>([])
+  const [unreadMessages, setUnreadMessages] = useState(0)
+  const [showComposeModal, setShowComposeModal] = useState(false)
+  const [selectedMessage, setSelectedMessage] = useState<any>(null)
+  const [messageTab, setMessageTab] = useState<'inbox' | 'sent'>('inbox')
+  const [newMessage, setNewMessage] = useState({ toUserId: '', toRole: '', subject: '', body: '' })
+  
   // Traductions
   const t: Record<string, Record<string, string>> = {
     fr: {
@@ -522,6 +530,66 @@ export default function App() {
   }
   
   useEffect(() => { loadNotifications(); const interval = setInterval(loadNotifications, 30000); return () => clearInterval(interval) }, [])
+  
+  // Charger les messages
+  const loadMessages = async () => {
+    if (!user) return
+    try {
+      const [inboxRes, countRes] = await Promise.all([
+        fetch(API_URL + '/api/messages?userId=' + user.id + '&role=' + user.role),
+        fetch(API_URL + '/api/messages/unread-count?userId=' + user.id + '&role=' + user.role)
+      ])
+      const msgs = await inboxRes.json()
+      const countData = await countRes.json()
+      setMessages(Array.isArray(msgs) ? msgs : [])
+      setUnreadMessages(countData.count || 0)
+    } catch (e) { console.error('Erreur chargement messages:', e) }
+  }
+  
+  const loadSentMessages = async () => {
+    if (!user) return
+    try {
+      const res = await fetch(API_URL + '/api/messages/sent?userId=' + user.id)
+      const msgs = await res.json()
+      setMessages(Array.isArray(msgs) ? msgs : [])
+    } catch (e) { console.error('Erreur:', e) }
+  }
+  
+  const sendMessage = async () => {
+    if (!newMessage.body.trim()) return alert('Le message ne peut pas être vide')
+    try {
+      await fetch(API_URL + '/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromUserId: user.id,
+          toUserId: newMessage.toUserId || null,
+          toRole: newMessage.toRole || null,
+          subject: newMessage.subject,
+          body: newMessage.body
+        })
+      })
+      setShowComposeModal(false)
+      setNewMessage({ toUserId: '', toRole: '', subject: '', body: '' })
+      loadMessages()
+      alert('✅ Message envoyé!')
+    } catch (e) { alert('Erreur envoi') }
+  }
+  
+  const markMessageRead = async (id: string) => {
+    await fetch(API_URL + '/api/messages/' + id + '/read', { method: 'PUT' })
+    loadMessages()
+  }
+  
+  const deleteMessage = async (id: string) => {
+    if (!confirm('Supprimer ce message?')) return
+    await fetch(API_URL + '/api/messages/' + id, { method: 'DELETE' })
+    setSelectedMessage(null)
+    loadMessages()
+  }
+  
+  useEffect(() => { if (user) loadMessages() }, [user])
+  useEffect(() => { const interval = setInterval(loadMessages, 30000); return () => clearInterval(interval) }, [user])
 
   // Vérifier si l'utilisateur a accès à une permission
   const hasPermission = (permissionId: string): boolean => {
@@ -1126,6 +1194,7 @@ export default function App() {
             { id: 'contracts', label: t[lang].contracts },
             { id: 'invoices', label: t[lang].invoices },
             { id: 'settings', label: t[lang].settings },
+            { id: 'messages', label: '💬 Messages' },
           ].filter(item => hasPermission(item.id)).map(item => (
             <button key={item.id} onClick={() => { setTab(item.id); setMobileMenuOpen(false) }}
               className={'w-full text-left px-4 py-2.5 rounded-xl mb-1 transition-all ' +
@@ -3491,6 +3560,181 @@ export default function App() {
           </div>
         </div>
       )}
+
+      
+          {/* MESSAGES */}
+          {!loading && tab === 'messages' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">💬 Messagerie interne</h2>
+                <button 
+                  onClick={() => setShowComposeModal(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                >
+                  ✏️ Nouveau message
+                </button>
+              </div>
+              
+              {/* Tabs Inbox / Sent */}
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => { setMessageTab('inbox'); loadMessages() }}
+                  className={`px-4 py-2 rounded-lg font-medium ${messageTab === 'inbox' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                >
+                  📥 Boîte de réception {unreadMessages > 0 && <span className="ml-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{unreadMessages}</span>}
+                </button>
+                <button 
+                  onClick={() => { setMessageTab('sent'); loadSentMessages() }}
+                  className={`px-4 py-2 rounded-lg font-medium ${messageTab === 'sent' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                >
+                  📤 Envoyés
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Liste des messages */}
+                <div className="lg:col-span-1 bg-white rounded-xl shadow overflow-hidden">
+                  <div className="max-h-96 overflow-y-auto">
+                    {messages.length === 0 ? (
+                      <div className="p-6 text-center text-gray-400">Aucun message</div>
+                    ) : (
+                      messages.map(msg => (
+                        <div 
+                          key={msg.id}
+                          onClick={() => { setSelectedMessage(msg); if (!msg.isRead && messageTab === 'inbox') markMessageRead(msg.id) }}
+                          className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${!msg.isRead && messageTab === 'inbox' ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''} ${selectedMessage?.id === msg.id ? 'bg-gray-100' : ''}`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <p className={`font-medium text-sm ${!msg.isRead && messageTab === 'inbox' ? 'text-blue-700' : 'text-gray-800'}`}>
+                              {msg.subject || '(Sans objet)'}
+                            </p>
+                            <span className="text-xs text-gray-400">
+                              {new Date(msg.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 truncate">{msg.body}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+                
+                {/* Détail du message */}
+                <div className="lg:col-span-2 bg-white rounded-xl shadow p-6">
+                  {selectedMessage ? (
+                    <div>
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-xl font-bold">{selectedMessage.subject || '(Sans objet)'}</h3>
+                          <p className="text-sm text-gray-500">
+                            {messageTab === 'inbox' ? 'De: ' : 'À: '}
+                            {messageTab === 'inbox' 
+                              ? (usersList.find(u => u.id === selectedMessage.fromUserId)?.firstName + ' ' + usersList.find(u => u.id === selectedMessage.fromUserId)?.lastName || 'Utilisateur')
+                              : selectedMessage.toUserId 
+                                ? (usersList.find(u => u.id === selectedMessage.toUserId)?.firstName + ' ' + usersList.find(u => u.id === selectedMessage.toUserId)?.lastName || 'Utilisateur')
+                                : selectedMessage.toRole || 'Tous'
+                            }
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {new Date(selectedMessage.createdAt).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                        <button 
+                          onClick={() => deleteMessage(selectedMessage.id)}
+                          className="text-red-500 hover:text-red-700 p-2"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                      <hr className="my-4" />
+                      <div className="whitespace-pre-wrap text-gray-700">{selectedMessage.body}</div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-400 py-12">
+                      <p className="text-4xl mb-2">📬</p>
+                      <p>Sélectionnez un message pour le lire</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Composer Message */}
+          {showComposeModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowComposeModal(false)}>
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+                <h2 className="text-xl font-bold mb-4">✏️ Nouveau message</h2>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Destinataire</label>
+                    <select 
+                      value={newMessage.toUserId}
+                      onChange={e => setNewMessage({...newMessage, toUserId: e.target.value, toRole: ''})}
+                      className="w-full border-2 rounded-xl p-3"
+                    >
+                      <option value="">-- Choisir un utilisateur --</option>
+                      {usersList.filter(u => u.id !== user?.id).map(u => (
+                        <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.role})</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Ou envoyer à un rôle</label>
+                    <select 
+                      value={newMessage.toRole}
+                      onChange={e => setNewMessage({...newMessage, toRole: e.target.value, toUserId: ''})}
+                      className="w-full border-2 rounded-xl p-3"
+                    >
+                      <option value="">-- Tous les utilisateurs d'un rôle --</option>
+                      <option value="ADMIN">Tous les Admins</option>
+                      <option value="MANAGER">Tous les Managers</option>
+                      <option value="OPERATOR">Tous les Opérateurs</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Sujet</label>
+                    <input 
+                      type="text"
+                      value={newMessage.subject}
+                      onChange={e => setNewMessage({...newMessage, subject: e.target.value})}
+                      placeholder="Objet du message"
+                      className="w-full border-2 rounded-xl p-3"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Message *</label>
+                    <textarea 
+                      value={newMessage.body}
+                      onChange={e => setNewMessage({...newMessage, body: e.target.value})}
+                      placeholder="Votre message..."
+                      rows={5}
+                      className="w-full border-2 rounded-xl p-3"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 mt-6">
+                  <button 
+                    onClick={() => setShowComposeModal(false)}
+                    className="flex-1 py-2 bg-gray-200 rounded-xl hover:bg-gray-300"
+                  >
+                    Annuler
+                  </button>
+                  <button 
+                    onClick={sendMessage}
+                    className="flex-1 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+                  >
+                    📤 Envoyer
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
       {/* Extension Contract Modal */}
       {showExtensionModal && extensionContract && (

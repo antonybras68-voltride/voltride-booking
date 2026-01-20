@@ -1942,6 +1942,38 @@ app.post('/api/push/unsubscribe', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to unsubscribe' }) }
 })
 
+app.post('/api/push/send', async (req, res) => {
+  try {
+    const { userId, title, body, data } = req.body
+    if (!title || !body) return res.status(400).json({ error: 'Title et body requis' })
+    
+    const subs = userId 
+      ? await prisma.pushSubscription.findMany({ where: { userId } })
+      : await prisma.pushSubscription.findMany()
+    
+    const results = await Promise.allSettled(subs.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          JSON.stringify({ title, body, icon: '/icon-192.png', data })
+        )
+        return { success: true }
+      } catch (err: any) {
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          await prisma.pushSubscription.delete({ where: { endpoint: sub.endpoint } }).catch(() => {})
+        }
+        throw err
+      }
+    }))
+    
+    res.json({ 
+      total: subs.length, 
+      success: results.filter(r => r.status === 'fulfilled').length,
+      failed: results.filter(r => r.status === 'rejected').length 
+    })
+  } catch (error) { console.error('Push send error:', error); res.status(500).json({ error: 'Failed to send' }) }
+})
+
 app.post('/api/push/test', async (req, res) => {
   try {
     const { endpoint } = req.body

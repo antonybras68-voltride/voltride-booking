@@ -1302,8 +1302,6 @@ model User {
   lastLoginAt   DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  pushSubscriptions PushSubscription[]
 }
 
 enum UserRole {
@@ -1392,7 +1390,19 @@ model AgencyClosure {
   @@index([startDate, endDate])
 }
 
-// Push Notification Subscriptions
+
+// ============== NOTIFICATION SETTINGS ==============
+model NotificationSetting {
+  id               String   @id @default(cuid())
+  notificationType String   @unique
+  roleAdmin        Boolean  @default(true)
+  roleManager      Boolean  @default(true)
+  roleOperator     Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ============== PUSH NOTIFICATIONS ==============
 model PushSubscription {
   id        String   @id @default(cuid())
   endpoint  String   @unique
@@ -1402,21 +1412,21 @@ model PushSubscription {
   userAgent String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  
   @@index([userId])
 }
 
-// Notification Settings per Role
-model NotificationSetting {
-  id            String   @id @default(cuid())
-  notificationType String  // new_booking, booking_cancelled, checkin_imminent, etc.
-  roleAdmin     Boolean  @default(true)
-  roleManager   Boolean  @default(true)
-  roleOperator  Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@unique([notificationType])
+// ============== NOTIFICATIONS HISTORY ==============
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String?
+  title       String
+  body        String
+  icon        String?
+  data        Json?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
 }

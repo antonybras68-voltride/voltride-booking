@@ -445,6 +445,14 @@ app.post('/api/bookings', async (req, res) => {
       include: { agency: true, customer: true, items: { include: { vehicle: true } }, options: { include: { option: true } }, fleetVehicle: true }
     })
     
+    // Envoyer notification nouvelle réservation
+    sendNotificationByType(
+      'new_booking',
+      '🆕 Nouvelle réservation',
+      `${customer.firstName} ${customer.lastName} - ${new Date(req.body.startDate).toLocaleDateString('fr-FR')}`,
+      { bookingId: booking.id, reference: booking.reference }
+    )
+    
     res.json(finalBooking)
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create booking' }) }
 })

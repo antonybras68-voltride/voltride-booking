@@ -1,4 +1,6 @@
-const CACHE_NAME = 'mv-operator-v2';
+const CACHE_NAME = 'mv-operator-v3';
+const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app';
+
 const urlsToCache = [
   '/',
   '/index.html',
@@ -10,11 +12,10 @@ const urlsToCache = [
 // Installation
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Cache ouvert');
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('Cache ouvert');
+      return cache.addAll(urlsToCache);
+    })
   );
   self.skipWaiting();
 });
@@ -41,37 +42,52 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request)
       .then((response) => {
         const responseClone = response.clone();
-        caches.open(CACHE_NAME)
-          .then((cache) => {
-            if (event.request.method === 'GET') {
-              cache.put(event.request, responseClone);
-            }
-          });
+        caches.open(CACHE_NAME).then((cache) => {
+          if (event.request.method === 'GET') {
+            cache.put(event.request, responseClone);
+          }
+        });
         return response;
       })
-      .catch(() => {
-        return caches.match(event.request);
-      })
+      .catch(() => caches.match(event.request))
   );
 });
 
 // ========================================
+// APP BADGE - Nombre sur l'icône
+// ========================================
+async function updateBadge() {
+  try {
+    const response = await fetch(API_URL + '/api/notifications/unread-count');
+    const data = await response.json();
+    const count = data.count || 0;
+    
+    if ('setAppBadge' in navigator) {
+      if (count > 0) {
+        await navigator.setAppBadge(count);
+      } else {
+        await navigator.clearAppBadge();
+      }
+    }
+  } catch (e) {
+    console.log('Badge update error:', e);
+  }
+}
+
+// ========================================
 // NOTIFICATIONS PUSH
 // ========================================
-
-// Réception d'une notification push
 self.addEventListener('push', (event) => {
   console.log('Push reçu:', event);
   
   let data = {
-    title: 'M&V Operator',
+    title: 'Voltride Operator',
     body: 'Nouvelle notification',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     tag: 'default'
   };
   
-  // Si le serveur envoie des données JSON
   if (event.data) {
     try {
       data = { ...data, ...event.data.json() };
@@ -84,14 +100,18 @@ self.addEventListener('push', (event) => {
     body: data.body,
     icon: data.icon || '/icon-192.png',
     badge: data.badge || '/icon-192.png',
-    tag: data.tag || 'default',
+    tag: data.tag || Date.now().toString(),
     vibrate: [200, 100, 200],
     data: data.data || {},
-    actions: data.actions || []
+    actions: data.actions || [],
+    requireInteraction: true
   };
   
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    Promise.all([
+      self.registration.showNotification(data.title, options),
+      updateBadge()
+    ])
   );
 });
 
@@ -100,20 +120,33 @@ self.addEventListener('notificationclick', (event) => {
   console.log('Notification cliquée:', event);
   event.notification.close();
   
-  // Ouvre l'app ou focus sur la fenêtre existante
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // Si une fenêtre est déjà ouverte, focus dessus
         for (const client of clientList) {
-          if (client.url.includes('operator') && 'focus' in client) {
+          if ('focus' in client) {
+            client.postMessage({ type: 'NOTIFICATION_CLICKED', data: event.notification.data });
             return client.focus();
           }
         }
-        // Sinon ouvre une nouvelle fenêtre
         if (clients.openWindow) {
           return clients.openWindow('/');
         }
       })
   );
 });
+
+// Fermeture d'une notification
+self.addEventListener('notificationclose', (event) => {
+  console.log('Notification fermée');
+  updateBadge();
+});
+
+// Message depuis l'app principale
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'UPDATE_BADGE') {
+    updateBadge();
+  }
+});
+
+console.log('Service Worker Voltride chargé avec support badge');

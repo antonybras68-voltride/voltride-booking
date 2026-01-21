@@ -220,7 +220,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
     setLoading(true)
     try {
       // Mettre à jour le booking avec les infos de check-in
-      await api.put(`/api/bookings/${booking.id}`, {
+      await api.updateBooking(booking.id, {
         checkedIn: true,
         checkedInAt: new Date().toISOString(),
         startMileage,
@@ -237,7 +237,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
       })
       
       // Mettre à jour le kilométrage du véhicule
-      await api.put(`/api/fleet/${fleetVehicle.id}`, {
+      await api.updateFleetVehicle(fleetVehicle.id, {
         currentMileage: startMileage,
         status: 'RENTED'
       })

@@ -110,8 +110,8 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('upload_preset', 'voltride_unsigned')
-      const res = await fetch('https://api.cloudinary.com/v1_1/dis5pcnfr/image/upload', {
+      formData.append('upload_preset', 'voltride')
+      const res = await fetch('https://api.cloudinary.com/v1_1/dis5pcnfr/auto/upload', {
         method: 'POST',
         body: formData
       })

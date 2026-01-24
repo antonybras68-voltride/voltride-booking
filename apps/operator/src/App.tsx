@@ -247,7 +247,7 @@ export default function App() {
 
   const [tab, setTab] = useState('planning')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [brand, setBrand] = useState('VOLTRIDE')
+  const brand = 'VOLTRIDE' // Marque fixe
   const [agencies, setAgencies] = useState([])
   const [allAgencies, setAllAgencies] = useState([])
   const [selectedAgency, setSelectedAgency] = useState('')
@@ -1122,17 +1122,8 @@ export default function App() {
       <div className={(mobileMenuOpen ? "translate-x-0" : "-translate-x-full") + " md:translate-x-0 fixed md:relative z-40 w-56 flex flex-col shadow-xl transition-transform duration-300"} style={{ background: 'linear-gradient(180deg, #abdee6 0%, #ffaf10 100%)' }}>
         <div className="p-4 border-b border-white/20">
           <div className="flex justify-center mb-3">
-            {brand === 'VOLTRIDE' ? (
-              <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766928342/d5uv1qrfwr86rd1abtd1.png" className="h-12" alt="Voltride" />
-            ) : (
-              <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766930480/logo-2024-e1699439584325-removebg-preview_sv6yxg.png" className="h-12" alt="Motor-Rent" />
-            )}
+            <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766928342/d5uv1qrfwr86rd1abtd1.png" className="h-12" alt="Voltride" />
           </div>
-          <select value={brand} onChange={e => { setBrand(e.target.value); setSelectedAgency('') }}
-            className="w-full text-sm bg-white/90 border-0 rounded-lg p-2 font-medium">
-            <option value="VOLTRIDE">Voltride</option>
-            <option value="MOTOR-RENT">Motor-Rent</option>
-          </select>
         </div>
         
         <nav className="flex-1 p-2">

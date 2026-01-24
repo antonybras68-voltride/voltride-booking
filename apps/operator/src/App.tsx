@@ -1118,6 +1118,23 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-gray-100 relative">
+      {/* Floating Logos Background */}
+      <div className="floating-logos-container">
+        {[...Array(15)].map((_, i) => (
+          <img
+            key={i}
+            src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1769278425/IMG-20260111-WA0001_1_-removebg-preview_zzajxa.png"
+            alt=""
+            className="floating-logo"
+            style={{
+              left: `${Math.random() * 100}%`,
+              width: `${30 + Math.random() * 40}px`,
+              animationDuration: `${15 + Math.random() * 20}s`,
+              animationDelay: `${Math.random() * 10}s`
+            }}
+          />
+        ))}
+      </div>
       {/* Sidebar */}
       <div className={(mobileMenuOpen ? "translate-x-0" : "-translate-x-full") + " md:translate-x-0 fixed md:relative z-40 w-56 flex flex-col shadow-xl transition-transform duration-300"} style={{ background: 'linear-gradient(180deg, #abdee6 0%, #ffaf10 100%)' }}>
         <div className="p-4 border-b border-white/20">

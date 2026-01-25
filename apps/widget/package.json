@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^5.4.1",
-    "@stripe/stripe-js": "^8.6.0",
+    "@stripe/stripe-js": "^8.6.4",
     "@tailwindcss/postcss": "^4.1.18",
     "@tailwindcss/vite": "^4.1.18",
     "react": "^19.2.0",

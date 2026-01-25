@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-
+import { loadStripe } from '@stripe/stripe-js'
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
 
 const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'VOLTRIDE'
@@ -7,14 +8,15 @@ const BRAND = 'VOLTRIDE'
 interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; closedOnSunday?: boolean; isActive?: boolean; showStockUrgency?: boolean }
 interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { id: string; name: { fr: string; es: string; en: string }; brand: string }; pricing: any[]; inventory: any[] }
 interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; description?: { fr: string; es: string; en: string }; maxQuantity: number; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; includedByDefault?: boolean; categories?: any[] }
+interface WidgetSettings { stripeEnabled: boolean; stripeMode: string; stripePublishableKey: string }
 
 type Lang = 'fr' | 'es' | 'en'
-type Step = 'dates' | 'vehicles' | 'options' | 'customer' | 'payment' | 'confirmation'
+type Step = 'dates' | 'vehicles' | 'options' | 'customer' | 'payment' | 'deposit' | 'confirmation'
 
 const translations = {
-  fr: { title: 'Location de vélos & e-bikes', selectAgency: 'Agence', selectDates: 'Sélectionnez vos dates', pickupDate: 'Date de retrait', returnDate: 'Date de retour', pickupTime: 'Heure de retrait', returnTime: 'Heure de retour', continue: 'Continuer', back: 'Retour', selectVehicles: 'Choisissez vos véhicules', quantity: 'Quantité', available: 'disponible(s)', deposit: 'Caution', perDay: '/jour', options: 'Options & Accessoires', yourInfo: 'Vos informations', firstName: 'Prénom', lastName: 'Nom', email: 'Email', phone: 'Téléphone', address: 'Adresse', postalCode: 'Code postal', city: 'Ville', country: 'Pays', payment: 'Paiement', summary: 'Récapitulatif', total: 'Total', depositToPay: 'Acompte à payer', depositInfo20: '20% car montant > 100€', depositInfo50: '50% car montant ≤ 100€', payNow: 'Payer maintenant', confirmation: 'Réservation confirmée !', bookingRef: 'Référence', emailSent: 'Un email de confirmation a été envoyé.', requiredDocs: 'Documents requis', docId: "Pièce d'identité ou passeport", docLicense: "Permis AM/A1/A2/B selon véhicule", securityDeposit: 'Caution à régler sur place', cashOrCard: 'En espèces ou carte de crédit (pas de carte de débit)', days: 'jour(s)', hours: 'heure(s) sup.', noVehicles: 'Aucun véhicule disponible pour cette agence', processing: 'Traitement en cours...', licensePlateWarning: '1 seul par réservation', helmetIncluded: 'Casque inclus', free: 'Gratuit', included: 'Inclus' },
-  es: { title: 'Alquiler de bicicletas y e-bikes', selectAgency: 'Agencia', selectDates: 'Seleccione sus fechas', pickupDate: 'Fecha de recogida', returnDate: 'Fecha de devolución', pickupTime: 'Hora de recogida', returnTime: 'Hora de devolución', continue: 'Continuar', back: 'Volver', selectVehicles: 'Elija sus vehículos', quantity: 'Cantidad', available: 'disponible(s)', deposit: 'Fianza', perDay: '/día', options: 'Opciones y Accesorios', yourInfo: 'Sus datos', firstName: 'Nombre', lastName: 'Apellido', email: 'Email', phone: 'Teléfono', address: 'Dirección', postalCode: 'Código postal', city: 'Ciudad', country: 'País', payment: 'Pago', summary: 'Resumen', total: 'Total', depositToPay: 'Anticipo a pagar', depositInfo20: '20% porque importe > 100€', depositInfo50: '50% porque importe ≤ 100€', payNow: 'Pagar ahora', confirmation: '¡Reserva confirmada!', bookingRef: 'Referencia', emailSent: 'Se ha enviado un email de confirmación.', requiredDocs: 'Documentos requeridos', docId: 'Documento de identidad o pasaporte', docLicense: 'Permiso AM/A1/A2/B según vehículo', securityDeposit: 'Fianza a pagar en tienda', cashOrCard: 'En efectivo o tarjeta de crédito (no débito)', days: 'día(s)', hours: 'hora(s) extra', noVehicles: 'No hay vehículos disponibles para esta agencia', processing: 'Procesando...', licensePlateWarning: 'solo 1 por reserva', helmetIncluded: 'Casco incluido', free: 'Gratis', included: 'Incluido' },
-  en: { title: 'Bike & E-Bike Rental', selectAgency: 'Agency', selectDates: 'Select your dates', pickupDate: 'Pickup date', returnDate: 'Return date', pickupTime: 'Pickup time', returnTime: 'Return time', continue: 'Continue', back: 'Back', selectVehicles: 'Choose your vehicles', quantity: 'Quantity', available: 'available', deposit: 'Deposit', perDay: '/day', options: 'Options & Accessories', yourInfo: 'Your information', firstName: 'First name', lastName: 'Last name', email: 'Email', phone: 'Phone', address: 'Address', postalCode: 'Postal code', city: 'City', country: 'Country', payment: 'Payment', summary: 'Summary', total: 'Total', depositToPay: 'Deposit to pay', depositInfo20: '20% because amount > 100€', depositInfo50: '50% because amount ≤ 100€', payNow: 'Pay now', confirmation: 'Booking confirmed!', bookingRef: 'Reference', emailSent: 'A confirmation email has been sent.', requiredDocs: 'Required documents', docId: 'ID card or passport', docLicense: 'AM/A1/A2/B license depending on vehicle', securityDeposit: 'Security deposit payable on site', cashOrCard: 'Cash or credit card (no debit cards)', days: 'day(s)', hours: 'extra hour(s)', noVehicles: 'No vehicles available for this agency', processing: 'Processing...', licensePlateWarning: 'only 1 per booking', helmetIncluded: 'Helmet included', free: 'Free', included: 'Included' }
+  fr: { title: 'Location de vélos & e-bikes', selectAgency: 'Agence', selectDates: 'Sélectionnez vos dates', pickupDate: 'Date de retrait', returnDate: 'Date de retour', pickupTime: 'Heure de retrait', returnTime: 'Heure de retour', continue: 'Continuer', back: 'Retour', selectVehicles: 'Choisissez vos véhicules', quantity: 'Quantité', available: 'disponible(s)', deposit: 'Caution', perDay: '/jour', options: 'Options & Accessoires', yourInfo: 'Vos informations', firstName: 'Prénom', lastName: 'Nom', email: 'Email', phone: 'Téléphone', address: 'Adresse', postalCode: 'Code postal', city: 'Ville', country: 'Pays', payment: 'Paiement', summary: 'Récapitulatif', total: 'Total', depositToPay: 'Acompte à payer', depositInfo20: '20% car montant > 100€', depositInfo50: '50% car montant ≤ 100€', payNow: 'Payer maintenant', confirmation: 'Réservation confirmée !', bookingRef: 'Référence', emailSent: 'Un email de confirmation a été envoyé.', requiredDocs: 'Documents requis', docId: "Pièce d'identité ou passeport", docLicense: "Permis AM/A1/A2/B selon véhicule", securityDeposit: 'Caution à régler sur place', cashOrCard: 'En espèces ou carte de crédit (pas de carte de débit)', days: 'jour(s)', hours: 'heure(s) sup.', noVehicles: 'Aucun véhicule disponible pour cette agence', processing: 'Traitement en cours...', licensePlateWarning: '1 seul par réservation', helmetIncluded: 'Casque inclus', free: 'Gratuit', included: 'Inclus', depositCardTitle: 'Enregistrement de la caution', depositCardDesc: 'Votre carte sera pré-autorisée la veille de votre location. Aucun montant ne sera débité si le véhicule est retourné en bon état.', depositCardAmount: 'Montant de la caution', saveCard: 'Enregistrer ma carte', cardSaved: 'Carte enregistrée !', skipDeposit: 'Payer la caution sur place' },
+  es: { title: 'Alquiler de bicicletas y e-bikes', selectAgency: 'Agencia', selectDates: 'Seleccione sus fechas', pickupDate: 'Fecha de recogida', returnDate: 'Fecha de devolución', pickupTime: 'Hora de recogida', returnTime: 'Hora de devolución', continue: 'Continuar', back: 'Volver', selectVehicles: 'Elija sus vehículos', quantity: 'Cantidad', available: 'disponible(s)', deposit: 'Fianza', perDay: '/día', options: 'Opciones y Accesorios', yourInfo: 'Sus datos', firstName: 'Nombre', lastName: 'Apellido', email: 'Email', phone: 'Teléfono', address: 'Dirección', postalCode: 'Código postal', city: 'Ciudad', country: 'País', payment: 'Pago', summary: 'Resumen', total: 'Total', depositToPay: 'Anticipo a pagar', depositInfo20: '20% porque importe > 100€', depositInfo50: '50% porque importe ≤ 100€', payNow: 'Pagar ahora', confirmation: '¡Reserva confirmada!', bookingRef: 'Referencia', emailSent: 'Se ha enviado un email de confirmación.', requiredDocs: 'Documentos requeridos', docId: 'Documento de identidad o pasaporte', docLicense: 'Permiso AM/A1/A2/B según vehículo', securityDeposit: 'Fianza a pagar en tienda', cashOrCard: 'En efectivo o tarjeta de crédito (no débito)', days: 'día(s)', hours: 'hora(s) extra', noVehicles: 'No hay vehículos disponibles para esta agencia', processing: 'Procesando...', licensePlateWarning: 'solo 1 por reserva', helmetIncluded: 'Casco incluido', free: 'Gratis', included: 'Incluido', depositCardTitle: 'Registro de la fianza', depositCardDesc: 'Su tarjeta será pre-autorizada el día antes de su alquiler. No se cobrará ningún importe si el vehículo se devuelve en buen estado.', depositCardAmount: 'Importe de la fianza', saveCard: 'Registrar mi tarjeta', cardSaved: '¡Tarjeta registrada!', skipDeposit: 'Pagar la fianza en tienda' },
+  en: { title: 'Bike & E-Bike Rental', selectAgency: 'Agency', selectDates: 'Select your dates', pickupDate: 'Pickup date', returnDate: 'Return date', pickupTime: 'Pickup time', returnTime: 'Return time', continue: 'Continue', back: 'Back', selectVehicles: 'Choose your vehicles', quantity: 'Quantity', available: 'available', deposit: 'Deposit', perDay: '/day', options: 'Options & Accessories', yourInfo: 'Your information', firstName: 'First name', lastName: 'Last name', email: 'Email', phone: 'Phone', address: 'Address', postalCode: 'Postal code', city: 'City', country: 'Country', payment: 'Payment', summary: 'Summary', total: 'Total', depositToPay: 'Deposit to pay', depositInfo20: '20% because amount > 100€', depositInfo50: '50% because amount ≤ 100€', payNow: 'Pay now', confirmation: 'Booking confirmed!', bookingRef: 'Reference', emailSent: 'A confirmation email has been sent.', requiredDocs: 'Required documents', docId: 'ID card or passport', docLicense: 'AM/A1/A2/B license depending on vehicle', securityDeposit: 'Security deposit payable on site', cashOrCard: 'Cash or credit card (no debit cards)', days: 'day(s)', hours: 'extra hour(s)', noVehicles: 'No vehicles available for this agency', processing: 'Processing...', licensePlateWarning: 'only 1 per booking', helmetIncluded: 'Helmet included', free: 'Free', included: 'Included', depositCardTitle: 'Security deposit registration', depositCardDesc: 'Your card will be pre-authorized the day before your rental. No amount will be charged if the vehicle is returned in good condition.', depositCardAmount: 'Deposit amount', saveCard: 'Save my card', cardSaved: 'Card saved!', skipDeposit: 'Pay deposit on site' }
 }
 
 const getTimeSlots = (dateStr: string): string[] => {
@@ -52,6 +54,147 @@ const WavesBackground = () => (
   </div>
 )
 
+// Composant pour collecter la carte de caution
+const DepositCardForm = ({ 
+  bookingId, 
+  bookingRef: _bookingRef,
+  customerEmail, 
+  depositAmount, 
+  lang: _lang, 
+  t, 
+  onSuccess, 
+  onSkip 
+}: { 
+  bookingId: string
+  bookingRef: string
+  customerEmail: string
+  depositAmount: number
+  lang: Lang
+  t: any
+  onSuccess: () => void
+  onSkip: () => void
+}) => {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [processing, setProcessing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!stripe || !elements) return
+
+    setProcessing(true)
+    setError(null)
+
+    try {
+      // 1. Créer le SetupIntent
+      const setupRes = await fetch(`${API_URL}/api/create-setup-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId,
+          customerEmail,
+          amount: depositAmount
+        })
+      })
+      const { clientSecret, stripeCustomerId } = await setupRes.json()
+
+      if (!clientSecret) {
+        throw new Error('Erreur lors de la création du SetupIntent')
+      }
+
+      // 2. Confirmer le SetupIntent avec la carte
+      const cardElement = elements.getElement(CardElement)
+      if (!cardElement) {
+        throw new Error('Élément carte non trouvé')
+      }
+
+      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: { email: customerEmail }
+        }
+      })
+
+      if (stripeError) {
+        throw new Error(stripeError.message)
+      }
+
+      if (setupIntent?.payment_method) {
+        // 3. Sauvegarder le paymentMethodId sur la réservation
+        await fetch(`${API_URL}/api/save-payment-method`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookingId,
+            paymentMethodId: setupIntent.payment_method,
+            stripeCustomerId
+          })
+        })
+
+        onSuccess()
+      }
+    } catch (err: any) {
+      setError(err.message || 'Une erreur est survenue')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold text-gray-800">🔒 {t.depositCardTitle}</h2>
+      
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <p className="text-sm text-blue-700">{t.depositCardDesc}</p>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <p className="font-bold text-amber-800">{t.depositCardAmount}: {depositAmount}€</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="border border-gray-200 rounded-xl p-4 bg-white">
+          <CardElement 
+            options={{
+              style: {
+                base: {
+                  fontSize: '16px',
+                  color: '#424770',
+                  '::placeholder': { color: '#aab7c4' }
+                },
+                invalid: { color: '#9e2146' }
+              },
+              hidePostalCode: true
+            }}
+          />
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={!stripe || processing}
+          className="w-full py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50"
+        >
+          {processing ? t.processing : t.saveCard}
+        </button>
+      </form>
+
+      <button
+        onClick={onSkip}
+        className="w-full py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition"
+      >
+        {t.skipDeposit}
+      </button>
+    </div>
+  )
+}
+
 function App() {
   const [lang, setLang] = useState<Lang>('fr')
   const [step, setStep] = useState<Step>('dates')
@@ -68,11 +211,12 @@ function App() {
   const [selectedVehicles, setSelectedVehicles] = useState<Record<string, number>>({})
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({})
   const [customer, setCustomer] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', postalCode: '', city: '', country: 'ES' })
-  
   const [phonePrefix, setPhonePrefix] = useState('+34')
+  const [widgetSettings, setWidgetSettings] = useState<WidgetSettings>({ stripeEnabled: false, stripeMode: 'test', stripePublishableKey: '' })
+  const [stripePromise, setStripePromise] = useState<any>(null)
+  const [currentBookingId, setCurrentBookingId] = useState<string>('')
   
   const phonePrefixes = [
-    // Europe de l'Ouest
     { code: '+34', country: '🇪🇸 España' },
     { code: '+33', country: '🇫🇷 France' },
     { code: '+44', country: '🇬🇧 UK' },
@@ -85,13 +229,11 @@ function App() {
     { code: '+41', country: '🇨🇭 Suisse' },
     { code: '+43', country: '🇦🇹 Österreich' },
     { code: '+353', country: '🇮🇪 Ireland' },
-    // Scandinavie
     { code: '+46', country: '🇸🇪 Sverige' },
     { code: '+47', country: '🇳🇴 Norge' },
     { code: '+45', country: '🇩🇰 Danmark' },
     { code: '+358', country: '🇫🇮 Suomi' },
     { code: '+354', country: '🇮🇸 Ísland' },
-    // Europe de l'Est
     { code: '+48', country: '🇵🇱 Polska' },
     { code: '+420', country: '🇨🇿 Česko' },
     { code: '+421', country: '🇸🇰 Slovensko' },
@@ -112,11 +254,9 @@ function App() {
     { code: '+375', country: '🇧🇾 Belarus' },
     { code: '+380', country: '🇺🇦 Україна' },
     { code: '+373', country: '🇲🇩 Moldova' },
-    // Grèce, Turquie, Chypre
     { code: '+30', country: '🇬🇷 Ελλάδα' },
     { code: '+90', country: '🇹🇷 Türkiye' },
     { code: '+357', country: '🇨🇾 Κύπρος' },
-    // Autre
     { code: 'other', country: '🌍 Otro/Other' },
   ]
   const [customPrefix, setCustomPrefix] = useState('')
@@ -139,7 +279,6 @@ function App() {
   
   const [additionalDrivers, setAdditionalDrivers] = useState<Array<{ firstName: string; lastName: string; email: string; phone: string }>>([])
   
-  // Mettre à jour les conducteurs additionnels quand le nombre de véhicules immatriculés change
   useEffect(() => {
     const platedCount = getPlatedVehiclesCount()
     const driversNeeded = Math.max(0, platedCount - 1)
@@ -153,6 +292,7 @@ function App() {
       setAdditionalDrivers(additionalDrivers.slice(0, driversNeeded))
     }
   }, [selectedVehicles])
+  
   const [bookingRef, setBookingRef] = useState('')
   const [processing, setProcessing] = useState(false)
 
@@ -162,14 +302,19 @@ function App() {
 
   useEffect(() => { 
     loadData()
-    // Gérer le retour de Stripe
     const params = new URLSearchParams(window.location.search)
     if (params.get('success') === 'true') {
       const ref = params.get('ref')
+      const bid = params.get('bookingId')
       if (ref) {
         setBookingRef(ref)
-        setStep('confirmation')
-        // Nettoyer l'URL
+        if (bid) {
+          setCurrentBookingId(bid)
+          // Aller à l'étape caution si Stripe est activé
+          setStep('deposit')
+        } else {
+          setStep('confirmation')
+        }
         window.history.replaceState({}, '', window.location.pathname)
       }
     }
@@ -178,19 +323,41 @@ function App() {
       window.history.replaceState({}, '', window.location.pathname)
     }
   }, [])
+  
   useEffect(() => { if (selectedAgency) loadVehicles() }, [selectedAgency])
   useEffect(() => { if (selectedAgency && startDate && endDate) loadFleetAvailability() }, [startDate, endDate])
   useEffect(() => { if (startDate && !startTimeSlots.includes(startTime)) setStartTime(startTimeSlots[0] || '10:00') }, [startDate, startTimeSlots])
   useEffect(() => { if (endDate && !endTimeSlots.includes(endTime)) setEndTime(endTimeSlots[0] || '10:00') }, [endDate, endTimeSlots])
 
+  // Charger Stripe quand les settings sont disponibles
+  useEffect(() => {
+    if (widgetSettings.stripeEnabled && widgetSettings.stripePublishableKey) {
+      setStripePromise(loadStripe(widgetSettings.stripePublishableKey))
+    }
+  }, [widgetSettings])
+
   const loadData = async () => {
     try {
-      const [agenciesRes, optionsRes] = await Promise.all([fetch(`${API_URL}/api/agencies`), fetch(`${API_URL}/api/options`)])
+      const [agenciesRes, optionsRes, settingsRes] = await Promise.all([
+        fetch(`${API_URL}/api/agencies`), 
+        fetch(`${API_URL}/api/options`),
+        fetch(`${API_URL}/api/widget-settings/voltride`)
+      ])
       const agenciesData = await agenciesRes.json()
       const filteredAgencies = agenciesData.filter((a: any) => a.brand === BRAND)
       setAgencies(filteredAgencies)
       if (filteredAgencies.length > 0) setSelectedAgency(filteredAgencies[0].id)
       setOptions(await optionsRes.json())
+      
+      // Charger les settings du widget
+      const settings = await settingsRes.json()
+      if (settings) {
+        setWidgetSettings({
+          stripeEnabled: settings.stripeEnabled || false,
+          stripeMode: settings.stripeMode || 'test',
+          stripePublishableKey: settings.stripePublishableKey || ''
+        })
+      }
     } catch (error) { console.error('Error:', error) }
     setLoading(false)
   }
@@ -199,13 +366,10 @@ function App() {
     try {
       const res = await fetch(`${API_URL}/api/vehicles?agencyId=${selectedAgency}`)
       const data = await res.json()
-      // Filtrer par marque
       const filtered = (Array.isArray(data) ? data : []).filter((v: Vehicle) => {
         return v.category?.brand === BRAND
       })
       setVehicles(filtered)
-      
-      // Charger les disponibilités Fleet pour cette agence et ces dates
       await loadFleetAvailability()
     } catch (error) { console.error('Error:', error) }
   }
@@ -264,7 +428,6 @@ function App() {
   }
   
   const getAvailableQuantity = (vehicle: Vehicle): number => {
-    // Utiliser les disponibilités Fleet (véhicules physiques réels)
     return fleetAvailability[vehicle.id] || 0
   }
 
@@ -280,15 +443,14 @@ function App() {
       return v?.hasPlate === true
     })
   }
-  
 
-  // Calculer le prix d une option selon le nombre de jours
   const getOptionPrice = (option: Option, days: number): number => {
     const dayKey = ("day" + Math.min(days, 14)) as keyof Option
     let total = Number(option[dayKey]) || 0
     if (days > 14) total += (days - 14) * (Number(option.day14) || 0) / 14
     return total
   }
+  
   const calculateTotal = (): number => {
     const days = calculateDays()
     const extraHours = calculateExtraHours()
@@ -308,7 +470,6 @@ function App() {
     return total
   }
   
-  // Voltride: 50% si <= 100€, 20% si > 100€
   const calculateDeposit = (): number => {
     const total = calculateTotal()
     return total > 100 ? Math.ceil(total * 0.2) : Math.ceil(total * 0.5)
@@ -327,12 +488,10 @@ function App() {
     return Object.values(selectedVehicles).some(qty => qty > 0)
   }
 
-
   const getTotalSelectedVehicles = (): number => {
     return Object.values(selectedVehicles).reduce((sum, qty) => sum + qty, 0)
   }
 
-  // Récupérer les catégories des véhicules sélectionnés
   const getSelectedCategoryIds = (): string[] => {
     const categoryIds: string[] = []
     Object.entries(selectedVehicles).forEach(([id, qty]) => {
@@ -346,7 +505,6 @@ function App() {
     return categoryIds
   }
 
-  // Filtrer les options pour ne montrer que celles liées aux catégories sélectionnées
   const getFilteredOptions = (): Option[] => {
     const selectedCatIds = getSelectedCategoryIds()
     return options.filter(opt => {
@@ -354,17 +512,16 @@ function App() {
       return opt.categories.some((c: any) => selectedCatIds.includes(c.categoryId))
     })
   }
+  
   const handleVehicleSelect = (vehicleId: string, quantity: number) => {
     const vehicle = vehicles.find(v => v.id === vehicleId)
     if (vehicle?.hasPlate) {
-      // Véhicule immatriculé : efface tout et ne garde que celui-ci
       if (quantity > 0) {
         setSelectedVehicles({ [vehicleId]: quantity })
       } else {
         setSelectedVehicles({ ...selectedVehicles, [vehicleId]: 0 })
       }
     } else {
-      // Véhicule non-immatriculé : efface les immatriculés existants
       if (quantity > 0) {
         const newSelection: Record<string, number> = {}
         Object.entries(selectedVehicles).forEach(([id, qty]) => {
@@ -381,7 +538,6 @@ function App() {
     }
   }
   
-  // Compter le nombre de véhicules immatriculés sélectionnés
   const getPlatedVehiclesCount = (): number => {
     let count = 0
     Object.entries(selectedVehicles).forEach(([id, qty]) => {
@@ -411,7 +567,6 @@ function App() {
           return { optionId: id, quantity: qty, unitPrice, totalPrice: unitPrice * qty }
         })
       
-      // Créer la réservation d'abord
       const bookingRes = await fetch(`${API_URL}/api/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -428,7 +583,7 @@ function App() {
       })
       const booking = await bookingRes.json()
       
-      // Créer la session Stripe
+      // Ajouter bookingId dans l'URL de retour pour l'étape caution
       const stripeRes = await fetch(`${API_URL}/api/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -437,13 +592,12 @@ function App() {
           bookingId: booking.id,
           amount: calculateDeposit(),
           customerEmail: customer.email,
-          successUrl: window.location.origin + window.location.pathname + '?success=true&ref=' + booking.reference,
+          successUrl: window.location.origin + window.location.pathname + `?success=true&ref=${booking.reference}&bookingId=${booking.id}`,
           cancelUrl: window.location.origin + window.location.pathname + '?canceled=true'
         })
       })
       const { url } = await stripeRes.json()
       
-      // Rediriger vers Stripe
       if (url) {
         window.location.href = url
       }
@@ -479,10 +633,10 @@ function App() {
         </div>
 
         <div className="flex justify-between mb-6 px-4">
-          {['dates', 'vehicles', 'options', 'customer', 'payment'].map((s, i) => (
-            <div key={s} className={`flex items-center ${i < 4 ? 'flex-1' : ''}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-md ${['dates', 'vehicles', 'options', 'customer', 'payment'].indexOf(step) >= i ? 'bg-white text-[#ffaf10]' : 'bg-white/50 text-gray-500'}`}>{i + 1}</div>
-              {i < 4 && <div className={`flex-1 h-1 mx-2 rounded ${['dates', 'vehicles', 'options', 'customer', 'payment'].indexOf(step) > i ? 'bg-white' : 'bg-white/50'}`} />}
+          {['dates', 'vehicles', 'options', 'customer', 'payment', 'deposit'].map((s, i) => (
+            <div key={s} className={`flex items-center ${i < 5 ? 'flex-1' : ''}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-md ${['dates', 'vehicles', 'options', 'customer', 'payment', 'deposit'].indexOf(step) >= i ? 'bg-white text-[#ffaf10]' : 'bg-white/50 text-gray-500'}`}>{i + 1}</div>
+              {i < 5 && <div className={`flex-1 h-1 mx-2 rounded ${['dates', 'vehicles', 'options', 'customer', 'payment', 'deposit'].indexOf(step) > i ? 'bg-white' : 'bg-white/50'}`} />}
             </div>
           ))}
         </div>
@@ -552,7 +706,6 @@ function App() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h3 className="font-bold text-gray-800">{getName(vehicle.name)}</h3>
-                            
                           </div>
                           <p className="text-sm text-gray-500">{getName(vehicle.category?.name)}</p>
                           <p className="text-sm text-gray-400">{t.deposit}: {vehicle.deposit}€</p>
@@ -587,7 +740,6 @@ function App() {
                               >
                                 {[...Array(maxQty + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}
                               </select>
-          
                             </div>
                           </div>
                         </div>
@@ -757,7 +909,7 @@ function App() {
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="font-bold text-amber-800">⚠️ {t.securityDeposit}: {calculateSecurityDeposit()}€</p>
-                <p className="text-sm text-amber-600">{t.cashOrCard}</p>
+                <p className="text-sm text-amber-600">{widgetSettings.stripeEnabled ? (lang === 'fr' ? 'Carte enregistrée à l\'étape suivante' : lang === 'es' ? 'Tarjeta registrada en el siguiente paso' : 'Card registered in next step') : t.cashOrCard}</p>
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setStep('customer')} className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition">{t.back}</button>
@@ -765,6 +917,28 @@ function App() {
                   {processing ? t.processing : t.payNow}
                 </button>
               </div>
+            </div>
+          )}
+
+          {step === 'deposit' && widgetSettings.stripeEnabled && stripePromise && (
+            <Elements stripe={stripePromise}>
+              <DepositCardForm
+                bookingId={currentBookingId}
+                bookingRef={bookingRef}
+                customerEmail={customer.email}
+                depositAmount={calculateSecurityDeposit()}
+                lang={lang}
+                t={t}
+                onSuccess={() => setStep('confirmation')}
+                onSkip={() => setStep('confirmation')}
+              />
+            </Elements>
+          )}
+
+          {step === 'deposit' && (!widgetSettings.stripeEnabled || !stripePromise) && (
+            <div className="text-center space-y-4">
+              <p className="text-gray-600">{t.processing}</p>
+              {setTimeout(() => setStep('confirmation'), 1000) && null}
             </div>
           )}
 
@@ -785,7 +959,7 @@ function App() {
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
                 <h3 className="font-bold text-amber-800">💰 {t.securityDeposit}: {calculateSecurityDeposit()}€</h3>
-                <p className="text-sm text-amber-600">{t.cashOrCard}</p>
+                <p className="text-sm text-amber-600">{t.cardSaved}</p>
               </div>
               <p className="text-gray-500 text-sm mt-4">{lang === 'fr' ? 'Merci pour votre confiance ! À bientôt chez Voltride.' : lang === 'es' ? '¡Gracias por su confianza! Hasta pronto en Voltride.' : 'Thank you for your trust! See you soon at Voltride.'}</p>
             </div>

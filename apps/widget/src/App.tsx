@@ -972,9 +972,16 @@ if (ref) {
                   <li>• {lang === 'fr' ? 'Permis AM, si location moto électrique' : lang === 'es' ? 'Permiso AM, si alquiler de moto eléctrica' : 'AM license, if electric motorcycle rental'}</li>
                 </ul>
               </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
-  <h3 className="font-bold text-amber-800">💰 {t.securityDeposit}: {returnedDepositAmount || calculateSecurityDeposit()}€</h3>
-  <p className="text-sm text-amber-600">{cardRegistered ? t.cardSaved : t.cashOrCard}</p>
+              <div className={`rounded-xl p-4 text-left ${cardRegistered ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+  <h3 className={`font-bold ${cardRegistered ? 'text-green-800' : 'text-amber-800'}`}>
+    {cardRegistered ? '✅' : '💰'} {t.securityDeposit}: {returnedDepositAmount || calculateSecurityDeposit()}€
+  </h3>
+  <p className={`text-sm ${cardRegistered ? 'text-green-600' : 'text-amber-600'}`}>
+    {cardRegistered 
+      ? (lang === 'fr' ? 'Votre carte sera pré-autorisée la veille de votre location' : lang === 'es' ? 'Su tarjeta será pre-autorizada el día antes de su alquiler' : 'Your card will be pre-authorized the day before your rental')
+      : t.cashOrCard
+    }
+  </p>
 </div>
               <p className="text-gray-500 text-sm mt-4">{lang === 'fr' ? 'Merci pour votre confiance ! À bientôt chez Voltride.' : lang === 'es' ? '¡Gracias por su confianza! Hasta pronto en Voltride.' : 'Thank you for your trust! See you soon at Voltride.'}</p>
             </div>

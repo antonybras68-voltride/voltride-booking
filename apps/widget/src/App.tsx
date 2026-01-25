@@ -91,7 +91,7 @@ const DepositCardForm = ({
       const setupRes = await fetch(`${API_URL}/api/create-setup-intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify({ brand: 'VOLTRIDE',
           bookingId,
           customerEmail,
           amount: depositAmount
@@ -125,7 +125,7 @@ const DepositCardForm = ({
         await fetch(`${API_URL}/api/save-payment-method`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          body: JSON.stringify({ brand: 'VOLTRIDE',
             bookingId,
             paymentMethodId: setupIntent.payment_method,
             stripeCustomerId
@@ -570,7 +570,7 @@ function App() {
       const bookingRes = await fetch(`${API_URL}/api/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify({ brand: 'VOLTRIDE',
           agencyId: selectedAgency,
           startDate, endDate, startTime, endTime,
           totalPrice: calculateTotal(),
@@ -587,8 +587,7 @@ function App() {
       const stripeRes = await fetch(`${API_URL}/api/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brand: 'VOLTRIDE',
+        body: JSON.stringify({ brand: 'VOLTRIDE',
           bookingId: booking.id,
           amount: calculateDeposit(),
           customerEmail: customer.email,

@@ -3769,5 +3769,39 @@ app.post('/api/notification-settings/bulk', async (req, res) => {
 })
 
 console.log('Notification settings routes loaded')
+// ============== APP SETTINGS (ENTREPRISE) ==============
+// GET - Récupérer un paramètre par clé
+app.get('/api/settings/:key', async (req, res) => {
+  try {
+    const setting = await prisma.appSettings.findUnique({
+      where: { key: req.params.key }
+    })
+    if (setting) {
+      res.json(setting.value)
+    } else {
+      res.json(null)
+    }
+  } catch (error) {
+    console.error('Error fetching setting:', error)
+    res.status(500).json({ error: 'Failed to fetch setting' })
+  }
+})
+
+// PUT - Sauvegarder un paramètre
+app.put('/api/settings/:key', async (req, res) => {
+  try {
+    const setting = await prisma.appSettings.upsert({
+      where: { key: req.params.key },
+      update: { value: req.body },
+      create: { key: req.params.key, value: req.body }
+    })
+    res.json(setting)
+  } catch (error) {
+    console.error('Error saving setting:', error)
+    res.status(500).json({ error: 'Failed to save setting' })
+  }
+})
+
+console.log('App settings routes loaded')
 
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })

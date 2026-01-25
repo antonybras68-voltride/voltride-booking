@@ -215,6 +215,7 @@ function App() {
   const [widgetSettings, setWidgetSettings] = useState<WidgetSettings>({ stripeEnabled: false, stripeMode: 'test', stripePublishableKey: '' })
   const [stripePromise, setStripePromise] = useState<any>(null)
   const [currentBookingId, setCurrentBookingId] = useState<string>('')
+  const [returnedDepositAmount, setReturnedDepositAmount] = useState<number>(0)
   
   const phonePrefixes = [
     { code: '+34', country: '🇪🇸 España' },
@@ -306,10 +307,12 @@ function App() {
     if (params.get('success') === 'true') {
       const ref = params.get('ref')
       const bid = params.get('bookingId')
-      if (ref) {
-        setBookingRef(ref)
-        if (bid) {
-          setCurrentBookingId(bid)
+const dep = params.get('deposit')
+if (ref) {
+  setBookingRef(ref)
+  if (bid) {
+    setCurrentBookingId(bid)
+    if (dep) setReturnedDepositAmount(parseFloat(dep))
           // Aller à l'étape caution si Stripe est activé
           setStep('deposit')
         } else {
@@ -591,7 +594,7 @@ function App() {
           bookingId: booking.id,
           amount: calculateDeposit(),
           customerEmail: customer.email,
-          successUrl: window.location.origin + window.location.pathname + `?success=true&ref=${booking.reference}&bookingId=${booking.id}`,
+         successUrl: window.location.origin + window.location.pathname + `?success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}`,
           cancelUrl: window.location.origin + window.location.pathname + '?canceled=true'
         })
       })
@@ -925,7 +928,7 @@ function App() {
                 bookingId={currentBookingId}
                 bookingRef={bookingRef}
                 customerEmail={customer.email}
-                depositAmount={calculateSecurityDeposit()}
+                depositAmount={returnedDepositAmount || calculateSecurityDeposit()}
                 lang={lang}
                 t={t}
                 onSuccess={() => setStep('confirmation')}

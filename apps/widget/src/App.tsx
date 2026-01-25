@@ -216,6 +216,7 @@ function App() {
   const [stripePromise, setStripePromise] = useState<any>(null)
   const [currentBookingId, setCurrentBookingId] = useState<string>('')
   const [returnedDepositAmount, setReturnedDepositAmount] = useState<number>(0)
+  const [cardRegistered, setCardRegistered] = useState<boolean>(false)
   
   const phonePrefixes = [
     { code: '+34', country: '🇪🇸 España' },
@@ -931,7 +932,7 @@ if (ref) {
                 depositAmount={returnedDepositAmount || calculateSecurityDeposit()}
                 lang={lang}
                 t={t}
-                onSuccess={() => setStep('confirmation')}
+                onSuccess={() => { setCardRegistered(true); setStep('confirmation') }}
                 onSkip={() => setStep('confirmation')}
               />
             </Elements>
@@ -960,9 +961,9 @@ if (ref) {
                 </ul>
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
-                <h3 className="font-bold text-amber-800">💰 {t.securityDeposit}: {calculateSecurityDeposit()}€</h3>
-                <p className="text-sm text-amber-600">{t.cardSaved}</p>
-              </div>
+  <h3 className="font-bold text-amber-800">💰 {t.securityDeposit}: {returnedDepositAmount || calculateSecurityDeposit()}€</h3>
+  <p className="text-sm text-amber-600">{cardRegistered ? t.cardSaved : t.cashOrCard}</p>
+</div>
               <p className="text-gray-500 text-sm mt-4">{lang === 'fr' ? 'Merci pour votre confiance ! À bientôt chez Voltride.' : lang === 'es' ? '¡Gracias por su confianza! Hasta pronto en Voltride.' : 'Thank you for your trust! See you soon at Voltride.'}</p>
             </div>
           )}

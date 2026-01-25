@@ -934,7 +934,7 @@ function App() {
             </Elements>
           )}
 
-          {step === 'deposit' && (!widgetSettings.stripeEnabled || !stripePromise) && (
+          {step === 'deposit' && widgetSettings.stripeEnabled === false && (
             <div className="text-center space-y-4">
               <p className="text-gray-600">{t.processing}</p>
               {setTimeout(() => setStep('confirmation'), 1000) && null}

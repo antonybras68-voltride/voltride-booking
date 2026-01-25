@@ -224,6 +224,14 @@ model Booking {
   checkedOutAt          DateTime?
   paidAmount            Float           @default(0)
   conflictingExtensions ContractExtension[] @relation("ConflictingBooking")
+  
+  // Stripe deposit fields
+  stripeCustomerId        String?
+  stripePaymentMethodId   String?
+  depositPaymentIntentId  String?
+  depositStatus           String?   @default("PENDING") // PENDING, CARD_SAVED, AUTHORIZED, RELEASED, CAPTURED
+  depositCapturedAmount   Float?
+  depositCaptureReason    String?
 }
 
 model BookingItem {

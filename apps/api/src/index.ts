@@ -3805,3 +3805,200 @@ app.put('/api/settings/:key', async (req, res) => {
 console.log('App settings routes loaded')
 
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })
+
+// ============== DEPOSIT/CAUTION SYSTEM ==============
+
+// 1. Créer un SetupIntent pour enregistrer la carte du client (sans débiter)
+app.post('/api/create-setup-intent', async (req, res) => {
+  try {
+    const { brand, customerId, customerEmail, customerName, bookingId, depositAmount } = req.body
+    const stripe = getStripeInstance(brand)
+    
+    // Créer ou récupérer le customer Stripe
+    let stripeCustomerId = null
+    const existingCustomers = await stripe.customers.list({ email: customerEmail, limit: 1 })
+    
+    if (existingCustomers.data.length > 0) {
+      stripeCustomerId = existingCustomers.data[0].id
+    } else {
+      const customer = await stripe.customers.create({
+        email: customerEmail,
+        name: customerName,
+        metadata: { customerId, brand }
+      })
+      stripeCustomerId = customer.id
+    }
+    
+    // Créer le SetupIntent
+    const setupIntent = await stripe.setupIntents.create({
+      customer: stripeCustomerId,
+      payment_method_types: ['card'],
+      metadata: {
+        bookingId,
+        depositAmount: depositAmount.toString(),
+        brand,
+        type: 'deposit'
+      }
+    })
+    
+    res.json({
+      clientSecret: setupIntent.client_secret,
+      stripeCustomerId
+    })
+  } catch (error) {
+    console.error('SetupIntent error:', error)
+    res.status(500).json({ error: 'Failed to create setup intent' })
+  }
+})
+
+// 2. Pré-autoriser la caution (appeler J-1 ou manuellement)
+app.post('/api/authorize-deposit', async (req, res) => {
+  try {
+    const { bookingId, brand } = req.body
+    const stripe = getStripeInstance(brand)
+    
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { customer: true }
+    })
+    
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' })
+    }
+    
+    if (!booking.stripeCustomerId || !booking.stripePaymentMethodId) {
+      return res.status(400).json({ error: 'No payment method registered for this booking' })
+    }
+    
+    // Créer une pré-autorisation (capture: false)
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(booking.depositAmount * 100), // en centimes
+      currency: 'eur',
+      customer: booking.stripeCustomerId,
+      payment_method: booking.stripePaymentMethodId,
+      capture_method: 'manual', // NE PAS capturer automatiquement
+      confirm: true,
+      off_session: true,
+      metadata: {
+        bookingId,
+        type: 'deposit_hold',
+        brand
+      }
+    })
+    
+    // Sauvegarder le paymentIntent ID
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        depositPaymentIntentId: paymentIntent.id,
+        depositStatus: 'AUTHORIZED'
+      }
+    })
+    
+    res.json({
+      success: true,
+      paymentIntentId: paymentIntent.id,
+      status: paymentIntent.status
+    })
+  } catch (error: any) {
+    console.error('Authorize deposit error:', error)
+    res.status(500).json({ error: error.message || 'Failed to authorize deposit' })
+  }
+})
+
+// 3. Libérer la caution (check-out sans problème)
+app.post('/api/release-deposit', async (req, res) => {
+  try {
+    const { bookingId, brand } = req.body
+    const stripe = getStripeInstance(brand)
+    
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } })
+    
+    if (!booking?.depositPaymentIntentId) {
+      return res.status(400).json({ error: 'No deposit authorization found' })
+    }
+    
+    // Annuler la pré-autorisation (libérer les fonds)
+    await stripe.paymentIntents.cancel(booking.depositPaymentIntentId)
+    
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { depositStatus: 'RELEASED' }
+    })
+    
+    res.json({ success: true, message: 'Deposit released' })
+  } catch (error: any) {
+    console.error('Release deposit error:', error)
+    res.status(500).json({ error: error.message || 'Failed to release deposit' })
+  }
+})
+
+// 4. Capturer la caution (partiellement ou totalement si dommages)
+app.post('/api/capture-deposit', async (req, res) => {
+  try {
+    const { bookingId, brand, amount, reason } = req.body
+    const stripe = getStripeInstance(brand)
+    
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } })
+    
+    if (!booking?.depositPaymentIntentId) {
+      return res.status(400).json({ error: 'No deposit authorization found' })
+    }
+    
+    // Capturer le montant spécifié (ou total si non spécifié)
+    const captureAmount = amount ? Math.round(amount * 100) : undefined
+    
+    await stripe.paymentIntents.capture(booking.depositPaymentIntentId, {
+      amount_to_capture: captureAmount
+    })
+    
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        depositStatus: 'CAPTURED',
+        depositCapturedAmount: amount || booking.depositAmount,
+        depositCaptureReason: reason
+      }
+    })
+    
+    res.json({ success: true, capturedAmount: amount || booking.depositAmount })
+  } catch (error: any) {
+    console.error('Capture deposit error:', error)
+    res.status(500).json({ error: error.message || 'Failed to capture deposit' })
+  }
+})
+
+// 5. Sauvegarder le payment method après SetupIntent
+app.post('/api/save-payment-method', async (req, res) => {
+  try {
+    const { bookingId, stripeCustomerId, paymentMethodId } = req.body
+    
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        stripeCustomerId,
+        stripePaymentMethodId: paymentMethodId,
+        depositStatus: 'CARD_SAVED'
+      }
+    })
+    
+    res.json({ success: true })
+  } catch (error) {
+    console.error('Save payment method error:', error)
+    res.status(500).json({ error: 'Failed to save payment method' })
+  }
+})
+
+// 6. Récupérer les settings widget
+app.get('/api/widget-settings/:brand', async (req, res) => {
+  try {
+    const key = `widget-${req.params.brand.toLowerCase()}`
+    const setting = await prisma.appSettings.findUnique({ where: { key } })
+    res.json(setting?.value || null)
+  } catch (error) {
+    console.error('Widget settings error:', error)
+    res.status(500).json({ error: 'Failed to fetch widget settings' })
+  }
+})
+
+console.log('Deposit/Caution routes loaded')

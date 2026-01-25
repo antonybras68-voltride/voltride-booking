@@ -58,7 +58,8 @@ const WavesBackground = () => (
 const DepositCardForm = ({ 
   bookingId, 
   bookingRef: _bookingRef,
-  customerEmail, 
+  customerEmail,
+  customerName,
   depositAmount, 
   lang: _lang, 
   t, 
@@ -68,6 +69,7 @@ const DepositCardForm = ({
   bookingId: string
   bookingRef: string
   customerEmail: string
+  customerName: string
   depositAmount: number
   lang: Lang
   t: any
@@ -88,13 +90,16 @@ const DepositCardForm = ({
 
     try {
       // 1. Créer le SetupIntent
+      // 1. Créer le SetupIntent
       const setupRes = await fetch(`${API_URL}/api/create-setup-intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brand: 'VOLTRIDE',
+        body: JSON.stringify({
+          brand: 'VOLTRIDE',
           bookingId,
           customerEmail,
-          amount: depositAmount
+          customerName,
+          depositAmount
         })
       })
       const { clientSecret, stripeCustomerId } = await setupRes.json()
@@ -217,6 +222,8 @@ function App() {
   const [currentBookingId, setCurrentBookingId] = useState<string>('')
   const [returnedDepositAmount, setReturnedDepositAmount] = useState<number>(0)
   const [cardRegistered, setCardRegistered] = useState<boolean>(false)
+  const [returnedEmail, setReturnedEmail] = useState<string>("")
+  const [returnedName, setReturnedName] = useState<string>("")
   
   const phonePrefixes = [
     { code: '+34', country: '🇪🇸 España' },
@@ -309,11 +316,15 @@ function App() {
       const ref = params.get('ref')
       const bid = params.get('bookingId')
 const dep = params.get('deposit')
+const email = params.get('email')
+const name = params.get('name')
 if (ref) {
   setBookingRef(ref)
   if (bid) {
     setCurrentBookingId(bid)
     if (dep) setReturnedDepositAmount(parseFloat(dep))
+    if (email) setReturnedEmail(decodeURIComponent(email))
+    if (name) setReturnedName(decodeURIComponent(name))
           // Aller à l'étape caution si Stripe est activé
           setStep('deposit')
         } else {
@@ -595,7 +606,7 @@ if (ref) {
           bookingId: booking.id,
           amount: calculateDeposit(),
           customerEmail: customer.email,
-         successUrl: window.location.origin + window.location.pathname + `?success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}`,
+        successUrl: window.location.origin + window.location.pathname + `?success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}&email=${encodeURIComponent(customer.email)}&name=${encodeURIComponent(customer.firstName + ' ' + customer.lastName)}`,
           cancelUrl: window.location.origin + window.location.pathname + '?canceled=true'
         })
       })
@@ -928,7 +939,8 @@ if (ref) {
               <DepositCardForm
                 bookingId={currentBookingId}
                 bookingRef={bookingRef}
-                customerEmail={customer.email}
+                customerEmail={returnedEmail || customer.email}
+                customerName={returnedName || (customer.firstName + " " + customer.lastName)}
                 depositAmount={returnedDepositAmount || calculateSecurityDeposit()}
                 lang={lang}
                 t={t}

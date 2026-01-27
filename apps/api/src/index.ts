@@ -4000,5 +4000,155 @@ app.get('/api/widget-settings/:brand', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch widget settings' })
   }
 })
+// 7. CRON - Pré-autoriser les cautions J-1
+app.post('/api/cron/authorize-deposits', async (req, res) => {
+  try {
+    // Vérifier le secret (optionnel mais recommandé pour sécuriser)
+    const cronSecret = req.headers['x-cron-secret']
+    if (process.env.CRON_SECRET && cronSecret !== process.env.CRON_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
 
+    // Calculer la date de demain
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+    
+    const dayAfterTomorrow = new Date(tomorrow)
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1)
+
+    // Trouver les réservations qui commencent demain avec une carte enregistrée
+    const bookings = await prisma.booking.findMany({
+      where: {
+        startDate: {
+          gte: tomorrow,
+          lt: dayAfterTomorrow
+        },
+        depositStatus: 'CARD_SAVED',
+        stripeCustomerId: { not: null },
+        stripePaymentMethodId: { not: null }
+      },
+      include: {
+        agency: true,
+        customer: true
+      }
+    })
+
+    console.log(`[CRON] Found ${bookings.length} bookings to authorize for tomorrow`)
+
+    const results = []
+    
+    for (const booking of bookings) {
+      try {
+        const brand = booking.agency?.brand || 'VOLTRIDE'
+        const stripe = getStripeInstance(brand)
+        
+        // Calculer le montant de la caution (somme des deposits des véhicules)
+        const bookingWithItems = await prisma.booking.findUnique({
+          where: { id: booking.id },
+          include: { items: { include: { vehicle: true } } }
+        })
+        
+        let depositAmount = 0
+        bookingWithItems?.items.forEach(item => {
+          depositAmount += (item.vehicle?.deposit || 0) * item.quantity
+        })
+
+        if (depositAmount <= 0) {
+          console.log(`[CRON] Booking ${booking.reference}: No deposit amount, skipping`)
+          results.push({ reference: booking.reference, status: 'skipped', reason: 'No deposit amount' })
+          continue
+        }
+
+        // Créer une pré-autorisation
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(depositAmount * 100),
+          currency: 'eur',
+          customer: booking.stripeCustomerId!,
+          payment_method: booking.stripePaymentMethodId!,
+          capture_method: 'manual',
+          confirm: true,
+          off_session: true,
+          metadata: {
+            bookingId: booking.id,
+            bookingRef: booking.reference,
+            type: 'deposit_hold',
+            brand
+          }
+        })
+
+        // Mettre à jour la réservation
+        await prisma.booking.update({
+          where: { id: booking.id },
+          data: {
+            depositPaymentIntentId: paymentIntent.id,
+            depositStatus: 'AUTHORIZED'
+          }
+        })
+
+        console.log(`[CRON] Booking ${booking.reference}: Authorized ${depositAmount}€`)
+        results.push({ reference: booking.reference, status: 'authorized', amount: depositAmount })
+
+      } catch (err: any) {
+        console.error(`[CRON] Booking ${booking.reference}: Error - ${err.message}`)
+        results.push({ reference: booking.reference, status: 'error', error: err.message })
+      }
+    }
+
+    res.json({
+      success: true,
+      date: tomorrow.toISOString().split('T')[0],
+      processed: bookings.length,
+      results
+    })
+
+  } catch (error: any) {
+    console.error('[CRON] authorize-deposits error:', error)
+    res.status(500).json({ error: error.message || 'Failed to process deposits' })
+  }
+})
+
+// GET version pour tester manuellement
+app.get('/api/cron/authorize-deposits/preview', async (req, res) => {
+  try {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+    
+    const dayAfterTomorrow = new Date(tomorrow)
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1)
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        startDate: {
+          gte: tomorrow,
+          lt: dayAfterTomorrow
+        },
+        depositStatus: 'CARD_SAVED',
+        stripeCustomerId: { not: null },
+        stripePaymentMethodId: { not: null }
+      },
+      include: {
+        agency: true,
+        customer: true,
+        items: { include: { vehicle: true } }
+      }
+    })
+
+    const preview = bookings.map(b => ({
+      reference: b.reference,
+      customer: `${b.customer?.firstName} ${b.customer?.lastName}`,
+      startDate: b.startDate,
+      depositAmount: b.items.reduce((sum, item) => sum + (item.vehicle?.deposit || 0) * item.quantity, 0)
+    }))
+
+    res.json({
+      date: tomorrow.toISOString().split('T')[0],
+      count: bookings.length,
+      bookings: preview
+    })
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
 console.log('Deposit/Caution routes loaded')

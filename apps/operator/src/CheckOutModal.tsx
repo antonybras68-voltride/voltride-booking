@@ -52,6 +52,12 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
   const [idCardVersoUrl, setIdCardVersoUrl] = useState('')
   const [licenseUrl, setLicenseUrl] = useState('')
   const [licenseVersoUrl, setLicenseVersoUrl] = useState('')
+  
+  // Caution Stripe
+  const [depositStatus, setDepositStatus] = useState<string>(booking.depositStatus || "PENDING")
+  const [processingDeposit, setProcessingDeposit] = useState(false)
+  const [captureAmount, setCaptureAmount] = useState<number>(0)
+  const [showCaptureModal, setShowCaptureModal] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
   
   const isMotorRent = brand === 'MOTOR-RENT'
@@ -258,7 +264,56 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
   const refundAmount = Math.max(0, depositAmount - totalDeductions)
   const additionalCharge = totalDeductions > depositAmount ? totalDeductions - depositAmount : 0
   const paymentMethod = contract?.depositMethod === 'CASH' ? 'Espèces' : 'Carte bancaire'
+// Fonctions caution Stripe
+  const handleReleaseDeposit = async () => {
+    if (!booking.depositPaymentIntentId) return
+    setProcessingDeposit(true)
+    try {
+      const res = await fetch(`${API_URL}/api/release-deposit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: booking.id, brand })
+      })
+      if (res.ok) {
+        setDepositStatus('RELEASED')
+        alert('✅ Caution libérée avec succès')
+      } else {
+        const err = await res.json()
+        alert('Erreur: ' + (err.error || 'Échec de la libération'))
+      }
+    } catch (e) {
+      alert('Erreur réseau')
+    }
+    setProcessingDeposit(false)
+  }
 
+  const handleCaptureDeposit = async () => {
+    if (!booking.depositPaymentIntentId || captureAmount <= 0) return
+    setProcessingDeposit(true)
+    try {
+      const res = await fetch(`${API_URL}/api/capture-deposit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          brand,
+          amount: captureAmount,
+          reason: deductions.map(d => d.name).join(', ') || 'Dommages'
+        })
+      })
+      if (res.ok) {
+        setDepositStatus('CAPTURED')
+        setShowCaptureModal(false)
+        alert(`✅ ${captureAmount}€ capturés sur la caution`)
+      } else {
+        const err = await res.json()
+        alert('Erreur: ' + (err.error || 'Échec de la capture'))
+      }
+    } catch (e) {
+      alert('Erreur réseau')
+    }
+    setProcessingDeposit(false)
+  }
   // Finalize
   const handleFinalize = async () => {
     setProcessing(true)
@@ -704,7 +759,60 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
                     <p className="text-gray-500">Identique au dépôt de caution</p>
                   </div>
                 </div>
-              </div>
+{/* Caution Stripe */}
+                {(depositStatus === 'AUTHORIZED' || depositStatus === 'CARD_SAVED') && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xl">💳</span>
+                      <div>
+                        <p className="font-medium text-blue-800">Caution pré-autorisée sur carte</p>
+                        <p className="text-sm text-blue-600">Montant bloqué: {booking.items?.reduce((sum: number, item: any) => sum + (item.vehicle?.deposit || 0) * item.quantity, 0) || depositAmount}€</p>
+                      </div>
+                    </div>
+                    
+                    {totalDeductions === 0 ? (
+                      <button
+                        onClick={handleReleaseDeposit}
+                        disabled={processingDeposit}
+                        className="w-full py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
+                      >
+                        {processingDeposit ? '⏳ Traitement...' : '✅ Libérer la caution (aucun dommage)'}
+                      </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-sm text-red-600 font-medium">Dommages: {totalDeductions.toFixed(2)}€</p>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={captureAmount}
+                            onChange={(e) => setCaptureAmount(parseFloat(e.target.value) || 0)}
+                            placeholder="Montant à capturer"
+                            className="flex-1 px-3 py-2 border rounded-lg"
+                          />
+                          <button
+                            onClick={handleCaptureDeposit}
+                            disabled={processingDeposit || captureAmount <= 0}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg disabled:opacity-50"
+                          >
+                            {processingDeposit ? '⏳' : '💰 Capturer'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {depositStatus === 'RELEASED' && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-center">
+                    <span className="text-green-700 font-medium">✅ Caution libérée</span>
+                  </div>
+                )}
+
+                {depositStatus === 'CAPTURED' && (
+                  <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg text-center">
+                    <span className="text-orange-700 font-medium">💰 Caution capturée: {booking.depositCapturedAmount}€</span>
+                  </div>
+                )}              </div>
 
               <button onClick={handleFinalize} disabled={processing || missingDocs.length > 0}
                 className="w-full py-3 bg-green-600 text-white rounded-lg disabled:opacity-50">

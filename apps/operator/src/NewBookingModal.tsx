@@ -201,8 +201,10 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
       case 4: return paymentMethod
       case 5: return true
       default: return false
-    }
-  }const handleCreateBooking = async () => {
+     }
+  }
+
+  const handleCreateBooking = async () => {
     setLoading(true)
     try {
       let customerId = selectedCustomer?.id

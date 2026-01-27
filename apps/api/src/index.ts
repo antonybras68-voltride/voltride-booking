@@ -3935,7 +3935,7 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
       remainingAmount, paymentMethod, brand, language = 'fr'
     } = req.body
 
-    const t = emailTemplates[language] || emailTemplates.fr
+    const t = emailTemplates[language as keyof typeof emailTemplates] || emailTemplates.fr
     const brandName = brand === 'VOLTRIDE' ? 'Voltride' : 'Motor-Rent'
     const brandColor = brand === 'VOLTRIDE' ? '#0e7490' : '#ffaf10'
 
@@ -3981,7 +3981,7 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
         <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">📋 ${t.documentsTitle}</h3>
           <ul style="margin: 0; padding-left: 20px;">
-            ${t.documents.map(doc => `<li>${doc}</li>`).join('')}
+            ${t.documents.map((doc: string) => `<li>${doc}</li>`).join('')}
           </ul>
         </div>
         

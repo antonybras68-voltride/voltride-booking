@@ -60,6 +60,46 @@ app.delete('/api/agencies/:id', async (req, res) => {
 })
 
 // ============== CATEGORIES ==============
+// ===== ENDPOINTS FILTRES PAR BRAND =====
+
+// Get agencies by brand (VOLTRIDE or MOTOR-RENT)
+app.get('/api/agencies/brand/:brand', async (req, res) => {
+  try {
+    const { brand } = req.params
+    const agencies = await prisma.agency.findMany({
+      where: { 
+        isActive: true,
+        brand: brand.toUpperCase()
+      },
+      orderBy: { code: 'asc' }
+    })
+    res.json(agencies)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch agencies by brand' })
+  }
+})
+
+// Get categories by brand (VOLTRIDE or MOTOR-RENT)
+app.get('/api/categories/brand/:brand', async (req, res) => {
+  try {
+    const { brand } = req.params
+    const categories = await prisma.category.findMany({
+      where: {
+        brand: brand.toUpperCase()
+      },
+      orderBy: { code: 'asc' },
+      include: {
+        _count: { select: { vehicles: true } },
+        options: { include: { option: true } }
+      }
+    })
+    res.json(categories)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch categories by brand' })
+  }
+})
+
+// ===== FIN ENDPOINTS FILTRES PAR BRAND =====
 app.get('/api/categories', async (req, res) => {
   try {
     const categories = await prisma.category.findMany({ orderBy: { code: 'asc' }, include: { _count: { select: { vehicles: true } }, options: { include: { option: true } } } })

@@ -3,6 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import { PrismaClient } from '@prisma/client'
 import Stripe from 'stripe'
+import { Resend } from 'resend'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
@@ -22,7 +23,7 @@ const getStripeInstance = (brand: string) => {
 
 const app = express()
 const prisma = new PrismaClient()
-
+const resend = new Resend(process.env.RESEND_API_KEY)
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json())
 
@@ -3843,7 +3844,174 @@ app.put('/api/settings/:key', async (req, res) => {
 })
 
 console.log('App settings routes loaded')
+// ============== EMAIL CONFIRMATION ==============
 
+const emailTemplates = {
+  fr: {
+    subject: 'Confirmation de réservation',
+    greeting: 'Bonjour',
+    confirmationText: 'Votre réservation a bien été enregistrée.',
+    vehicleLabel: 'Véhicule',
+    periodLabel: 'Période de location',
+    from: 'du',
+    to: 'au',
+    at: 'à',
+    totalLabel: 'Total de la réservation',
+    paidLabel: 'Montant payé',
+    remainingLabel: 'Reste à payer sur place',
+    depositLabel: 'Caution (à prévoir au check-in)',
+    documentsTitle: 'Documents à prévoir le jour de la location',
+    documents: [
+      "Pièce d'identité (carte d'identité ou passeport)",
+      "Permis de conduire (si véhicule immatriculé)",
+      "Moyen de paiement pour la caution"
+    ],
+    paymentTitle: 'Récapitulatif du paiement',
+    paymentMethod: 'Mode de paiement',
+    card: 'Carte bancaire',
+    cash: 'Espèces',
+    footer: "Merci pour votre confiance. À bientôt !",
+    team: "L'équipe"
+  },
+  es: {
+    subject: 'Confirmación de reserva',
+    greeting: 'Hola',
+    confirmationText: 'Su reserva ha sido registrada correctamente.',
+    vehicleLabel: 'Vehículo',
+    periodLabel: 'Período de alquiler',
+    from: 'del',
+    to: 'al',
+    at: 'a las',
+    totalLabel: 'Total de la reserva',
+    paidLabel: 'Importe pagado',
+    remainingLabel: 'Resto a pagar en el local',
+    depositLabel: 'Fianza (a prever en el check-in)',
+    documentsTitle: 'Documentos necesarios el día del alquiler',
+    documents: [
+      "Documento de identidad (DNI o pasaporte)",
+      "Permiso de conducir (si vehículo matriculado)",
+      "Medio de pago para la fianza"
+    ],
+    paymentTitle: 'Resumen del pago',
+    paymentMethod: 'Método de pago',
+    card: 'Tarjeta bancaria',
+    cash: 'Efectivo',
+    footer: "Gracias por su confianza. ¡Hasta pronto!",
+    team: "El equipo"
+  },
+  en: {
+    subject: 'Booking Confirmation',
+    greeting: 'Hello',
+    confirmationText: 'Your booking has been successfully registered.',
+    vehicleLabel: 'Vehicle',
+    periodLabel: 'Rental period',
+    from: 'from',
+    to: 'to',
+    at: 'at',
+    totalLabel: 'Total booking amount',
+    paidLabel: 'Amount paid',
+    remainingLabel: 'Remaining to pay on site',
+    depositLabel: 'Deposit (required at check-in)',
+    documentsTitle: 'Documents required on rental day',
+    documents: [
+      "ID document (ID card or passport)",
+      "Driving license (if registered vehicle)",
+      "Payment method for deposit"
+    ],
+    paymentTitle: 'Payment summary',
+    paymentMethod: 'Payment method',
+    card: 'Credit card',
+    cash: 'Cash',
+    footer: "Thank you for your trust. See you soon!",
+    team: "The team"
+  }
+}
+
+app.post('/api/send-booking-confirmation', async (req, res) => {
+  try {
+    const { 
+      bookingId, email, firstName, lastName, vehicleName, vehicleNumber,
+      startDate, endDate, startTime, endTime, totalPrice, paidAmount, 
+      remainingAmount, paymentMethod, brand, language = 'fr'
+    } = req.body
+
+    const t = emailTemplates[language] || emailTemplates.fr
+    const brandName = brand === 'VOLTRIDE' ? 'Voltride' : 'Motor-Rent'
+    const brandColor = brand === 'VOLTRIDE' ? '#0e7490' : '#ffaf10'
+
+    const formatDate = (date: string) => {
+      const d = new Date(date)
+      return d.toLocaleDateString(language === 'en' ? 'en-GB' : language === 'es' ? 'es-ES' : 'fr-FR')
+    }
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"></head>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: ${brandColor}; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="margin: 0;">${brandName}</h1>
+        <p style="margin: 5px 0 0 0;">${t.subject}</p>
+      </div>
+      
+      <div style="padding: 20px; border: 1px solid #ddd; border-top: none;">
+        <p>${t.greeting} ${firstName},</p>
+        <p>${t.confirmationText}</p>
+        
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">🚲 ${t.vehicleLabel}</h3>
+          <p style="margin: 0;"><strong>${vehicleNumber}</strong> - ${vehicleName}</p>
+        </div>
+        
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">📅 ${t.periodLabel}</h3>
+          <p style="margin: 0;">${t.from} ${formatDate(startDate)} ${t.at} ${startTime} ${t.to} ${formatDate(endDate)} ${t.at} ${endTime}</p>
+        </div>
+        
+        <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">💰 ${t.paymentTitle}</h3>
+          <table style="width: 100%;">
+            <tr><td>${t.totalLabel}</td><td style="text-align: right;"><strong>${totalPrice}€</strong></td></tr>
+            <tr><td>${t.paidLabel} (${paymentMethod === 'card' ? t.card : t.cash})</td><td style="text-align: right; color: green;"><strong>${paidAmount}€</strong></td></tr>
+            ${remainingAmount > 0 ? `<tr><td>${t.remainingLabel}</td><td style="text-align: right; color: orange;"><strong>${remainingAmount}€</strong></td></tr>` : ''}
+            <tr style="border-top: 1px solid #ccc;"><td>${t.depositLabel}</td><td style="text-align: right;"><strong>${req.body.depositAmount || 100}€</strong></td></tr>
+          </table>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">📋 ${t.documentsTitle}</h3>
+          <ul style="margin: 0; padding-left: 20px;">
+            ${t.documents.map(doc => `<li>${doc}</li>`).join('')}
+          </ul>
+        </div>
+        
+        <p style="text-align: center; color: #666; margin-top: 30px;">
+          ${t.footer}<br/>
+          <strong>${t.team} ${brandName}</strong>
+        </p>
+      </div>
+    </body>
+    </html>
+    `
+
+    const fromEmail = brand === 'VOLTRIDE' ? 'reservations@voltride.es' : 'reservations@motor-rent.es'
+    
+    await resend.emails.send({
+      from: `${brandName} <${fromEmail}>`,
+      to: email,
+      subject: `${t.subject} - ${vehicleNumber}`,
+      html
+    })
+
+    console.log(`[EMAIL] Confirmation sent to ${email} for booking ${bookingId}`)
+    res.json({ success: true })
+  } catch (error: any) {
+    console.error('[EMAIL] Error:', error)
+    res.status(500).json({ error: error.message || 'Failed to send email' })
+  }
+})
+
+console.log('Email confirmation routes loaded')
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })
 
 // ============== DEPOSIT/CAUTION SYSTEM ==============

@@ -47,9 +47,9 @@ export function NewFleetModal({ agencyId, onClose, onSave }: NewFleetModalProps)
   const loadData = async () => {
     try {
       const [catRes, vehRes, agRes] = await Promise.all([
-        fetch(`${API_URL}/api/categories`),
+        fetch(`${API_URL}/api/categories/brand/VOLTRIDE`),
         fetch(`${API_URL}/api/vehicles`),
-        fetch(`${API_URL}/api/agencies`)
+        fetch(`${API_URL}/api/agencies/brand/VOLTRIDE`)
       ])
       setCategories(await catRes.json())
       setVehicles(await vehRes.json())

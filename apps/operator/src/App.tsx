@@ -246,6 +246,7 @@ export default function App() {
   }
 
   const [tab, setTab] = useState('planning')
+  const [sidebarExpanded, setSidebarExpanded] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const brand = 'VOLTRIDE' // Marque fixe
   const [agencies, setAgencies] = useState([])
@@ -1118,74 +1119,76 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-gray-100 relative overflow-hidden">
-      {/* Floating Logos Background */}
-      <div className="floating-logos-container">
-        {[...Array(15)].map((_, i) => (
-          <img
-            key={i}
-            src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1769278425/IMG-20260111-WA0001_1_-removebg-preview_zzajxa.png"
-            alt=""
-            className="floating-logo"
-            style={{
-              left: `${Math.random() * 100}%`,
-              width: `${30 + Math.random() * 40}px`,
-              animationDuration: `${15 + Math.random() * 20}s`,
-              animationDelay: `${Math.random() * 10}s`
-            }}
-          />
-        ))}
-      </div>
       {/* Sidebar */}
-      <div className={(mobileMenuOpen ? "translate-x-0" : "-translate-x-full") + " md:translate-x-0 fixed md:relative z-40 w-56 flex flex-col shadow-xl relative transition-transform duration-300"} style={{ background: 'linear-gradient(180deg, #abdee6 0%, #ffaf10 100%)' }}>
+      <div 
+  className={(mobileMenuOpen ? "translate-x-0" : "-translate-x-full") + ` md:translate-x-0 fixed md:relative z-40 ${sidebarExpanded ? 'w-56' : 'w-16'} flex flex-col shadow-xl relative transition-all duration-300`} 
+  style={{ background: 'linear-gradient(180deg, #abdee6 0%, #ffaf10 100%)' }}
+  onMouseEnter={() => setSidebarExpanded(true)}
+  onMouseLeave={() => setSidebarExpanded(false)}
+>
         <div className="p-4 border-b border-white/20">
           <div className="flex justify-center mb-3">
-            <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766928342/d5uv1qrfwr86rd1abtd1.png" className="h-12" alt="Voltride" />
+            <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766928342/d5uv1qrfwr86rd1abtd1.png" className={sidebarExpanded ? "h-12" : "h-8"} alt="Voltride" />
           </div>
         </div>
         
         <nav className="flex-1 p-2">
           {[
-            { id: 'dashboard', label: t[lang].dashboard },
-            { id: 'planning', label: t[lang].planning },
-            { id: 'bookings', label: t[lang].bookings },
-            { id: 'fleet', label: t[lang].fleet },
-            { id: 'checkout', label: t[lang].checkout },
-            { id: 'customers', label: t[lang].customers },
-            { id: 'contracts', label: t[lang].contracts },
-            { id: 'invoices', label: t[lang].invoices },
-            { id: 'settings', label: t[lang].settings },
-            
+            { id: 'dashboard', label: t[lang].dashboard, icon: '📊' },
+            { id: 'planning', label: t[lang].planning, icon: '📅' },
+            { id: 'bookings', label: t[lang].bookings, icon: '📋' },
+            { id: 'fleet', label: t[lang].fleet, icon: '🚲' },
+            { id: 'checkout', label: t[lang].checkout, icon: '✅' },
+            { id: 'customers', label: t[lang].customers, icon: '👥' },
+            { id: 'contracts', label: t[lang].contracts, icon: '📄' },
+            { id: 'invoices', label: t[lang].invoices, icon: '💰' },
+            { id: 'settings', label: t[lang].settings, icon: '⚙️' },
           ].filter(item => hasPermission(item.id)).map(item => (
             <button key={item.id} onClick={() => { setTab(item.id); setMobileMenuOpen(false) }}
-              className={'w-full text-left px-4 py-2.5 rounded-xl mb-1 transition-all ' +
-                (tab === item.id ? 'bg-white/90 text-gray-800 font-semibold shadow-md' : 'text-white/90 hover:bg-white/20')}>
-              {item.label}
+              className={'w-full text-left px-3 py-2.5 rounded-xl mb-1 transition-all flex items-center gap-3 ' +
+                (tab === item.id ? 'bg-white/90 text-gray-800 font-semibold shadow-md' : 'text-white/90 hover:bg-white/20')}
+              title={item.label}>
+              <span className="text-lg">{item.icon}</span>
+              {sidebarExpanded && <span>{item.label}</span>}
             </button>
           ))}
         </nav>
         
         {/* User info & Logout */}
-        <div className="p-3 border-t border-white/20">
-          <div className="bg-white/20 rounded-xl p-3">
-            <div className="text-white font-medium text-sm">{user?.firstName} {user?.lastName}</div>
-            <div className="text-white/70 text-xs">{user?.role}</div>
-            <div className="flex gap-1 mt-2">
-              <button onClick={() => { setLang('fr'); localStorage.setItem('lang', 'fr') }}
-                className={'flex-1 py-1 text-xs rounded transition ' + (lang === 'fr' ? 'bg-white text-gray-800 font-bold' : 'bg-white/30 text-white')}>
-                🇫🇷 FR
+        <div className="p-2 border-t border-white/20">
+          <div className="bg-white/20 rounded-xl p-2">
+            {sidebarExpanded ? (
+              <>
+                <div className="text-white font-medium text-sm">{user?.firstName} {user?.lastName}</div>
+                <div className="text-white/70 text-xs">{user?.role}</div>
+                <div className="flex gap-1 mt-2">
+                  <button onClick={() => { setLang('fr'); localStorage.setItem('lang', 'fr') }}
+                    className={'flex-1 py-1 text-xs rounded transition ' + (lang === 'fr' ? 'bg-white text-gray-800 font-bold' : 'bg-white/30 text-white')}>
+                    🇫🇷 FR
+                  </button>
+                  <button onClick={() => { setLang('es'); localStorage.setItem('lang', 'es') }}
+                    className={'flex-1 py-1 text-xs rounded transition ' + (lang === 'es' ? 'bg-white text-gray-800 font-bold' : 'bg-white/30 text-white')}>
+                    🇪🇸 ES
+                  </button>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => { handleLogout(); }}
+                  className="mt-2 w-full py-2 bg-red-500/80 hover:bg-red-600 text-white text-sm rounded-lg transition font-medium"
+                >
+                  {t[lang].logout}
+                </button>
+              </>
+            ) : (
+              <button 
+                type="button"
+                onClick={() => { handleLogout(); }}
+                className="w-full py-2 bg-red-500/80 hover:bg-red-600 text-white text-lg rounded-lg transition"
+                title={t[lang].logout}
+              >
+                🚪
               </button>
-              <button onClick={() => { setLang('es'); localStorage.setItem('lang', 'es') }}
-                className={'flex-1 py-1 text-xs rounded transition ' + (lang === 'es' ? 'bg-white text-gray-800 font-bold' : 'bg-white/30 text-white')}>
-                🇪🇸 ES
-              </button>
-            </div>
-            <button 
-              type="button"
-              onClick={() => { handleLogout(); }}
-              className="mt-2 w-full py-2 bg-red-500/80 hover:bg-red-600 text-white text-sm rounded-lg transition font-medium"
-            >
-              {t[lang].logout}
-            </button>
+            )}
           </div>
         </div>
       </div>

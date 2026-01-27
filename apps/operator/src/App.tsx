@@ -1444,6 +1444,7 @@ export default function App() {
                             <th key={i} className={'px-1 py-2 text-center w-24 ' + (isToday ? 'bg-yellow-100' : isWeekend ? 'bg-gray-100' : '')}>
                               <div className="text-xs text-gray-500 uppercase">{day.toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
                               <div className={'text-lg ' + (isToday ? 'font-bold text-yellow-600' : '')}>{day.getDate()}</div>
+<div className="text-xs text-gray-400">{day.toLocaleDateString('fr-FR', { month: 'short' })}</div>
                               {isToday && <div className="text-xs text-yellow-600">{t[lang].today}</div>}
                             </th>
                           )

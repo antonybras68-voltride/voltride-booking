@@ -3928,12 +3928,19 @@ const emailTemplates = {
 }
 
 app.post('/api/send-booking-confirmation', async (req, res) => {
+  console.log('[EMAIL] === Starting email send ===')
+  console.log('[EMAIL] Request body:', JSON.stringify(req.body, null, 2))
+  console.log('[EMAIL] RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY)
+  console.log('[EMAIL] RESEND_API_KEY prefix:', process.env.RESEND_API_KEY?.substring(0, 10) + '...')
+  
   try {
     const { 
       bookingId, email, firstName, lastName, vehicleName, vehicleNumber,
       startDate, endDate, startTime, endTime, totalPrice, paidAmount, 
       remainingAmount, paymentMethod, brand, language = 'fr'
     } = req.body
+
+    console.log('[EMAIL] Parsed data - email:', email, 'brand:', brand, 'language:', language)
 
     const t = emailTemplates[language as keyof typeof emailTemplates] || emailTemplates.fr
     const brandName = brand === 'VOLTRIDE' ? 'Voltride' : 'Motor-Rent'
@@ -3953,21 +3960,17 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
         <h1 style="margin: 0;">${brandName}</h1>
         <p style="margin: 5px 0 0 0;">${t.subject}</p>
       </div>
-      
       <div style="padding: 20px; border: 1px solid #ddd; border-top: none;">
         <p>${t.greeting} ${firstName},</p>
         <p>${t.confirmationText}</p>
-        
         <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">🚲 ${t.vehicleLabel}</h3>
           <p style="margin: 0;"><strong>${vehicleNumber}</strong> - ${vehicleName}</p>
         </div>
-        
         <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">📅 ${t.periodLabel}</h3>
           <p style="margin: 0;">${t.from} ${formatDate(startDate)} ${t.at} ${startTime} ${t.to} ${formatDate(endDate)} ${t.at} ${endTime}</p>
         </div>
-        
         <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">💰 ${t.paymentTitle}</h3>
           <table style="width: 100%;">
@@ -3977,14 +3980,12 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
             <tr style="border-top: 1px solid #ccc;"><td>${t.depositLabel}</td><td style="text-align: right;"><strong>${req.body.depositAmount || 100}€</strong></td></tr>
           </table>
         </div>
-        
         <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">📋 ${t.documentsTitle}</h3>
           <ul style="margin: 0; padding-left: 20px;">
             ${t.documents.map((doc: string) => `<li>${doc}</li>`).join('')}
           </ul>
         </div>
-        
         <p style="text-align: center; color: #666; margin-top: 30px;">
           ${t.footer}<br/>
           <strong>${t.team} ${brandName}</strong>
@@ -3996,21 +3997,27 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
 
     const fromEmail = brand === 'VOLTRIDE' ? 'reservations@voltride.es' : 'reservations@motor-rent.es'
     
-    await resend.emails.send({
+    console.log('[EMAIL] Sending email from:', fromEmail, 'to:', email)
+    
+    const result = await resend.emails.send({
       from: `${brandName} <${fromEmail}>`,
       to: email,
       subject: `${t.subject} - ${vehicleNumber}`,
       html
     })
 
+    console.log('[EMAIL] Resend response:', JSON.stringify(result, null, 2))
     console.log(`[EMAIL] Confirmation sent to ${email} for booking ${bookingId}`)
-    res.json({ success: true })
+    res.json({ success: true, resendResponse: result })
   } catch (error: any) {
-    console.error('[EMAIL] Error:', error)
+    console.error('[EMAIL] Error details:', error)
+    console.error('[EMAIL] Error message:', error.message)
+    console.error('[EMAIL] Error stack:', error.stack)
     res.status(500).json({ error: error.message || 'Failed to send email' })
   }
 })
-
+        
+       
 console.log('Email confirmation routes loaded')
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })
 

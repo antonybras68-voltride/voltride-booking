@@ -225,11 +225,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
           })
         })
         const newCustomer = await res.json()
-        if (newCustomer.error === 'duplicate') {
-          customerId = newCustomer.existingCustomer.id
-        } else {
-          customerId = newCustomer.id
-        }
+        customerId = newCustomer.id
       }
 
       const totalWithOptions = calculatedPrice + calculateOptionsTotal()

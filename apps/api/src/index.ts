@@ -4019,7 +4019,7 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
     </html>
     `
 
-    const fromEmail = 'onboarding@resend.dev'
+    const fromEmail = brand === 'VOLTRIDE' ? 'reservations@voltride.es' : 'reservations@motor-rent.es'
     
     console.log('[EMAIL] Sending email from:', fromEmail, 'to:', email)
     

@@ -46,7 +46,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [customerForm, setCustomerForm] = useState({
     firstName: '', lastName: '', email: '', phone: '',
-    phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES'
+    phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES', language: 'es'
   })
   
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('card')
@@ -270,7 +270,9 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
           paidAmount,
           remainingAmount: getRemainingAmount(),
           paymentMethod,
-          brand
+          depositAmount,
+          brand,
+          language: customerMode === 'search' ? (selectedCustomer?.language || 'es') : customerForm.language
         })
       }).catch(e => console.error('Email error:', e))
 
@@ -505,6 +507,14 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                         {COUNTRIES.map(c => (<option key={c.code} value={c.code}>{c.flag} {c.name}</option>))}
                       </select>
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Langue de communication</label>
+                    <select value={customerForm.language} onChange={e => setCustomerForm({...customerForm, language: e.target.value})} className="w-full border-2 rounded-xl p-3">
+                      <option value="es">🇪🇸 Español</option>
+                      <option value="fr">🇫🇷 Français</option>
+                      <option value="en">🇬🇧 English</option>
+                    </select>
                   </div>
                 </div>
               )}

@@ -1716,6 +1716,7 @@ app.post('/api/auth/login', async (req, res) => {
         role: user.role,
         brands: user.brands,
         agencyIds: user.agencyIds,
+        allowedApps: user.allowedApps || [],
         language: user.language
       }
     })
@@ -1748,7 +1749,8 @@ app.get('/api/auth/me', async (req, res) => {
       lastName: user.lastName,
       role: user.role,
       brands: user.brands,
-      agencyIds: user.agencyIds
+      agencyIds: user.agencyIds,
+      allowedApps: user.allowedApps || []
     })
   } catch (e) {
     res.status(401).json({ error: 'Token invalide' })
@@ -1768,6 +1770,7 @@ app.post('/api/users', async (req, res) => {
         role: req.body.role || 'OPERATOR',
         brands: req.body.brands || ['VOLTRIDE', 'MOTOR-RENT'],
         agencyIds: req.body.agencyIds || [],
+        allowedApps: req.body.allowedApps || [],
         language: req.body.language || 'es'
       }
     })
@@ -1782,7 +1785,7 @@ app.post('/api/users', async (req, res) => {
 app.get('/api/users', async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      select: { id: true, email: true, firstName: true, lastName: true, role: true, brands: true, agencyIds: true, language: true, isActive: true, lastLoginAt: true, createdAt: true }
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, brands: true, agencyIds: true, allowedApps: true, language: true, isActive: true, lastLoginAt: true, createdAt: true }
     })
     res.json(users)
   } catch (e) {

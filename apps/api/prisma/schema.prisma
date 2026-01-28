@@ -1305,6 +1305,7 @@ model User {
   role          UserRole @default(OPERATOR)
   brands        String[] // ['VOLTRIDE', 'MOTOR-RENT']
   agencyIds     String[] // IDs des agences autorisées
+  allowedApps   String[] // Apps autorisées dans le Launcher
   language      String   @default("es") // fr, es
   isActive      Boolean  @default(true)
   lastLoginAt   DateTime?

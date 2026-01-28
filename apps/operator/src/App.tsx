@@ -3353,7 +3353,45 @@ export default function App() {
                   ✅ Check-in
                 </button>
               )}
-
+{!selectedBookingDetail.checkedIn && (
+                <button onClick={async () => {
+                  try {
+                    const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/send-booking-confirmation', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        bookingId: selectedBookingDetail.id,
+                        email: selectedBookingDetail.customer?.email,
+                        firstName: selectedBookingDetail.customer?.firstName,
+                        lastName: selectedBookingDetail.customer?.lastName,
+                        vehicleName: getName(selectedBookingDetail.items?.[0]?.vehicle?.name) || getName(fleet.find(f => f.id === selectedBookingDetail.fleetVehicleId)?.vehicle?.name),
+                        vehicleNumber: fleet.find(f => f.id === selectedBookingDetail.fleetVehicleId)?.vehicleNumber || 'N/A',
+                        startDate: selectedBookingDetail.startDate,
+                        endDate: selectedBookingDetail.endDate,
+                        startTime: selectedBookingDetail.startTime,
+                        endTime: selectedBookingDetail.endTime,
+                        totalPrice: selectedBookingDetail.totalPrice,
+                        paidAmount: selectedBookingDetail.paidAmount || 0,
+                        remainingAmount: (selectedBookingDetail.totalPrice || 0) - (selectedBookingDetail.paidAmount || 0),
+                        paymentMethod: selectedBookingDetail.paymentMethod || 'card',
+                        depositAmount: selectedBookingDetail.depositAmount,
+                        brand: 'VOLTRIDE',
+                        language: selectedBookingDetail.language || 'fr'
+                      })
+                    })
+                    if (res.ok) {
+                      alert('Email de confirmation renvoyé !')
+                    } else {
+                      alert('Erreur lors de l\'envoi de l\'email')
+                    }
+                  } catch (e) {
+                    alert('Erreur: ' + e.message)
+                  }
+                }}
+                  className="py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">
+                  📧 Renvoyer email
+                </button>
+              )}
               <button onClick={() => setShowBookingDetail(false)}
                 className="py-2 px-4 bg-gray-200 rounded-lg hover:bg-gray-300 ml-auto">
                 Fermer

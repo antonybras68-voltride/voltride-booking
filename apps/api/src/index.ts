@@ -3861,10 +3861,14 @@ const emailTemplates = {
     remainingLabel: 'Reste à payer sur place',
     depositLabel: 'Caution (à prévoir au check-in)',
     documentsTitle: 'Documents à prévoir le jour de la location',
-    documents: [
-      "Pièce d'identité (carte d'identité ou passeport)",
-      "Permis de conduire (si véhicule immatriculé)",
-      "Moyen de paiement pour la caution"
+    documentsRegistered: [
+      "Pièce d'identité ou passeport (le permis de conduire étranger ne fait pas office de pièce d'identité)",
+      "Permis de conduire physique valide",
+      "Carte de crédit uniquement pour la caution (pas de carte de débit ni espèces)"
+    ],
+    documentsNonRegistered: [
+      "Pièce d'identité ou passeport (le permis de conduire étranger ne fait pas office de pièce d'identité)",
+      "Carte de crédit uniquement pour la caution (pas de carte de débit ni espèces)"
     ],
     paymentTitle: 'Récapitulatif du paiement',
     paymentMethod: 'Mode de paiement',
@@ -3887,10 +3891,14 @@ const emailTemplates = {
     remainingLabel: 'Resto a pagar en el local',
     depositLabel: 'Fianza (a prever en el check-in)',
     documentsTitle: 'Documentos necesarios el día del alquiler',
-    documents: [
-      "Documento de identidad (DNI o pasaporte)",
-      "Permiso de conducir (si vehículo matriculado)",
-      "Medio de pago para la fianza"
+    documentsRegistered: [
+      "Documento de identidad o pasaporte (el permiso de conducir extranjero no sirve como documento de identidad)",
+      "Permiso de conducir físico válido",
+      "Tarjeta de crédito únicamente para la fianza (no tarjeta de débito ni efectivo)"
+    ],
+    documentsNonRegistered: [
+      "Documento de identidad o pasaporte (el permiso de conducir extranjero no sirve como documento de identidad)",
+      "Tarjeta de crédito únicamente para la fianza (no tarjeta de débito ni efectivo)"
     ],
     paymentTitle: 'Resumen del pago',
     paymentMethod: 'Método de pago',
@@ -3913,10 +3921,14 @@ const emailTemplates = {
     remainingLabel: 'Remaining to pay on site',
     depositLabel: 'Deposit (required at check-in)',
     documentsTitle: 'Documents required on rental day',
-    documents: [
-      "ID document (ID card or passport)",
-      "Driving license (if registered vehicle)",
-      "Payment method for deposit"
+    documentsRegistered: [
+      "ID card or passport (foreign driving license does not serve as ID)",
+      "Valid physical driving license",
+      "Credit card only for deposit (no debit card or cash)"
+    ],
+    documentsNonRegistered: [
+      "ID card or passport (foreign driving license does not serve as ID)",
+      "Credit card only for deposit (no debit card or cash)"
     ],
     paymentTitle: 'Payment summary',
     paymentMethod: 'Payment method',
@@ -3930,21 +3942,24 @@ const emailTemplates = {
 app.post('/api/send-booking-confirmation', async (req, res) => {
   console.log('[EMAIL] === Starting email send ===')
   console.log('[EMAIL] Request body:', JSON.stringify(req.body, null, 2))
-  console.log('[EMAIL] RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY)
-  console.log('[EMAIL] RESEND_API_KEY prefix:', process.env.RESEND_API_KEY?.substring(0, 10) + '...')
   
   try {
     const { 
       bookingId, email, firstName, lastName, vehicleName, vehicleNumber,
       startDate, endDate, startTime, endTime, totalPrice, paidAmount, 
-      remainingAmount, paymentMethod, brand, language = 'fr'
+      remainingAmount, paymentMethod, brand, language = 'fr', isRegisteredVehicle = false
     } = req.body
 
-    console.log('[EMAIL] Parsed data - email:', email, 'brand:', brand, 'language:', language)
+    console.log('[EMAIL] Parsed data - email:', email, 'brand:', brand, 'language:', language, 'isRegistered:', isRegisteredVehicle)
 
     const t = emailTemplates[language as keyof typeof emailTemplates] || emailTemplates.fr
     const brandName = brand === 'VOLTRIDE' ? 'Voltride' : 'Motor-Rent'
     const brandColor = brand === 'VOLTRIDE' ? '#0e7490' : '#ffaf10'
+    const logoUrl = brand === 'VOLTRIDE' 
+      ? 'https://res.cloudinary.com/dof8xnabp/image/upload/v1737372450/VOLTRIDE_LOGO-04_copy_fgqmrv.png'
+      : 'https://res.cloudinary.com/dof8xnabp/image/upload/v1737372450/MOTOR_RENT_LOGO_copy_kxwqjk.png'
+
+    const documents = isRegisteredVehicle ? t.documentsRegistered : t.documentsNonRegistered
 
     const formatDate = (date: string) => {
       const d = new Date(date)
@@ -3955,41 +3970,50 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
     <!DOCTYPE html>
     <html>
     <head><meta charset="UTF-8"></head>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: ${brandColor}; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="margin: 0;">${brandName}</h1>
-        <p style="margin: 5px 0 0 0;">${t.subject}</p>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+      <div style="background: ${brandColor}; color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+        <img src="${logoUrl}" alt="${brandName}" style="max-width: 200px; max-height: 80px; margin-bottom: 10px;" />
+        <p style="margin: 10px 0 0 0; font-size: 18px;">${t.subject}</p>
       </div>
-      <div style="padding: 20px; border: 1px solid #ddd; border-top: none;">
-        <p>${t.greeting} ${firstName},</p>
+      <div style="padding: 25px; border: 1px solid #ddd; border-top: none; background: white;">
+        <p style="font-size: 16px;">${t.greeting} ${firstName},</p>
         <p>${t.confirmationText}</p>
-        <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">🚲 ${t.vehicleLabel}</h3>
-          <p style="margin: 0;"><strong>${vehicleNumber}</strong> - ${vehicleName}</p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${brandColor};">
+          <h3 style="margin-top: 0; color: ${brandColor};">🚲 ${t.vehicleLabel}</h3>
+          <p style="margin: 0; font-size: 16px;"><strong>${vehicleNumber}</strong> - ${vehicleName}</p>
         </div>
-        <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">📅 ${t.periodLabel}</h3>
-          <p style="margin: 0;">${t.from} ${formatDate(startDate)} ${t.at} ${startTime} ${t.to} ${formatDate(endDate)} ${t.at} ${endTime}</p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${brandColor};">
+          <h3 style="margin-top: 0; color: ${brandColor};">📅 ${t.periodLabel}</h3>
+          <p style="margin: 0;">${t.from} <strong>${formatDate(startDate)}</strong> ${t.at} <strong>${startTime}</strong></p>
+          <p style="margin: 5px 0 0 0;">${t.to} <strong>${formatDate(endDate)}</strong> ${t.at} <strong>${endTime}</strong></p>
         </div>
+        
         <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">💰 ${t.paymentTitle}</h3>
-          <table style="width: 100%;">
-            <tr><td>${t.totalLabel}</td><td style="text-align: right;"><strong>${totalPrice}€</strong></td></tr>
-            <tr><td>${t.paidLabel} (${paymentMethod === 'card' ? t.card : t.cash})</td><td style="text-align: right; color: green;"><strong>${paidAmount}€</strong></td></tr>
-            ${remainingAmount > 0 ? `<tr><td>${t.remainingLabel}</td><td style="text-align: right; color: orange;"><strong>${remainingAmount}€</strong></td></tr>` : ''}
-            <tr style="border-top: 1px solid #ccc;"><td>${t.depositLabel}</td><td style="text-align: right;"><strong>${req.body.depositAmount || 100}€</strong></td></tr>
+          <h3 style="margin-top: 0; color: #0e7490;">💰 ${t.paymentTitle}</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0;">${t.totalLabel}</td><td style="text-align: right; padding: 8px 0;"><strong>${totalPrice}€</strong></td></tr>
+            <tr><td style="padding: 8px 0;">${t.paidLabel} (${paymentMethod === 'card' ? t.card : t.cash})</td><td style="text-align: right; padding: 8px 0; color: green;"><strong>${paidAmount}€</strong></td></tr>
+            ${remainingAmount > 0 ? '<tr><td style="padding: 8px 0;">' + t.remainingLabel + '</td><td style="text-align: right; padding: 8px 0; color: orange;"><strong>' + remainingAmount + '€</strong></td></tr>' : ''}
+            <tr style="border-top: 2px solid #ccc;"><td style="padding: 12px 0; font-weight: bold;">${t.depositLabel}</td><td style="text-align: right; padding: 12px 0;"><strong>${req.body.depositAmount || 100}€</strong></td></tr>
           </table>
         </div>
-        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">📋 ${t.documentsTitle}</h3>
-          <ul style="margin: 0; padding-left: 20px;">
-            ${t.documents.map((doc: string) => `<li>${doc}</li>`).join('')}
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffc107;">
+          <h3 style="margin-top: 0; color: #856404;">📋 ${t.documentsTitle}</h3>
+          <ul style="margin: 0; padding-left: 20px; color: #856404;">
+            ${documents.map((doc: string) => '<li style="margin-bottom: 8px;">' + doc + '</li>').join('')}
           </ul>
         </div>
-        <p style="text-align: center; color: #666; margin-top: 30px;">
+        
+        <p style="text-align: center; color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
           ${t.footer}<br/>
           <strong>${t.team} ${brandName}</strong>
         </p>
+      </div>
+      <div style="text-align: center; padding: 15px; color: #999; font-size: 12px;">
+        © ${new Date().getFullYear()} ${brandName} - Tous droits réservés
       </div>
     </body>
     </html>
@@ -4000,24 +4024,21 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
     console.log('[EMAIL] Sending email from:', fromEmail, 'to:', email)
     
     const result = await resend.emails.send({
-      from: `${brandName} <${fromEmail}>`,
+      from: brandName + ' <' + fromEmail + '>',
       to: email,
-      subject: `${t.subject} - ${vehicleNumber}`,
+      subject: t.subject + ' - ' + vehicleNumber,
       html
     })
 
     console.log('[EMAIL] Resend response:', JSON.stringify(result, null, 2))
-    console.log(`[EMAIL] Confirmation sent to ${email} for booking ${bookingId}`)
+    console.log('[EMAIL] Confirmation sent to ' + email + ' for booking ' + bookingId)
     res.json({ success: true, resendResponse: result })
   } catch (error: any) {
     console.error('[EMAIL] Error details:', error)
-    console.error('[EMAIL] Error message:', error.message)
-    console.error('[EMAIL] Error stack:', error.stack)
     res.status(500).json({ error: error.message || 'Failed to send email' })
   }
 })
-        
-       
+
 console.log('Email confirmation routes loaded')
 app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })
 

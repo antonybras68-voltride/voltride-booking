@@ -3956,7 +3956,7 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
     const brandName = brand === 'VOLTRIDE' ? 'Voltride' : 'Motor-Rent'
     const brandColor = brand === 'VOLTRIDE' ? '#0e7490' : '#ffaf10'
     const logoUrl = brand === 'VOLTRIDE' 
-      ? 'https://res.cloudinary.com/dof8xnabp/image/upload/v1737372450/VOLTRIDE_LOGO-04_copy_fgqmrv.png'
+      ? 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1766883143/IMG-20251228-WA0001-removebg-preview_n0fsq5.png'
       : 'https://res.cloudinary.com/dof8xnabp/image/upload/v1737372450/MOTOR_RENT_LOGO_copy_kxwqjk.png'
 
     const documents = isRegisteredVehicle ? t.documentsRegistered : t.documentsNonRegistered

@@ -276,7 +276,8 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
           paymentMethod,
           depositAmount,
           brand,
-          language: customerMode === 'search' ? (selectedCustomer?.language || 'es') : customerForm.language
+          language: customerMode === 'search' ? (selectedCustomer?.language || 'es') : customerForm.language,
+          isRegisteredVehicle: !!selectedFleet.licensePlate
         })
       }).catch(e => console.error('Email error:', e))
 
@@ -290,7 +291,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[95vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         
         <div className="p-4 border-b" style={{ backgroundColor: brand === 'VOLTRIDE' ? '#abdee6' : '#ffaf10' }}>

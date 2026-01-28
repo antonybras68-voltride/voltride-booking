@@ -417,7 +417,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[95vh] overflow-hidden flex flex-col" 
         onClick={e => e.stopPropagation()}>
         

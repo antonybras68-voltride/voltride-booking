@@ -2992,7 +2992,7 @@ export default function App() {
 
       {/* Cancel Modal */}
       {showCancelModal && cancelBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCancelModal(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-bold mb-4">❌ {lang === "fr" ? "Annuler la réservation" : "Cancelar la reserva"}</h3>
             <p className="text-gray-600 mb-4">{lang === "fr" ? "Réservation" : "Reserva"} {cancelBooking.reference} - {cancelBooking.customer?.lastName}</p>
@@ -3053,7 +3053,7 @@ export default function App() {
 
       {/* Modal Assignation */}
       {assigningBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setAssigningBooking(null)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
           <div className="bg-white rounded-xl p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-bold mb-4">{lang === 'fr' ? 'Assigner un véhicule' : 'Asignar un vehículo'}</h3>
             <p className="text-gray-600 mb-4">{lang === 'fr' ? 'Réservation' : 'Reserva'}: {assigningBooking.reference}</p>
@@ -3084,7 +3084,7 @@ export default function App() {
 
       {/* Modal Client */}
       {showCustomerModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCustomerModal(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
           <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-bold mb-4">
               {editingCustomer ? (lang === 'fr' ? 'Modifier le client' : 'Editar cliente') : (lang === 'fr' ? 'Nouveau client' : 'Nuevo cliente')}
@@ -3185,7 +3185,7 @@ export default function App() {
       
       {/* Booking Detail Modal */}
       {showBookingDetail && selectedBookingDetail && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowBookingDetail(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" >
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="p-4 border-b bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-2xl">
@@ -3376,7 +3376,8 @@ export default function App() {
                         paymentMethod: selectedBookingDetail.paymentMethod || 'card',
                         depositAmount: selectedBookingDetail.depositAmount,
                         brand: 'VOLTRIDE',
-                        language: selectedBookingDetail.language || 'fr'
+                        language: selectedBookingDetail.language || 'fr',
+                        isRegisteredVehicle: !!fleet.find(f => f.id === selectedBookingDetail.fleetVehicleId)?.licensePlate
                       })
                     })
                     if (res.ok) {
@@ -3414,7 +3415,7 @@ export default function App() {
 
       {/* Walkin Modal */}
       {showWalkinModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={cancelWalkin}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" >
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <div className="bg-green-600 text-white p-4 rounded-t-2xl">
               <h2 className="text-xl font-bold">👤 Nouveau client walk-in</h2>
@@ -3566,7 +3567,7 @@ export default function App() {
       
           {/* Extension Contract Modal */}
       {showExtensionModal && extensionContract && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowExtensionModal(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-bold mb-4">{lang === 'fr' ? 'Avenant - Extension de contrat' : 'Extensión de contrato'}</h2>
             <div className="space-y-4">

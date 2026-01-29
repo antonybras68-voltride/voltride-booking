@@ -294,6 +294,9 @@ export default function App() {
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [checkInBooking, setCheckInBooking] = useState(null)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingBooking, setEditingBooking] = useState<any>(null)
+  const [editForm, setEditForm] = useState({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00' })
   const [showBookingDetail, setShowBookingDetail] = useState(false)
   const [selectedBookingDetail, setSelectedBookingDetail] = useState(null)
   const [cancelBooking, setCancelBooking] = useState(null)
@@ -2645,7 +2648,17 @@ export default function App() {
               🏁 Check-out
             </button>
           )}
-          <button onClick={() => { alert('Modification à implémenter'); setContextMenu(null) }}
+          <button onClick={() => { 
+              setEditingBooking(contextMenu.booking)
+              setEditForm({
+                startDate: contextMenu.booking.startDate?.split('T')[0] || '',
+                endDate: contextMenu.booking.endDate?.split('T')[0] || '',
+                startTime: contextMenu.booking.startTime || '10:00',
+                endTime: contextMenu.booking.endTime || '10:00'
+              })
+              setShowEditModal(true)
+              setContextMenu(null) 
+            }}
             className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2">
             ✏️ Modifier
           </button>
@@ -2672,6 +2685,69 @@ export default function App() {
       )}
 
       {/* Cancel Modal */}
+      {/* Modal Edition Réservation */}
+      {showEditModal && editingBooking && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <h2 className="text-xl font-bold mb-4">✏️ Modifier la réservation</h2>
+            <div className="space-y-4">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="font-medium">{editingBooking.customer?.firstName} {editingBooking.customer?.lastName}</p>
+                <p className="text-sm text-gray-600">{editingBooking.fleetVehicle?.vehicleNumber} - {editingBooking.fleetVehicle?.vehicle?.name?.fr}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Date début</label>
+                  <input type="date" value={editForm.startDate} onChange={e => setEditForm({...editForm, startDate: e.target.value})} className="w-full border-2 rounded-xl p-3" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Heure début</label>
+                  <input type="time" value={editForm.startTime} onChange={e => setEditForm({...editForm, startTime: e.target.value})} className="w-full border-2 rounded-xl p-3" />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Date fin</label>
+                  <input type="date" value={editForm.endDate} onChange={e => setEditForm({...editForm, endDate: e.target.value})} className="w-full border-2 rounded-xl p-3" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Heure fin</label>
+                  <input type="time" value={editForm.endTime} onChange={e => setEditForm({...editForm, endTime: e.target.value})} className="w-full border-2 rounded-xl p-3" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => { setShowEditModal(false); setEditingBooking(null) }} className="flex-1 py-3 bg-gray-200 rounded-xl hover:bg-gray-300">
+                Annuler
+              </button>
+              <button onClick={async () => {
+                try {
+                  await fetch(API_URL + '/api/bookings/' + editingBooking.id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      startDate: editForm.startDate,
+                      endDate: editForm.endDate,
+                      startTime: editForm.startTime,
+                      endTime: editForm.endTime
+                    })
+                  })
+                  setShowEditModal(false)
+                  setEditingBooking(null)
+                  loadBookings()
+                  alert('Réservation modifiée !')
+                } catch (e) { alert('Erreur lors de la modification') }
+              }} className="flex-1 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showCancelModal && cancelBooking && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>

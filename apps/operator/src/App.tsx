@@ -2815,17 +2815,23 @@ export default function App() {
                   if (editForm.options) {
                     updateData.options = editForm.options.filter((o: any) => o.quantity > 0).map((o: any) => ({ optionId: o.optionId, quantity: o.quantity }))
                   }
-                  await fetch(API_URL + '/api/bookings/' + editingBooking.id, {
+                  const response = await fetch(API_URL + '/api/bookings/' + editingBooking.id, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(updateData)
                   })
+                  if (!response.ok) {
+                    throw new Error('Erreur serveur')
+                  }
                   setShowEditModal(false)
                   setEditingBooking(null)
-                  setEditForm({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00' })
+                  setEditForm({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00', fleetVehicleId: '', options: null })
                   loadBookings()
-                  alert('Réservation modifiée !')
-                } catch (e) { alert('Erreur lors de la modification') }
+                  alert('Réservation modifiée avec succès !')
+                } catch (e) { 
+                  console.error('Erreur modification:', e)
+                  alert('Erreur lors de la modification') 
+                }
               }} className="flex-1 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
                 Enregistrer
               </button>

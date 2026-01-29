@@ -635,10 +635,14 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
               <div>
                 <label className="block text-sm font-medium mb-2">Langue des CGV</label>
                 <div className="flex gap-2">
-                  {['fr', 'es', 'en'].map(l => (
-                    <button key={l} onClick={() => setTermsLang(l)}
-                      className={`px-4 py-2 rounded-lg ${termsLang === l ? 'bg-green-600 text-white' : 'bg-gray-100'}`}>
-                      {l === 'fr' ? '🇫🇷 FR' : l === 'es' ? '🇪🇸 ES' : '🇬🇧 EN'}
+                  {[
+                    { code: 'fr', flag: '🇫🇷', label: 'FR' },
+                    { code: 'es', flag: '🇪🇸', label: 'ES' },
+                    { code: 'en', flag: '🇬🇧', label: 'EN' }
+                  ].map(l => (
+                    <button key={l.code} onClick={() => setTermsLang(l.code)}
+                      className={`px-4 py-2 rounded-lg flex items-center gap-2 ${termsLang === l.code ? 'bg-green-600 text-white' : 'bg-gray-100'}`}>
+                      <span className="text-xl">{l.flag}</span> {l.label}
                     </button>
                   ))}
                 </div>
@@ -649,14 +653,22 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)}
                     className="w-5 h-5 mt-0.5 rounded" />
                   <span className="text-sm">
-                    J'ai lu et j'accepte les <a href="#" className="text-blue-600 underline">Conditions Générales de Vente</a>
+                    J'ai lu et j'accepte les {settings?.cgvPdf?.[termsLang] ? (
+                      <a href={settings.cgvPdf[termsLang]} target="_blank" rel="noreferrer" className="text-blue-600 underline font-medium">Conditions Générales de Vente</a>
+                    ) : (
+                      <span className="text-blue-600 underline">Conditions Générales de Vente</span>
+                    )}
                   </span>
                 </label>
                 <label className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
                   <input type="checkbox" checked={rgpdAccepted} onChange={e => setRgpdAccepted(e.target.checked)}
                     className="w-5 h-5 mt-0.5 rounded" />
                   <span className="text-sm">
-                    J'accepte le traitement de mes données personnelles (RGPD)
+                    J'accepte le traitement de mes données personnelles ({settings?.rgpdPdf?.[termsLang] ? (
+                      <a href={settings.rgpdPdf[termsLang]} target="_blank" rel="noreferrer" className="text-blue-600 underline font-medium">RGPD</a>
+                    ) : (
+                      <span className="text-blue-600 underline">RGPD</span>
+                    )})
                   </span>
                 </label>
               </div>
@@ -688,43 +700,81 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
           {/* STEP 5: Paiement */}
           {step === 5 && (
             <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <div className="flex justify-between text-lg">
+              {/* Récapitulatif des montants */}
+              <div className="p-4 bg-gray-50 rounded-xl space-y-2">
+                <div className="flex justify-between">
                   <span>Total location :</span>
-                  <span className="font-bold">{((booking?.totalPrice || 0) - optionsDiscount).toFixed(2)} €</span>
+                  <span className="font-bold">{(booking?.totalPrice || 0).toFixed(2)} €</span>
                 </div>
-                {optionsDiscount > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Réduction options :</span>
-                    <span>-{optionsDiscount.toFixed(2)} €</span>
+                {(booking?.paidAmount || 0) > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Déjà payé (réservation) :</span>
+                    <span>-{(booking?.paidAmount || 0).toFixed(2)} €</span>
                   </div>
                 )}
+                {discount > 0 && (
+                  <div className="flex justify-between text-orange-600">
+                    <span>Remise commerciale :</span>
+                    <span>-{discount.toFixed(2)} €</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-300">
+                  <span>Reste à payer :</span>
+                  <span className="text-blue-600">{Math.max(0, (booking?.totalPrice || 0) - (booking?.paidAmount || 0) - discount).toFixed(2)} €</span>
+                </div>
                 <div className="flex justify-between text-lg mt-2 pt-2 border-t">
                   <span>Caution :</span>
                   <span className="font-bold">{booking?.depositAmount || fleetVehicle?.vehicle?.deposit || 100} €</span>
                 </div>
               </div>
               
-              <div>
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer">
+              {/* Remise commerciale */}
+              <div className="p-4 bg-orange-50 rounded-xl">
+                <label className="block text-sm font-medium mb-2">🏷️ Remise commerciale (optionnel)</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <input type="number" value={discount || ''} onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
+                      placeholder="Montant en €" className="w-full border rounded-lg p-2" />
+                  </div>
+                  <div>
+                    <input type="text" value={discountReason} onChange={e => setDiscountReason(e.target.value)}
+                      placeholder="Motif de la remise" className="w-full border rounded-lg p-2" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Location payée */}
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={locationPaid} onChange={e => setLocationPaid(e.target.checked)}
                     className="w-6 h-6 rounded" />
                   <span className="font-medium">✅ Location payée</span>
                 </label>
+                {locationPaid && (
+                  <div className="mt-3 flex gap-2">
+                    {['CARD', 'CASH'].map(m => (
+                      <button key={m} onClick={() => setPaymentMethod(m)}
+                        className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${paymentMethod === m ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
+                        {m === 'CARD' ? '💳 CB' : '💵 Espèces'}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               
-              <div>
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer">
+              {/* Caution encaissée */}
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={depositPaid} onChange={e => setDepositPaid(e.target.checked)}
                     className="w-6 h-6 rounded" />
                   <span className="font-medium">✅ Caution encaissée</span>
                 </label>
                 {depositPaid && (
-                  <div className="mt-2 flex gap-2">
-                    {['CARD', 'CASH', 'TRANSFER'].map(m => (
+                  <div className="mt-3 flex gap-2">
+                    {['CARD', 'CASH'].map(m => (
                       <button key={m} onClick={() => setDepositMethod(m)}
-                        className={`px-3 py-1 rounded-lg text-sm ${depositMethod === m ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
-                        {m === 'CARD' ? '💳 CB' : m === 'CASH' ? '💵 Espèces' : '🏦 Virement'}
+                        className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${depositMethod === m ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
+                        {m === 'CARD' ? '💳 CB' : '💵 Espèces'}
                       </button>
                     ))}
                   </div>

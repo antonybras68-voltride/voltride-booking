@@ -708,10 +708,24 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   <span>Total location :</span>
                   <span className="font-bold">{(booking?.totalPrice || 0).toFixed(2)} €</span>
                 </div>
+                {/* Acompte payé à la réservation */}
                 {(booking?.paidAmount || 0) > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Déjà payé (réservation) :</span>
-                    <span>-{(booking?.paidAmount || 0).toFixed(2)} €</span>
+                  <div className="p-2 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex justify-between text-green-700">
+                      <span>Acompte réservation :</span>
+                      <span className="font-bold">-{(booking?.paidAmount || 0).toFixed(2)} €</span>
+                    </div>
+                    <div className="text-xs text-green-600 mt-1">
+                      📅 {booking?.createdAt ? new Date(booking.createdAt).toLocaleDateString('fr-FR') : ''} 
+                      {booking?.source === 'WIDGET' ? ' • 💳 Paiement en ligne' : ' • 🏪 En agence'}
+                    </div>
+                  </div>
+                )}
+                {(booking?.paidAmount || 0) === 0 && booking?.source === 'OPERATOR' && (
+                  <div className="p-2 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="text-orange-700 text-sm">
+                      ⚠️ Réservation walk-in - Aucun acompte perçu
+                    </div>
                   </div>
                 )}
                 {discount > 0 && (

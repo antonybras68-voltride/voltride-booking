@@ -156,7 +156,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
   }
 
   useEffect(() => {
-    if (selectedFleet && bookingStartDate && bookingEndDate) {
+    if (selectedFleet && bookingStartDate && bookingEndDate && bookingStartTime && bookingEndTime) {
       const start = new Date(bookingStartDate)
       const end = new Date(bookingEndDate)
       const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)))
@@ -166,11 +166,25 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
         let price = 0
         if (days <= 14) price = pricing['day' + days] || pricing.day14 || 0
         else price = (pricing.day14 || 0) + ((days - 14) * (pricing.extraDayPrice || 10))
-        setCalculatedPrice(price)
+        
+        // Réduction 20% pour demi-journée (4h exactement) le jour même
+        const today = new Date().toISOString().split('T')[0]
+        if (bookingStartDate === today && bookingStartDate === bookingEndDate) {
+          const startMinutes = parseInt(bookingStartTime.split(':')[0]) * 60 + parseInt(bookingStartTime.split(':')[1])
+          const endMinutes = parseInt(bookingEndTime.split(':')[0]) * 60 + parseInt(bookingEndTime.split(':')[1])
+          const durationMinutes = endMinutes - startMinutes
+          
+          // Si exactement 4 heures (240 minutes), appliquer -20%
+          if (durationMinutes === 240) {
+            price = Math.round(price * 0.8)
+          }
+        }
+        
+        setCalculatedPrice(Math.round(price))
       }
       setDepositAmount(selectedFleet.vehicle?.deposit || 100)
     }
-  }, [selectedFleet, bookingStartDate, bookingEndDate])
+  }, [selectedFleet, bookingStartDate, bookingEndDate, bookingStartTime, bookingEndTime])
 
   const calculatePaymentAmount = (): number => {
     const totalWithOptions = calculatedPrice + calculateOptionsTotal()

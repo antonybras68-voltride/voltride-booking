@@ -296,7 +296,7 @@ export default function App() {
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingBooking, setEditingBooking] = useState<any>(null)
-  const [editForm, setEditForm] = useState({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00' })
+  const [editForm, setEditForm] = useState<any>({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00', fleetVehicleId: '', options: null })
   const [showBookingDetail, setShowBookingDetail] = useState(false)
   const [selectedBookingDetail, setSelectedBookingDetail] = useState(null)
   const [cancelBooking, setCancelBooking] = useState(null)
@@ -2687,56 +2687,120 @@ export default function App() {
       {/* Cancel Modal */}
       {/* Modal Edition Réservation */}
       {showEditModal && editingBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 m-4">
             <h2 className="text-xl font-bold mb-4">✏️ Modifier la réservation</h2>
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Info client */}
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="font-medium">{editingBooking.customer?.firstName} {editingBooking.customer?.lastName}</p>
-                <p className="text-sm text-gray-600">{editingBooking.fleetVehicle?.vehicleNumber} - {editingBooking.fleetVehicle?.vehicle?.name?.fr}</p>
+                <p className="text-sm text-gray-500">Réf: {editingBooking.reference}</p>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Date début</label>
-                  <input type="date" value={editForm.startDate} onChange={e => setEditForm({...editForm, startDate: e.target.value})} className="w-full border-2 rounded-xl p-3" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Heure début</label>
-                  <input type="time" value={editForm.startTime} onChange={e => setEditForm({...editForm, startTime: e.target.value})} className="w-full border-2 rounded-xl p-3" />
+              {/* Dates et heures */}
+              <div className="border rounded-xl p-4">
+                <h3 className="font-medium mb-3">📅 Dates et heures</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Date début</label>
+                    <input type="date" value={editForm.startDate} onChange={e => setEditForm({...editForm, startDate: e.target.value})} className="w-full border-2 rounded-xl p-3" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Heure début</label>
+                    <input type="time" value={editForm.startTime} onChange={e => setEditForm({...editForm, startTime: e.target.value})} className="w-full border-2 rounded-xl p-3" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Date fin</label>
+                    <input type="date" value={editForm.endDate} onChange={e => setEditForm({...editForm, endDate: e.target.value})} className="w-full border-2 rounded-xl p-3" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Heure fin</label>
+                    <input type="time" value={editForm.endTime} onChange={e => setEditForm({...editForm, endTime: e.target.value})} className="w-full border-2 rounded-xl p-3" />
+                  </div>
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Date fin</label>
-                  <input type="date" value={editForm.endDate} onChange={e => setEditForm({...editForm, endDate: e.target.value})} className="w-full border-2 rounded-xl p-3" />
+              {/* Véhicule */}
+              <div className="border rounded-xl p-4">
+                <h3 className="font-medium mb-3">🚲 Véhicule</h3>
+                <div className="p-3 bg-blue-50 rounded-lg mb-3">
+                  <p className="font-medium">Actuel: {editingBooking.fleetVehicle?.vehicleNumber} - {editingBooking.fleetVehicle?.vehicle?.name?.fr || editingBooking.fleetVehicle?.vehicle?.name?.es}</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Heure fin</label>
-                  <input type="time" value={editForm.endTime} onChange={e => setEditForm({...editForm, endTime: e.target.value})} className="w-full border-2 rounded-xl p-3" />
+                <select 
+                  value={editForm.fleetVehicleId || editingBooking.fleetVehicleId} 
+                  onChange={e => setEditForm({...editForm, fleetVehicleId: e.target.value})}
+                  className="w-full border-2 rounded-xl p-3"
+                >
+                  <option value={editingBooking.fleetVehicleId}>Garder le véhicule actuel</option>
+                  {fleet.filter(f => f.status === 'AVAILABLE' && f.agencyId === editingBooking.agencyId).map(f => (
+                    <option key={f.id} value={f.id}>{f.vehicleNumber} - {f.vehicle?.name?.fr || f.vehicle?.name?.es}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Équipements */}
+              <div className="border rounded-xl p-4">
+                <h3 className="font-medium mb-3">🎒 Équipements</h3>
+                <div className="space-y-2">
+                  {editingBooking.options?.map((opt: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                      <span>{opt.option?.name?.fr || opt.option?.name?.es || 'Option'}</span>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => {
+                            const newOptions = [...(editForm.options || editingBooking.options)]
+                            if (newOptions[idx].quantity > 0) {
+                              newOptions[idx] = {...newOptions[idx], quantity: newOptions[idx].quantity - 1}
+                              setEditForm({...editForm, options: newOptions})
+                            }
+                          }}
+                          className="w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300"
+                        >-</button>
+                        <span className="w-8 text-center font-medium">{(editForm.options || editingBooking.options)[idx]?.quantity || opt.quantity}</span>
+                        <button 
+                          onClick={() => {
+                            const newOptions = [...(editForm.options || editingBooking.options)]
+                            newOptions[idx] = {...newOptions[idx], quantity: newOptions[idx].quantity + 1}
+                            setEditForm({...editForm, options: newOptions})
+                          }}
+                          className="w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300"
+                        >+</button>
+                      </div>
+                    </div>
+                  ))}
+                  {(!editingBooking.options || editingBooking.options.length === 0) && (
+                    <p className="text-gray-500 text-sm">Aucun équipement sur cette réservation</p>
+                  )}
                 </div>
               </div>
             </div>
             
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { setShowEditModal(false); setEditingBooking(null) }} className="flex-1 py-3 bg-gray-200 rounded-xl hover:bg-gray-300">
+              <button onClick={() => { setShowEditModal(false); setEditingBooking(null); setEditForm({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00' }) }} className="flex-1 py-3 bg-gray-200 rounded-xl hover:bg-gray-300">
                 Annuler
               </button>
               <button onClick={async () => {
                 try {
+                  const updateData: any = {
+                    startDate: editForm.startDate,
+                    endDate: editForm.endDate,
+                    startTime: editForm.startTime,
+                    endTime: editForm.endTime
+                  }
+                  if (editForm.fleetVehicleId && editForm.fleetVehicleId !== editingBooking.fleetVehicleId) {
+                    updateData.fleetVehicleId = editForm.fleetVehicleId
+                  }
+                  if (editForm.options) {
+                    updateData.options = editForm.options.map((o: any) => ({ optionId: o.optionId, quantity: o.quantity }))
+                  }
                   await fetch(API_URL + '/api/bookings/' + editingBooking.id, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      startDate: editForm.startDate,
-                      endDate: editForm.endDate,
-                      startTime: editForm.startTime,
-                      endTime: editForm.endTime
-                    })
+                    body: JSON.stringify(updateData)
                   })
                   setShowEditModal(false)
                   setEditingBooking(null)
+                  setEditForm({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00' })
                   loadBookings()
                   alert('Réservation modifiée !')
                 } catch (e) { alert('Erreur lors de la modification') }

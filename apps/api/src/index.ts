@@ -3307,7 +3307,7 @@ app.put('/api/bookings/:id/assign', async (req, res) => {
 app.put('/api/bookings/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { startDate, endDate, startTime, endTime, fleetVehicleId, status, checkedIn, checkedInAt, checkedOut, checkedOutAt } = req.body
+    const { startDate, endDate, startTime, endTime, fleetVehicleId, status, checkedIn, checkedInAt, checkedOut, checkedOutAt, options } = req.body
     
     const updateData: any = {}
     if (startDate) updateData.startDate = new Date(startDate)
@@ -3325,12 +3325,49 @@ app.put('/api/bookings/:id', async (req, res) => {
     if (checkedOut !== undefined) updateData.checkedOut = checkedOut
     if (checkedOutAt) updateData.checkedOutAt = new Date(checkedOutAt)
     
+    // Mise à jour des options si fournies
+    if (options && Array.isArray(options)) {
+      // Supprimer les anciennes options
+      await prisma.bookingOption.deleteMany({ where: { bookingId: id } })
+      
+      // Ajouter les nouvelles options
+      for (const opt of options) {
+        if (opt.quantity > 0) {
+          // Récupérer les infos de l'option pour calculer le prix
+          const optionData = await prisma.option.findUnique({ where: { id: opt.optionId } })
+          if (optionData) {
+            // Calculer le nombre de jours
+            const start = updateData.startDate || (await prisma.booking.findUnique({ where: { id } }))?.startDate
+            const end = updateData.endDate || (await prisma.booking.findUnique({ where: { id } }))?.endDate
+            const days = start && end ? Math.max(1, Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24))) : 1
+            
+            // Calculer le prix de l'option
+            const dayKey = days <= 14 ? 'day' + days : 'day14'
+            const pricePerDay = (optionData as any)[dayKey] || 0
+            const totalPrice = pricePerDay * opt.quantity
+            
+            await prisma.bookingOption.create({
+              data: {
+                bookingId: id,
+                optionId: opt.optionId,
+                quantity: opt.quantity,
+                unitPrice: pricePerDay,
+                totalPrice: totalPrice
+              }
+            })
+          }
+        }
+      }
+    }
+    
     const booking = await prisma.booking.update({
       where: { id },
       data: updateData,
       include: {
         agency: true,
         customer: true,
+        fleetVehicle: { include: { vehicle: true } },
+        options: { include: { option: true } },
         items: { include: { vehicle: true } }
       }
     })

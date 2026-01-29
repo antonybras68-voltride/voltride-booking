@@ -297,6 +297,7 @@ export default function App() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingBooking, setEditingBooking] = useState<any>(null)
   const [editForm, setEditForm] = useState<any>({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00', fleetVehicleId: '', options: null })
+  const [availableOptions, setAvailableOptions] = useState<any[]>([])
   const [showBookingDetail, setShowBookingDetail] = useState(false)
   const [selectedBookingDetail, setSelectedBookingDetail] = useState(null)
   const [cancelBooking, setCancelBooking] = useState(null)
@@ -2648,14 +2649,21 @@ export default function App() {
               🏁 Check-out
             </button>
           )}
-          <button onClick={() => { 
+          <button onClick={async () => { 
               setEditingBooking(contextMenu.booking)
               setEditForm({
                 startDate: contextMenu.booking.startDate?.split('T')[0] || '',
                 endDate: contextMenu.booking.endDate?.split('T')[0] || '',
                 startTime: contextMenu.booking.startTime || '10:00',
-                endTime: contextMenu.booking.endTime || '10:00'
+                endTime: contextMenu.booking.endTime || '10:00',
+                options: contextMenu.booking.options?.map((o: any) => ({optionId: o.optionId, quantity: o.quantity})) || []
               })
+              // Charger les options disponibles
+              try {
+                const res = await fetch(API_URL + '/api/options')
+                const allOptions = await res.json()
+                setAvailableOptions(allOptions)
+              } catch (e) { console.error('Erreur chargement options:', e) }
               setShowEditModal(true)
               setContextMenu(null) 
             }}
@@ -2740,36 +2748,50 @@ export default function App() {
               
               {/* Équipements */}
               <div className="border rounded-xl p-4">
-                <h3 className="font-medium mb-3">🎒 Équipements</h3>
+                <h3 className="font-medium mb-3">🎒 Équipements / Options</h3>
                 <div className="space-y-2">
-                  {editingBooking.options?.map((opt: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                      <span>{opt.option?.name?.fr || opt.option?.name?.es || 'Option'}</span>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => {
-                            const newOptions = [...(editForm.options || editingBooking.options)]
-                            if (newOptions[idx].quantity > 0) {
-                              newOptions[idx] = {...newOptions[idx], quantity: newOptions[idx].quantity - 1}
+                  {availableOptions.map((opt: any) => {
+                    const currentOpt = (editForm.options || []).find((o: any) => o.optionId === opt.id)
+                    const existingOpt = editingBooking.options?.find((o: any) => o.optionId === opt.id)
+                    const quantity = currentOpt?.quantity ?? existingOpt?.quantity ?? 0
+                    return (
+                      <div key={opt.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <span className="font-medium">{opt.name?.fr || opt.name?.es || 'Option'}</span>
+                          <span className="text-sm text-gray-500 ml-2">({opt.day1 || 0}€/jour)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => {
+                              const newOptions = [...(editForm.options || editingBooking.options?.map((o: any) => ({optionId: o.optionId, quantity: o.quantity})) || [])]
+                              const idx = newOptions.findIndex((o: any) => o.optionId === opt.id)
+                              if (idx >= 0 && newOptions[idx].quantity > 0) {
+                                newOptions[idx] = {...newOptions[idx], quantity: newOptions[idx].quantity - 1}
+                              }
                               setEditForm({...editForm, options: newOptions})
-                            }
-                          }}
-                          className="w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300"
-                        >-</button>
-                        <span className="w-8 text-center font-medium">{(editForm.options || editingBooking.options)[idx]?.quantity || opt.quantity}</span>
-                        <button 
-                          onClick={() => {
-                            const newOptions = [...(editForm.options || editingBooking.options)]
-                            newOptions[idx] = {...newOptions[idx], quantity: newOptions[idx].quantity + 1}
-                            setEditForm({...editForm, options: newOptions})
-                          }}
-                          className="w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300"
-                        >+</button>
+                            }}
+                            className="w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300 font-bold"
+                          >-</button>
+                          <span className="w-8 text-center font-medium">{quantity}</span>
+                          <button 
+                            onClick={() => {
+                              const newOptions = [...(editForm.options || editingBooking.options?.map((o: any) => ({optionId: o.optionId, quantity: o.quantity})) || [])]
+                              const idx = newOptions.findIndex((o: any) => o.optionId === opt.id)
+                              if (idx >= 0) {
+                                newOptions[idx] = {...newOptions[idx], quantity: newOptions[idx].quantity + 1}
+                              } else {
+                                newOptions.push({optionId: opt.id, quantity: 1})
+                              }
+                              setEditForm({...editForm, options: newOptions})
+                            }}
+                            className="w-8 h-8 bg-blue-500 text-white rounded-full hover:bg-blue-600 font-bold"
+                          >+</button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                  {(!editingBooking.options || editingBooking.options.length === 0) && (
-                    <p className="text-gray-500 text-sm">Aucun équipement sur cette réservation</p>
+                    )
+                  })}
+                  {availableOptions.length === 0 && (
+                    <p className="text-gray-500 text-sm">Chargement des options...</p>
                   )}
                 </div>
               </div>
@@ -2791,7 +2813,7 @@ export default function App() {
                     updateData.fleetVehicleId = editForm.fleetVehicleId
                   }
                   if (editForm.options) {
-                    updateData.options = editForm.options.map((o: any) => ({ optionId: o.optionId, quantity: o.quantity }))
+                    updateData.options = editForm.options.filter((o: any) => o.quantity > 0).map((o: any) => ({ optionId: o.optionId, quantity: o.quantity }))
                   }
                   await fetch(API_URL + '/api/bookings/' + editingBooking.id, {
                     method: 'PUT',

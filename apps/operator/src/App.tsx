@@ -2828,7 +2828,7 @@ export default function App() {
                   setShowEditModal(false)
                   setEditingBooking(null)
                   setEditForm({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00', fleetVehicleId: '', options: null })
-                  loadBookings()
+                  loadData()
                   alert('Réservation modifiée avec succès !')
                 } catch (e: any) { 
                   console.error('Erreur modification:', e)

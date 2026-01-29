@@ -2821,16 +2821,18 @@ export default function App() {
                     body: JSON.stringify(updateData)
                   })
                   if (!response.ok) {
-                    throw new Error('Erreur serveur')
+                    const errorData = await response.json().catch(() => ({}))
+                    console.error('API Error:', response.status, errorData)
+                    throw new Error(errorData.error || 'Erreur serveur ' + response.status)
                   }
                   setShowEditModal(false)
                   setEditingBooking(null)
                   setEditForm({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00', fleetVehicleId: '', options: null })
                   loadBookings()
                   alert('Réservation modifiée avec succès !')
-                } catch (e) { 
+                } catch (e: any) { 
                   console.error('Erreur modification:', e)
-                  alert('Erreur lors de la modification') 
+                  alert('Erreur lors de la modification: ' + (e.message || 'Erreur inconnue'))
                 }
               }} className="flex-1 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
                 Enregistrer

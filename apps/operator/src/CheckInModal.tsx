@@ -635,42 +635,44 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
               <div>
                 <label className="block text-sm font-medium mb-2">Langue des CGV</label>
                 <div className="flex gap-2">
-                  {[
-                    { code: 'fr', flag: '🇫🇷', label: 'FR' },
-                    { code: 'es', flag: '🇪🇸', label: 'ES' },
-                    { code: 'en', flag: '🇬🇧', label: 'EN' }
-                  ].map(l => (
-                    <button key={l.code} onClick={() => setTermsLang(l.code)}
-                      className={`px-4 py-2 rounded-lg flex items-center gap-2 ${termsLang === l.code ? 'bg-green-600 text-white' : 'bg-gray-100'}`}>
-                      <span className="text-xl">{l.flag}</span> {l.label}
-                    </button>
-                  ))}
+                  <button onClick={() => setTermsLang('fr')}
+                    className={`px-4 py-2 rounded-lg flex items-center gap-2 ${termsLang === 'fr' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}>
+                    <img src="https://flagcdn.com/24x18/fr.png" alt="FR" className="w-6 h-4" /> FR
+                  </button>
+                  <button onClick={() => setTermsLang('es')}
+                    className={`px-4 py-2 rounded-lg flex items-center gap-2 ${termsLang === 'es' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}>
+                    <img src="https://flagcdn.com/24x18/es.png" alt="ES" className="w-6 h-4" /> ES
+                  </button>
+                  <button onClick={() => setTermsLang('en')}
+                    className={`px-4 py-2 rounded-lg flex items-center gap-2 ${termsLang === 'en' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}>
+                    <img src="https://flagcdn.com/24x18/gb.png" alt="EN" className="w-6 h-4" /> EN
+                  </button>
                 </div>
               </div>
               
               <div className="space-y-3">
-                <label className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
                   <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)}
-                    className="w-5 h-5 mt-0.5 rounded" />
+                    className="w-5 h-5 mt-0.5 rounded cursor-pointer" />
                   <span className="text-sm">
                     J'ai lu et j'accepte les {settings?.cgvPdf?.[termsLang] ? (
-                      <a href={settings.cgvPdf[termsLang]} target="_blank" rel="noreferrer" className="text-blue-600 underline font-medium">Conditions Générales de Vente</a>
+                      <a href={settings.cgvPdf[termsLang]} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-blue-600 underline font-medium hover:text-blue-800">Conditions Générales de Vente</a>
                     ) : (
-                      <span className="text-blue-600 underline">Conditions Générales de Vente</span>
+                      <span className="text-gray-400">(CGV non disponible)</span>
                     )}
                   </span>
-                </label>
-                <label className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
                   <input type="checkbox" checked={rgpdAccepted} onChange={e => setRgpdAccepted(e.target.checked)}
-                    className="w-5 h-5 mt-0.5 rounded" />
+                    className="w-5 h-5 mt-0.5 rounded cursor-pointer" />
                   <span className="text-sm">
-                    J'accepte le traitement de mes données personnelles ({settings?.rgpdPdf?.[termsLang] ? (
-                      <a href={settings.rgpdPdf[termsLang]} target="_blank" rel="noreferrer" className="text-blue-600 underline font-medium">RGPD</a>
+                    J'accepte le traitement de mes données personnelles {settings?.rgpdPdf?.[termsLang] ? (
+                      <a href={settings.rgpdPdf[termsLang]} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-blue-600 underline font-medium hover:text-blue-800">(RGPD)</a>
                     ) : (
-                      <span className="text-blue-600 underline">RGPD</span>
-                    )})
+                      <span className="text-gray-400">(RGPD non disponible)</span>
+                    )}
                   </span>
-                </label>
+                </div>
               </div>
               
               <div>

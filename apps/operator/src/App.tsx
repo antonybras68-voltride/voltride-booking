@@ -39,7 +39,7 @@ export default function App() {
       bookings: 'Réservations',
       fleet: 'Flotte',
       checkout: 'Check-out',
-      customers: 'Clients',
+      customers: 'Clientes',
       contracts: 'Contrats',
       invoices: 'Factures',
       settings: 'Paramètres',
@@ -69,7 +69,7 @@ export default function App() {
       actions: 'Actions',
       active: 'Actif',
       inactive: 'Inactif',
-      vehicle: 'Véhicule',
+      vehicle: 'Vehículo',
       today: "Hoy",
       previous: 'Anterior',
       next: 'Siguiente',
@@ -99,8 +99,8 @@ export default function App() {
       checkin: 'Check-in',
       language: 'Idioma',
       contractNumber: "N° Contrat",
-      client: "Client",
-      vehicleContract: "Véhicule",
+      client: "Cliente",
+      vehicleContract: "Vehículo",
       period: "Période",
       amount: "Montant",
       contractStatus: "Statut",
@@ -130,7 +130,7 @@ export default function App() {
       bookings: 'Reservas',
       fleet: 'Flota',
       checkout: 'Devolución',
-      customers: 'Clientes',
+      customers: 'Clientees',
       contracts: 'Contratos',
       invoices: 'Facturas',
       settings: 'Ajustes',
@@ -190,7 +190,7 @@ export default function App() {
       checkin: 'Check-in',
       language: 'Idioma',
       contractNumber: "N° Contrato",
-      client: "Cliente",
+      client: "Clientee",
       vehicleContract: "Vehículo",
       period: "Período",
       amount: "Importe",
@@ -430,7 +430,7 @@ export default function App() {
       })
       const data = await res.json()
       if (data.error === 'duplicate') {
-        alert(data.message + '\n\nClient existant: ' + data.existingCustomer.firstName + ' ' + data.existingCustomer.lastName)
+        alert(data.message + '\n\nCliente existant: ' + data.existingCustomer.firstName + ' ' + data.existingCustomer.lastName)
         return
       }
       loadCustomers()
@@ -636,7 +636,7 @@ export default function App() {
         })
       })
       const newCustomer = await res.json()
-      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
       setShowWalkinModal(false)
       setWalkinStatus(null)
       setWalkinData(null)
@@ -887,7 +887,7 @@ export default function App() {
     
     const assignedVehicle = fleet.find(f => f.id === booking.fleetVehicleId)
     if (!assignedVehicle) {
-      alert(lang === 'fr' ? 'Véhicule non trouvé' : 'Vehículo no encontrado')
+      alert(lang === 'fr' ? 'Vehículo non trouvé' : 'Vehículo no encontrado')
       return
     }
     
@@ -1076,7 +1076,7 @@ export default function App() {
         })
       })
       const newCustomer = await res.json()
-      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
       setShowWalkinModal(false)
       setWalkinStatus(null)
       setWalkinData(null)
@@ -1413,7 +1413,7 @@ export default function App() {
         })
       })
       const newCustomer = await res.json()
-      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
       setShowWalkinModal(false)
       setWalkinStatus(null)
       setWalkinData(null)
@@ -1527,7 +1527,7 @@ export default function App() {
         })
       })
       const newCustomer = await res.json()
-      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
       setShowWalkinModal(false)
       setWalkinStatus(null)
       setWalkinData(null)
@@ -1662,7 +1662,7 @@ export default function App() {
         })
       })
       const newCustomer = await res.json()
-      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
       setShowWalkinModal(false)
       setWalkinStatus(null)
       setWalkinData(null)
@@ -1811,7 +1811,7 @@ export default function App() {
         })
       })
       const newCustomer = await res.json()
-      alert('Client créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
+      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
       setShowWalkinModal(false)
       setWalkinStatus(null)
       setWalkinData(null)
@@ -1909,7 +1909,7 @@ export default function App() {
       
       {/* Filtre par assignation */}
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600 font-medium">{lang === 'fr' ? 'Véhicule:' : 'Vehículo:'}</span>
+        <span className="text-sm text-gray-600 font-medium">{lang === 'fr' ? 'Vehículo:' : 'Vehículo:'}</span>
         <div className="flex gap-1">
           {[
             { id: 'ALL', label: lang === 'fr' ? 'Tous' : 'Todos' },
@@ -1972,10 +1972,10 @@ export default function App() {
         <thead className="bg-gray-50">
           <tr>
             <th className="px-4 py-3 text-left text-sm font-medium">Référence</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">Client</th>
+            <th className="px-4 py-3 text-left text-sm font-medium">Cliente</th>
             <th className="px-4 py-3 text-left text-sm font-medium">Dates</th>
             <th className="px-4 py-3 text-left text-sm font-medium">{t[lang].vehicle}</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">{lang === 'fr' ? 'Véhicule assigné' : 'Vehículo asignado'}</th>
+            <th className="px-4 py-3 text-left text-sm font-medium">{lang === 'fr' ? 'Vehículo assigné' : 'Vehículo asignado'}</th>
             <th className="px-4 py-3 text-left text-sm font-medium">{t[lang].status}</th>
             <th className="px-4 py-3 text-left text-sm font-medium">Source</th>
             <th className="px-4 py-3 text-left text-sm font-medium">{t[lang].actions}</th>
@@ -2182,7 +2182,7 @@ export default function App() {
           {!loading && tab === 'checkout' && (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Check-out</h2>
-              <p className="text-gray-600">{lang === "fr" ? "Véhicules actuellement en location" : "Vehículos actualmente en alquiler"}</p>
+              <p className="text-gray-600">{lang === "fr" ? "Vehículos actuellement en location" : "Vehículos actualmente en alquiler"}</p>
               
               {rentedBookings.length === 0 ? (
                 <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
@@ -2399,7 +2399,7 @@ export default function App() {
               <div className="bg-white rounded-xl shadow p-4 flex flex-wrap gap-4 items-end">
                 <div className="flex-1 min-w-[200px]">
                   <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'fr' ? 'Rechercher' : 'Buscar'}</label>
-                  <input type="text" value={contractSearch} onChange={(e) => setContractSearch(e.target.value)} placeholder={lang === 'fr' ? 'Client, véhicule, n° contrat...' : 'Cliente, vehículo, n° contrato...'} className="border rounded-lg px-3 py-2 w-full" />
+                  <input type="text" value={contractSearch} onChange={(e) => setContractSearch(e.target.value)} placeholder={lang === 'fr' ? 'Cliente, véhicule, n° contrat...' : 'Clientee, vehículo, n° contrato...'} className="border rounded-lg px-3 py-2 w-full" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].from}</label>
@@ -2438,10 +2438,10 @@ export default function App() {
                     {contracts.filter(c => {
                       if (contractSearch) {
                         const search = contractSearch.toLowerCase();
-                        const matchClient = (c.customer?.firstName + ' ' + c.customer?.lastName).toLowerCase().includes(search);
+                        const matchCliente = (c.customer?.firstName + ' ' + c.customer?.lastName).toLowerCase().includes(search);
                         const matchVehicle = (c.fleetVehicle?.vehicleNumber || '').toLowerCase().includes(search);
                         const matchNumber = (c.contractNumber || '').toLowerCase().includes(search);
-                        if (!matchClient && !matchVehicle && !matchNumber) return false;
+                        if (!matchCliente && !matchVehicle && !matchNumber) return false;
                       }
                       if (contractsFilter.status && c.status !== contractsFilter.status) return false;
                       if (contractsFilter.startDate && new Date(c.currentStartDate) < new Date(contractsFilter.startDate)) return false;
@@ -2476,7 +2476,7 @@ export default function App() {
               <div className="bg-white rounded-xl shadow p-4 flex flex-wrap gap-4 items-end">
                 <div className="flex-1 min-w-[200px]">
                   <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'fr' ? 'Rechercher' : 'Buscar'}</label>
-                  <input type="text" value={contractSearch} onChange={(e) => setContractSearch(e.target.value)} placeholder={lang === 'fr' ? 'Client, véhicule, n° contrat...' : 'Cliente, vehículo, n° contrato...'} className="border rounded-lg px-3 py-2 w-full" />
+                  <input type="text" value={contractSearch} onChange={(e) => setContractSearch(e.target.value)} placeholder={lang === 'fr' ? 'Cliente, véhicule, n° contrat...' : 'Clientee, vehículo, n° contrato...'} className="border rounded-lg px-3 py-2 w-full" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].from}</label>
@@ -2745,9 +2745,9 @@ export default function App() {
                 </div>
               </div>
               
-              {/* Véhicule */}
+              {/* Vehículo */}
               <div className="border rounded-xl p-4">
-                <h3 className="font-medium mb-3">🚲 Véhicule</h3>
+                <h3 className="font-medium mb-3">🚲 Vehículo</h3>
                 <div className="p-3 bg-blue-50 rounded-lg mb-3">
                   <p className="font-medium">Actuel: {editingBooking.fleetVehicle?.vehicleNumber} - {editingBooking.fleetVehicle?.vehicle?.name?.fr || editingBooking.fleetVehicle?.vehicle?.name?.es}</p>
                 </div>
@@ -2950,7 +2950,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal Client */}
+      {/* Modal Cliente */}
       {showCustomerModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
           <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
@@ -3077,13 +3077,13 @@ export default function App() {
                 </span>
                 <span className={'px-3 py-1 rounded-full text-sm ' + 
                   (selectedBookingDetail.source === 'WIDGET' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700')}>
-                  {selectedBookingDetail.source === 'WIDGET' ? '🌐 En línea' : '🏪 Walk-in (agence)'}
+                  {selectedBookingDetail.source === 'WIDGET' ? '🌐 En línea' : '🏪 Walk-in (agencia)'}
                 </span>
               </div>
               
-              {/* Client */}
+              {/* Cliente */}
               <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">👤 Client</h3>
+                <h3 className="font-bold text-gray-700 mb-3">👤 Cliente</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Nombre completo</p>
@@ -3108,9 +3108,9 @@ export default function App() {
                 </div>
               </div>
               
-              {/* Véhicule */}
+              {/* Vehículo */}
               <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">🚲 Véhicule</h3>
+                <h3 className="font-bold text-gray-700 mb-3">🚲 Vehículo</h3>
                 {(() => {
                   const assignedVehicle = fleet.find(f => f.id === selectedBookingDetail.fleetVehicleId)
                   return (

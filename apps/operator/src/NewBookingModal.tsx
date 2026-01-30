@@ -394,8 +394,8 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
 
               {selectedFleet && !dateValidationError && (
                 <div className="p-4 bg-blue-50 rounded-xl">
-                  <div className="flex justify-between text-lg"><span>Prix location</span><span className="font-bold">{calculatedPrice.toFixed(2)}€</span></div>
-                  <div className="flex justify-between text-sm text-gray-600"><span>Caution</span><span>{depositAmount.toFixed(2)}€</span></div>
+                  <div className="flex justify-between text-lg"><span>Precio alquiler</span><span className="font-bold">{calculatedPrice.toFixed(2)}€</span></div>
+                  <div className="flex justify-between text-sm text-gray-600"><span>Fianza</span><span>{depositAmount.toFixed(2)}€</span></div>
                 </div>
               )}
             </div>
@@ -442,7 +442,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                 <button onClick={() => setCustomerMode('search')}
                   className={'flex-1 py-3 rounded-xl border-2 font-medium text-sm ' + 
                     (customerMode === 'search' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200')}>
-                  🔍 Cliente existant
+                  🔍 Cliente existente
                 </button>
                 <button onClick={() => { setCustomerMode('manual'); setSelectedCustomer(null) }}
                   className={'flex-1 py-3 rounded-xl border-2 font-medium text-sm ' + 
@@ -453,7 +453,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
 
               {customerMode === 'search' && (
                 <div className="space-y-4">
-                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Rechercher par nom, email ou téléphone..." className="w-full border-2 rounded-xl p-3" />
+                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nombre, email o teléfono..." className="w-full border-2 rounded-xl p-3" />
                   {selectedCustomer ? (
                     <div className="p-4 bg-green-50 border-2 border-green-500 rounded-xl">
                       <div className="flex justify-between items-center">

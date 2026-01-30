@@ -660,7 +660,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     className="w-5 h-5 mt-0.5 rounded cursor-pointer" />
                   <span className="text-sm">
                     J'ai lu et j'accepte les {settings?.cgvResume?.[termsLang] ? (
-                      <span className="text-blue-600 font-medium cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); alert(settings.cgvResume?.[termsLang] || 'CGV non disponibles'); }}>Conditions Générales de Vente</span>
+                      <span className="text-blue-600 font-medium cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); setShowTextModal({ type: 'cgv', text: settings?.cgvResume?.[termsLang] || 'CGV non disponibles' }); }}>Conditions Générales de Vente</span>
                     ) : (
                       <span className="text-gray-400">(CGV non disponible)</span>
                     )}
@@ -671,7 +671,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     className="w-5 h-5 mt-0.5 rounded cursor-pointer" />
                   <span className="text-sm">
                     J'accepte le traitement de mes données personnelles {settings?.rgpd?.[termsLang] ? (
-                      <span className="text-blue-600 font-medium cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); alert(settings.rgpd?.[termsLang] || 'RGPD non disponible'); }}>(RGPD)</span>
+                      <span className="text-blue-600 font-medium cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); setShowTextModal({ type: 'rgpd', text: settings?.rgpd?.[termsLang] || 'RGPD non disponible' }); }}>(RGPD)</span>
                     ) : (
                       <span className="text-gray-400">(RGPD non disponible)</span>
                     )}

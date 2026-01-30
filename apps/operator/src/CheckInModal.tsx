@@ -87,25 +87,25 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
     // Étape 2
     clientDocuments: termsLang === 'fr' ? 'Documents du client' : termsLang === 'es' ? 'Documentos del cliente' : 'Client documents',
     idCard: termsLang === 'fr' ? 'Pièce d\'identité' : termsLang === 'es' ? 'Documento de identidad' : 'ID Card',
-    driverLicense: termsLang === 'fr' ? 'Permis de conduire' : termsLang === 'es' ? 'Permiso de conducir' : 'Driver\'s license',
+    driverLicense: termsLang === 'fr' ? '{t.driverLicense}' : termsLang === 'es' ? 'Permiso de conducir' : 'Driver\'s license',
     verified: termsLang === 'fr' ? 'Vérifié' : termsLang === 'es' ? 'Verificado' : 'Verified',
     toVerify: termsLang === 'fr' ? 'À vérifier' : termsLang === 'es' ? 'Pendiente' : 'To verify',
-    vehicleWithLicense: termsLang === 'fr' ? 'Véhicule nécessitant un permis - Permis + CNI obligatoires' : termsLang === 'es' ? 'Vehículo que requiere permiso - Permiso + DNI obligatorios' : 'Vehicle requiring license - License + ID required',
-    vehicleWithoutLicense: termsLang === 'fr' ? 'Véhicule sans permis - Carte d\'identité obligatoire' : termsLang === 'es' ? 'Vehículo sin permiso - DNI obligatorio' : 'Vehicle without license - ID required',
+    vehicleWithLicense: termsLang === 'fr' ? '{t.vehicleWithLicenseTitle} - {t.licenseIdRequired}' : termsLang === 'es' ? 'Vehículo que requiere permiso - Permiso + DNI obligatorios' : 'Vehicle requiring license - License + ID required',
+    vehicleWithoutLicense: termsLang === 'fr' ? '{t.vehicleWithoutLicenseTitle} - Carte d\'identité obligatoire' : termsLang === 'es' ? 'Vehículo sin permiso - DNI obligatorio' : 'Vehicle without license - ID required',
     
     // Étape 3
     includedEquipment: termsLang === 'fr' ? 'Équipements inclus' : termsLang === 'es' ? 'Equipamiento incluido' : 'Included equipment',
     helmet: termsLang === 'fr' ? 'Casque' : termsLang === 'es' ? 'Casco' : 'Helmet',
-    lock: termsLang === 'fr' ? 'Antivol' : termsLang === 'es' ? 'Antirrobo' : 'Lock',
+    lock: termsLang === 'fr' ? '{t.lock}' : termsLang === 'es' ? 'Antirrobo' : 'Lock',
     charger: termsLang === 'fr' ? 'Chargeur' : termsLang === 'es' ? 'Cargador' : 'Charger',
     
     // Étape 4
-    cgvLanguage: termsLang === 'fr' ? 'Langue des CGV' : termsLang === 'es' ? 'Idioma de las CGV' : 'Terms language',
+    cgvLanguage: termsLang === 'fr' ? '{t.cgvLanguage}' : termsLang === 'es' ? 'Idioma de las CGV' : 'Terms language',
     acceptCgv: termsLang === 'fr' ? 'J\'ai lu et j\'accepte les' : termsLang === 'es' ? 'He leído y acepto las' : 'I have read and accept the',
     cgv: termsLang === 'fr' ? 'Conditions Générales de Vente' : termsLang === 'es' ? 'Condiciones Generales de Venta' : 'Terms and Conditions',
     acceptRgpd: termsLang === 'fr' ? 'J\'accepte le traitement de mes données personnelles' : termsLang === 'es' ? 'Acepto el tratamiento de mis datos personales' : 'I accept the processing of my personal data',
-    clientSignature: termsLang === 'fr' ? 'Signature du client' : termsLang === 'es' ? 'Firma del cliente' : 'Client signature',
-    clearSignature: termsLang === 'fr' ? 'Effacer la signature' : termsLang === 'es' ? 'Borrar firma' : 'Clear signature',
+    clientSignature: termsLang === 'fr' ? '{t.clientSignature}' : termsLang === 'es' ? 'Firma del cliente' : 'Client signature',
+    clearSignature: termsLang === 'fr' ? '{t.clearSignature}' : termsLang === 'es' ? 'Borrar firma' : 'Clear signature',
     close: termsLang === 'fr' ? 'Fermer' : termsLang === 'es' ? 'Cerrar' : 'Close',
     cgvUnavailable: termsLang === 'fr' ? 'CGV non disponibles' : termsLang === 'es' ? 'CGV no disponibles' : 'Terms not available',
     rgpdUnavailable: termsLang === 'fr' ? 'RGPD non disponible' : termsLang === 'es' ? 'RGPD no disponible' : 'GDPR not available',
@@ -119,12 +119,12 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
     cash: termsLang === 'fr' ? 'Espèces' : termsLang === 'es' ? 'Efectivo' : 'Cash',
     remainingPayment: termsLang === 'fr' ? 'Reste à payer' : termsLang === 'es' ? 'Pendiente de pago' : 'Remaining payment',
     securityDeposit: termsLang === 'fr' ? 'Caution' : termsLang === 'es' ? 'Fianza' : 'Security deposit',
-    noDeposit: termsLang === 'fr' ? 'Aucun acompte perçu à la réservation' : termsLang === 'es' ? 'Sin anticipo en la reserva' : 'No deposit received',
-    commercialDiscount: termsLang === 'fr' ? 'Remise commerciale (optionnel)' : termsLang === 'es' ? 'Descuento comercial (opcional)' : 'Commercial discount (optional)',
-    amountEuro: termsLang === 'fr' ? 'Montant en €' : termsLang === 'es' ? 'Importe en €' : 'Amount in €',
-    discountReason: termsLang === 'fr' ? 'Motif de la remise' : termsLang === 'es' ? 'Motivo del descuento' : 'Discount reason',
-    rentalPaid: termsLang === 'fr' ? 'Location payée' : termsLang === 'es' ? 'Alquiler pagado' : 'Rental paid',
-    depositCollected: termsLang === 'fr' ? 'Caution encaissée' : termsLang === 'es' ? 'Fianza cobrada' : 'Deposit collected',
+    noDeposit: termsLang === 'fr' ? '{t.noDeposit}' : termsLang === 'es' ? '{t.noDeposit}' : 'No deposit received',
+    commercialDiscount: termsLang === 'fr' ? '{t.commercialDiscount}' : termsLang === 'es' ? '{t.commercialDiscount}' : 'Commercial discount (optional)',
+    amountEuro: termsLang === 'fr' ? '{t.amountEuro}' : termsLang === 'es' ? '{t.amountEuro}' : 'Amount in €',
+    discountReason: termsLang === 'fr' ? '{t.discountReason}' : termsLang === 'es' ? '{t.discountReason}' : 'Discount reason',
+    rentalPaid: termsLang === 'fr' ? '{t.rentalPaid}' : termsLang === 'es' ? '{t.rentalPaid}' : 'Rental paid',
+    depositCollected: termsLang === 'fr' ? '{t.depositCollected}' : termsLang === 'es' ? '{t.depositCollected}' : 'Deposit collected',
     
     // Étape 6
     vehicleInspection: termsLang === 'fr' ? 'Inspection du véhicule' : termsLang === 'es' ? 'Inspección del vehículo' : 'Vehicle inspection',
@@ -133,6 +133,25 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
     existingDamages: termsLang === 'fr' ? 'Dommages existants' : termsLang === 'es' ? 'Daños existentes' : 'Existing damages',
     batteryLevel: termsLang === 'fr' ? 'Niveau de batterie' : termsLang === 'es' ? 'Nivel de batería' : 'Battery level',
     mileage: termsLang === 'fr' ? 'Kilométrage' : termsLang === 'es' ? 'Kilometraje' : 'Mileage',
+    
+    // Textes supplémentaires
+    mileageInfo: termsLang === 'fr' ? 'Le kilométrage de départ sera relevé lors de l\'inspection finale.' : termsLang === 'es' ? 'El kilometraje de salida se registrará en la inspección final.' : 'Starting mileage will be recorded during final inspection.',
+    vehicleWithLicenseTitle: termsLang === 'fr' ? 'Véhicule nécessitant un permis' : termsLang === 'es' ? 'Vehículo que requiere permiso' : 'Vehicle requiring license',
+    licenseIdRequired: termsLang === 'fr' ? 'Permis + CNI obligatoires' : termsLang === 'es' ? 'Permiso + DNI obligatorios' : 'License + ID required',
+    vehicleWithoutLicenseTitle: termsLang === 'fr' ? 'Véhicule sans permis' : termsLang === 'es' ? 'Vehículo sin permiso' : 'Vehicle without license',
+    idRequired: termsLang === 'fr' ? 'Carte d\'identité obligatoire' : termsLang === 'es' ? 'DNI obligatorio' : 'ID required',
+    frontPhoto: termsLang === 'fr' ? 'Photo recto' : termsLang === 'es' ? 'Foto anverso' : 'Front photo',
+    backPhoto: termsLang === 'fr' ? 'Photo verso' : termsLang === 'es' ? 'Foto reverso' : 'Back photo',
+    upload: termsLang === 'fr' ? 'Télécharger' : termsLang === 'es' ? 'Subir' : 'Upload',
+    equipmentGiven: termsLang === 'fr' ? 'Équipements remis au client' : termsLang === 'es' ? 'Equipamiento entregado al cliente' : 'Equipment given to client',
+    topCase: termsLang === 'fr' ? 'Top case' : termsLang === 'es' ? 'Baúl' : 'Top case',
+    inspectionPhotos: termsLang === 'fr' ? 'Photos d\'inspection' : termsLang === 'es' ? 'Fotos de inspección' : 'Inspection photos',
+    front: termsLang === 'fr' ? 'Avant' : termsLang === 'es' ? 'Delantero' : 'Front',
+    backSide: termsLang === 'fr' ? 'Arrière' : termsLang === 'es' ? 'Trasero' : 'Back',
+    leftSide: termsLang === 'fr' ? 'Côté gauche' : termsLang === 'es' ? 'Lado izquierdo' : 'Left side',
+    rightSide: termsLang === 'fr' ? 'Côté droit' : termsLang === 'es' ? 'Lado derecho' : 'Right side',
+    dashboard: termsLang === 'fr' ? 'Compteur/Tableau de bord' : termsLang === 'es' ? 'Contador/Tablero' : 'Dashboard',
+    startMileage: termsLang === 'fr' ? 'Kilométrage de départ' : termsLang === 'es' ? 'Kilometraje de salida' : 'Starting mileage',
   }
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -163,10 +182,10 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   const getRequiredPhotos = () => {
     if (isMotorRent) {
       return [
-        { key: 'front', label: 'Avant', required: true },
+        { key: 'front', label: '{t.front}', required: true },
         { key: 'left', label: 'Gauche', required: true },
         { key: 'right', label: 'Droite', required: true },
-        { key: 'rear', label: 'Arrière', required: true },
+        { key: 'rear', label: '{t.back}', required: true },
         { key: 'counter', label: 'Compteur', required: false }
       ]
     } else {
@@ -386,7 +405,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                 </div>
               </div>
               <div className="p-4 bg-blue-50 rounded-xl text-blue-700 text-sm">
-                ℹ️ Le kilométrage de départ sera relevé lors de l'inspection finale.
+                {t.mileageInfo}
               </div>
             </div>
           )}
@@ -504,7 +523,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     <>
                       {/* Catégorie avec permis */}
                       <div className="p-3 bg-orange-50 rounded-xl text-orange-700 text-sm">
-                        <strong>Véhicule nécessitant un permis</strong> - Permis + CNI obligatoires
+                        <strong>{t.vehicleWithLicenseTitle}</strong> - {t.licenseIdRequired}
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">
@@ -605,7 +624,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     <>
                       {/* Catégorie sans permis - CNI obligatoire */}
                       <div className="p-3 bg-blue-50 rounded-xl text-blue-700 text-sm">
-                        ℹ️ Véhicule sans permis - <strong>Carte d'identité obligatoire</strong>
+                        ℹ️ {t.vehicleWithoutLicenseTitle} - <strong>{t.idRequired}</strong>
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">
@@ -795,14 +814,14 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     </div>
                     <div className="text-xs text-green-600 mt-1">
                       {booking?.createdAt ? new Date(booking.createdAt).toLocaleDateString('fr-FR') : ''} 
-                      {booking?.source === 'WIDGET' ? ' • En línea • Tarjeta' : ` • En agencia • ${booking?.paymentMethod === 'card' ? 'Tarjeta' : booking?.paymentMethod === 'cash' ? 'Efectivo' : 'Tarjeta/Efectivo'}`}
+                      {booking?.source === 'WIDGET' ? ' • En línea • {t.card}' : ` • {t.inAgency} • ${booking?.paymentMethod === 'card' ? 'Tarjeta' : booking?.paymentMethod === 'cash' ? 'Efectivo' : '{t.card}/{t.cash}'}`}
                     </div>
                   </div>
                 )}
                 {(booking?.paidAmount || 0) === 0 && (
                   <div className="p-2 bg-orange-50 rounded-lg border border-orange-200">
                     <div className="text-orange-700 text-sm">
-                      Sin anticipo en la reserva
+                      {t.noDeposit}
                     </div>
                   </div>
                 )}
@@ -824,25 +843,25 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
               
               {/* Remise commerciale */}
               <div className="p-4 bg-orange-50 rounded-xl">
-                <label className="block text-sm font-medium mb-2">🏷️ Descuento comercial (opcional)</label>
+                <label className="block text-sm font-medium mb-2">🏷️ {t.commercialDiscount}</label>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <input type="number" value={discount || ''} onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
-                      placeholder="Importe en €" className="w-full border rounded-lg p-2" />
+                      placeholder="{t.amountEuro}" className="w-full border rounded-lg p-2" />
                   </div>
                   <div>
                     <input type="text" value={discountReason} onChange={e => setDiscountReason(e.target.value)}
-                      placeholder="Motivo del descuento" className="w-full border rounded-lg p-2" />
+                      placeholder="{t.discountReason}" className="w-full border rounded-lg p-2" />
                   </div>
                 </div>
               </div>
               
-              {/* Alquiler pagado */}
+              {/* {t.rentalPaid} */}
               <div className="p-4 bg-gray-50 rounded-xl">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={locationPaid} onChange={e => setLocationPaid(e.target.checked)}
                     className="w-6 h-6 rounded" />
-                  <span className="font-medium">Alquiler pagado</span>
+                  <span className="font-medium">{t.rentalPaid}</span>
                 </label>
                 {locationPaid && (
                   <div className="mt-3 flex gap-2">
@@ -856,12 +875,12 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                 )}
               </div>
               
-              {/* Fianza cobrada */}
+              {/* {t.depositCollected} */}
               <div className="p-4 bg-gray-50 rounded-xl">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={depositPaid} onChange={e => setDepositPaid(e.target.checked)}
                     className="w-6 h-6 rounded" />
-                  <span className="font-medium">Fianza cobrada</span>
+                  <span className="font-medium">{t.depositCollected}</span>
                 </label>
                 {depositPaid && (
                   <div className="mt-3 flex gap-2">
@@ -985,7 +1004,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
             <div className="whitespace-pre-wrap text-sm text-gray-700">{showTextModal.text}</div>
           </div>
           <div className="p-4 border-t flex justify-end">
-            <button onClick={() => setShowTextModal(null)} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Cerrar</button>
+            <button onClick={() => setShowTextModal(null)} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">{t.close}</button>
           </div>
         </div>
       </div>

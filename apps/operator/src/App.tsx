@@ -3258,7 +3258,7 @@ export default function App() {
         <CheckInModal
           booking={checkInBooking}
           fleetVehicle={fleet.find(f => f.id === checkInBooking.fleetVehicleId)}
-          settings={settings}
+          settings={checkInBooking?.agency?.brand === 'MOTOR-RENT' ? settings.motorrent : settings.voltride}
           onClose={() => setShowCheckIn(false)}
           onComplete={() => { setShowCheckIn(false); setCheckInBooking(null); loadData() }}
         />

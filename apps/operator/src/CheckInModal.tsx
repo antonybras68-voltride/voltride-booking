@@ -64,7 +64,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   const [isDrawing, setIsDrawing] = useState(false)
   
   // Step 5 - Payment
-  const [locationPaid, setLocationPaid] = useState(booking?.paidAmount > 0)
+  const [locationPaid, setLocationPaid] = useState(false)
   const [depositPaid, setDepositPaid] = useState(false)
   const [depositMethod, setDepositMethod] = useState('CARD')
   const [discount, setDiscount] = useState(0)
@@ -717,14 +717,14 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     </div>
                     <div className="text-xs text-green-600 mt-1">
                       📅 {booking?.createdAt ? new Date(booking.createdAt).toLocaleDateString('fr-FR') : ''} 
-                      {booking?.source === 'WIDGET' ? ' • 💳 Paiement en ligne' : booking?.paymentMethod === 'CARD' ? ' • 💳 CB' : booking?.paymentMethod === 'CASH' ? ' • 💵 Espèces' : ' • 🏪 En agence'}
+                      {booking?.source === 'WIDGET' ? ' • 💳 Paiement en ligne' : booking?.paymentMethod === 'card' ? ' • 💳 CB' : booking?.paymentMethod === 'cash' ? ' • 💵 Espèces' : ' • 🏪 En agence'}
                     </div>
                   </div>
                 )}
-                {(booking?.paidAmount || 0) === 0 && booking?.source === 'OPERATOR' && (
+                {(booking?.paidAmount || 0) === 0 && (
                   <div className="p-2 bg-orange-50 rounded-lg border border-orange-200">
                     <div className="text-orange-700 text-sm">
-                      ⚠️ Réservation walk-in - Aucun acompte perçu
+                      ⚠️ Aucun acompte perçu à la réservation
                     </div>
                   </div>
                 )}

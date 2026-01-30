@@ -717,7 +717,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     </div>
                     <div className="text-xs text-green-600 mt-1">
                       📅 {booking?.createdAt ? new Date(booking.createdAt).toLocaleDateString('fr-FR') : ''} 
-                      {booking?.source === 'WIDGET' ? ' • 💳 Paiement en ligne' : ' • 🏪 En agence'}
+                      {booking?.source === 'WIDGET' ? ' • 💳 Paiement en ligne' : booking?.paymentMethod === 'CARD' ? ' • 💳 CB' : booking?.paymentMethod === 'CASH' ? ' • 💵 Espèces' : ' • 🏪 En agence'}
                     </div>
                   </div>
                 )}

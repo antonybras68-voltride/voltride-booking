@@ -656,7 +656,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     className="w-5 h-5 mt-0.5 rounded cursor-pointer" />
                   <span className="text-sm">
                     J'ai lu et j'accepte les {settings?.cgvResume?.[termsLang] ? (
-                      <a href={`https://docs.google.com/viewer?url=${encodeURIComponent(settings.cgvResume[termsLang])}&embedded=true`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-blue-600 underline font-medium hover:text-blue-800">Conditions Générales de Vente</a>
+                      <a href={settings.cgvResume[termsLang]} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-blue-600 underline font-medium hover:text-blue-800">Conditions Générales de Vente</a>
                     ) : (
                       <span className="text-gray-400">(CGV non disponible)</span>
                     )}
@@ -667,7 +667,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     className="w-5 h-5 mt-0.5 rounded cursor-pointer" />
                   <span className="text-sm">
                     J'accepte le traitement de mes données personnelles {settings?.rgpd?.[termsLang] ? (
-                      <a href={`https://docs.google.com/viewer?url=${encodeURIComponent(settings.rgpd[termsLang])}&embedded=true`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-blue-600 underline font-medium hover:text-blue-800">(RGPD)</a>
+                      <a href={settings.rgpd[termsLang]} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-blue-600 underline font-medium hover:text-blue-800">(RGPD)</a>
                     ) : (
                       <span className="text-gray-400">(RGPD non disponible)</span>
                     )}

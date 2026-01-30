@@ -442,11 +442,20 @@ app.post('/api/bookings', async (req, res) => {
     if (!customer) {
       customer = await prisma.customer.create({ data: { firstName: req.body.customer.firstName, lastName: req.body.customer.lastName, email: req.body.customer.email, phone: req.body.customer.phone, address: req.body.customer.address, postalCode: req.body.customer.postalCode, city: req.body.customer.city, country: req.body.customer.country || 'ES', language: req.body.customer.language || 'es' } })
     }
+    // Récupérer la caution du véhicule
+    const vehicleId = req.body.items?.[0]?.vehicleId
+    const vehicle = vehicleId ? await prisma.vehicle.findUnique({ where: { id: vehicleId } }) : null
+    const vehicleDeposit = vehicle?.deposit || 100
+    
+    // paidAmount = acompte payé par le client (ce que le widget envoie comme depositAmount)
+    // depositAmount = vraie caution du véhicule
+    const paidAmount = req.body.depositAmount || 0
+    
     // Créer la réservation d'abord
     const booking = await prisma.booking.create({
       data: {
         reference,
-        agencyId: req.body.agencyId, customerId: customer.id, startDate: new Date(req.body.startDate), endDate: new Date(req.body.endDate), startTime: req.body.startTime, endTime: req.body.endTime, totalPrice: req.body.totalPrice, depositAmount: req.body.depositAmount, language: req.body.language || 'es',
+        agencyId: req.body.agencyId, customerId: customer.id, startDate: new Date(req.body.startDate), endDate: new Date(req.body.endDate), startTime: req.body.startTime, endTime: req.body.endTime, totalPrice: req.body.totalPrice, depositAmount: vehicleDeposit, paidAmount: paidAmount, language: req.body.language || 'es',
         source: 'WIDGET',
         items: { create: req.body.items.map((item: any) => ({ vehicleId: item.vehicleId, quantity: item.quantity, unitPrice: item.unitPrice, totalPrice: item.totalPrice })) },
         options: { create: (req.body.options || []).map((opt: any) => ({ optionId: opt.optionId, quantity: opt.quantity, unitPrice: opt.unitPrice, totalPrice: opt.totalPrice })) }

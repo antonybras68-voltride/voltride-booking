@@ -3455,7 +3455,6 @@ app.post('/api/bookings/operator', async (req, res) => {
         totalPrice,
         depositAmount,
         paidAmount: paidAmount || 0,
-        paymentMethod: paymentMethod || null,
         status: 'CONFIRMED',
         language,
         source: 'WALK_IN',

@@ -26,8 +26,8 @@ interface NewBookingModalProps {
 
 export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onClose, onComplete }: NewBookingModalProps) {
   const [step, setStep] = useState(1)
-  const [options, setOptions] = useState([])
-  const [selectedOptions, setSelectedOptions] = useState({})
+  const [options, setOpciones] = useState([])
+  const [selectedOpciones, setSelectedOpciones] = useState({})
   const [loading, setLoading] = useState(false)
   
   const [selectedFleet, setSelectedFleet] = useState(fleetVehicle || null)
@@ -77,10 +77,10 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
       fetch(`${API_URL}/api/options`)
         .then(res => res.json())
         .then(data => {
-          const categoryOptions = data.filter((opt: any) => 
+          const categoryOpciones = data.filter((opt: any) => 
             opt.categories?.some((c: any) => c.categoryId === selectedFleet.vehicle.categoryId)
           )
-          setOptions(categoryOptions.length > 0 ? categoryOptions : data)
+          setOpciones(categoryOpciones.length > 0 ? categoryOpciones : data)
         })
     }
   }, [selectedFleet])
@@ -112,7 +112,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
       const durationMinutes = endMinutes - startMinutes
       
       if (durationMinutes < 240) {
-        setDateValidationError('Pour une location le même jour, la durée minimum est de 4 heures')
+        setDateValidationError('Para un alquiler el mismo día, la duración mínima es de 4 horas')
         return
       }
     }
@@ -144,11 +144,11 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
     return option.day14 || 0
   }
 
-  const calculateOptionsTotal = (): number => {
+  const calculateOpcionesTotal = (): number => {
     const start = new Date(bookingStartDate)
     const end = new Date(bookingEndDate)
     const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)))
-    return Object.entries(selectedOptions).reduce((total, [optId, qty]) => {
+    return Object.entries(selectedOpciones).reduce((total, [optId, qty]) => {
       const opt = options.find((o: any) => o.id === optId)
       if (opt && qty > 0) return total + (getOptionPrice(opt, days) * (qty as number))
       return total
@@ -167,7 +167,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
         if (days <= 14) price = pricing['day' + days] || pricing.day14 || 0
         else price = (pricing.day14 || 0) + ((days - 14) * (pricing.extraDayPrice || 10))
         
-        // Réduction 20% pour demi-journée (4h exactement) le jour même
+        // Réduction 20% para demi-journée (4h exactement) le jour même
         const today = new Date().toISOString().split('T')[0]
         if (bookingStartDate === today && bookingStartDate === bookingEndDate) {
           const startMinutes = parseInt(bookingStartTime.split(':')[0]) * 60 + parseInt(bookingStartTime.split(':')[1])
@@ -187,16 +187,16 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
   }, [selectedFleet, bookingStartDate, bookingEndDate, bookingStartTime, bookingEndTime])
 
   const calculatePaymentAmount = (): number => {
-    const totalWithOptions = calculatedPrice + calculateOptionsTotal()
+    const totalWithOpciones = calculatedPrice + calculateOpcionesTotal()
     const today = new Date().toISOString().split('T')[0]
-    if (payFullAmount || bookingStartDate === today) return Math.round(totalWithOptions)
-    const percentage = totalWithOptions < 100 ? 0.5 : 0.3
-    return Math.round(totalWithOptions * percentage)
+    if (payFullAmount || bookingStartDate === today) return Math.round(totalWithOpciones)
+    const percentage = totalWithOpciones < 100 ? 0.5 : 0.3
+    return Math.round(totalWithOpciones * percentage)
   }
 
   const getRemainingAmount = (): number => {
-    const totalWithOptions = calculatedPrice + calculateOptionsTotal()
-    return Math.round(totalWithOptions) - calculatePaymentAmount()
+    const totalWithOpciones = calculatedPrice + calculateOpcionesTotal()
+    return Math.round(totalWithOpciones) - calculatePaymentAmount()
   }
 
   const isBookingToday = (): boolean => {
@@ -246,7 +246,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
         }
       }
 
-      const totalWithOptions = calculatedPrice + calculateOptionsTotal()
+      const totalWithOpciones = calculatedPrice + calculateOpcionesTotal()
       const paidAmount = calculatePaymentAmount()
 
       const bookingRes = await api.createBooking({
@@ -258,7 +258,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
         endDate: bookingEndDate,
         startTime: bookingStartTime,
         endTime: bookingEndTime,
-        totalPrice: totalWithOptions,
+        totalPrice: totalWithOpciones,
         depositAmount,
         paidAmount,
         paymentMethod,
@@ -284,7 +284,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
           endDate: bookingEndDate,
           startTime: bookingStartTime,
           endTime: bookingEndTime,
-          totalPrice: totalWithOptions,
+          totalPrice: totalWithOpciones,
           paidAmount,
           remainingAmount: getRemainingAmount(),
           paymentMethod,
@@ -310,13 +310,13 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
         
         <div className="p-4 border-b" style={{ backgroundColor: brand === 'VOLTRIDE' ? '#abdee6' : '#ffaf10' }}>
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">➕ Nouvelle réservation</h2>
+            <h2 className="text-xl font-bold">➕ Nueva reserva</h2>
             <button onClick={onClose} className="text-2xl opacity-70 hover:opacity-100">&times;</button>
           </div>
         </div>
 
         <div className="flex border-b">
-          {['Véhicule & Dates', 'Options', 'Client', 'Paiement', 'Récapitulatif'].map((label, i) => (
+          {['Vehículo y Fechas', 'Opciones', 'Cliente', 'Pago', 'Resumen'].map((label, i) => (
             <button key={i} onClick={() => i + 1 <= step && setStep(i + 1)}
               className={'flex-1 py-3 text-center text-xs font-medium ' +
                 (step === i + 1 ? 'bg-white border-b-2 border-blue-500 text-blue-600' :
@@ -331,7 +331,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium mb-2">Véhicule</label>
+                <label className="block text-sm font-medium mb-2">Vehículo</label>
                 {selectedFleet ? (
                   <div className="flex items-center gap-4 p-4 bg-green-50 border-2 border-green-500 rounded-xl">
                     {selectedFleet.vehicle?.imageUrl ? (
@@ -343,7 +343,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                       <p className="font-bold">{selectedFleet.vehicleNumber}</p>
                       <p className="text-sm text-gray-600">{getName(selectedFleet.vehicle?.name)}</p>
                     </div>
-                    <button onClick={() => setSelectedFleet(null)} className="text-red-500 text-sm">Changer</button>
+                    <button onClick={() => setSelectedFleet(null)} className="text-red-500 text-sm">Cambiar</button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3 max-h-48 overflow-auto">
@@ -367,19 +367,19 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Date début</label>
+                  <label className="block text-sm font-medium mb-2">Fecha inicio</label>
                   <input type="date" value={bookingStartDate} onChange={e => setBookingStartDate(e.target.value)} className="w-full border-2 rounded-xl p-3" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Heure début</label>
+                  <label className="block text-sm font-medium mb-2">Hora inicio</label>
                   <input type="time" value={bookingStartTime} onChange={e => setBookingStartTime(e.target.value)} className="w-full border-2 rounded-xl p-3" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Date fin</label>
+                  <label className="block text-sm font-medium mb-2">Fecha fin</label>
                   <input type="date" value={bookingEndDate} onChange={e => setBookingEndDate(e.target.value)} min={bookingStartDate} className="w-full border-2 rounded-xl p-3" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Heure fin</label>
+                  <label className="block text-sm font-medium mb-2">Hora fin</label>
                   <input type="time" value={bookingEndTime} onChange={e => setBookingEndTime(e.target.value)} className="w-full border-2 rounded-xl p-3" />
                 </div>
               </div>
@@ -389,7 +389,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
               )}
 
               {agencySchedule && !agencySchedule.isClosed && agencySchedule.openTime && (
-                <div className="p-3 bg-blue-50 rounded-xl text-sm text-blue-700">🕐 Horaires de l'agence : {agencySchedule.openTime} - {agencySchedule.closeTime}</div>
+                <div className="p-3 bg-blue-50 rounded-xl text-sm text-blue-700">🕐 Horarios de la agencia : {agencySchedule.openTime} - {agencySchedule.closeTime}</div>
               )}
 
               {selectedFleet && !dateValidationError && (
@@ -403,7 +403,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
 
           {step === 2 && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-gray-700">Options & Accessoires</h3>
+              <h3 className="font-semibold text-gray-700">Opciones & Accessoires</h3>
               {options.length === 0 ? (
                 <p className="text-gray-500 text-center py-4">Aucune option disponible</p>
               ) : (
@@ -416,14 +416,14 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                     return (
                       <div key={option.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-3">
-                          <input type="checkbox" checked={!!selectedOptions[option.id]} onChange={(e) => setSelectedOptions({...selectedOptions, [option.id]: e.target.checked ? 1 : 0})} className="w-5 h-5 rounded" />
+                          <input type="checkbox" checked={!!selectedOpciones[option.id]} onChange={(e) => setSelectedOpciones({...selectedOpciones, [option.id]: e.target.checked ? 1 : 0})} className="w-5 h-5 rounded" />
                           <div>
                             <p className="font-medium">{getName(option.name)}</p>
-                            <p className="text-sm text-gray-500">{price}€ pour {days} jour(s)</p>
+                            <p className="text-sm text-gray-500">{price}€ para {days} día(s)</p>
                           </div>
                         </div>
-                        {selectedOptions[option.id] > 0 && option.maxQuantity > 1 && (
-                          <select value={selectedOptions[option.id] || 1} onChange={(e) => setSelectedOptions({...selectedOptions, [option.id]: parseInt(e.target.value)})} className="p-2 border rounded-lg">
+                        {selectedOpciones[option.id] > 0 && option.maxQuantity > 1 && (
+                          <select value={selectedOpciones[option.id] || 1} onChange={(e) => setSelectedOpciones({...selectedOpciones, [option.id]: parseInt(e.target.value)})} className="p-2 border rounded-lg">
                             {Array.from({length: option.maxQuantity}, (_, i) => i + 1).map(n => (<option key={n} value={n}>{n}</option>))}
                           </select>
                         )}
@@ -433,7 +433,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                 </div>
               )}
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-gray-600">Total options: <span className="font-bold">{calculateOptionsTotal()}€</span></p>
+                <p className="text-sm text-gray-600">Total opciones: <span className="font-bold">{calculateOpcionesTotal()}€</span></p>
               </div>
             </div>
           )}{step === 3 && (
@@ -442,12 +442,12 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                 <button onClick={() => setCustomerMode('search')}
                   className={'flex-1 py-3 rounded-xl border-2 font-medium text-sm ' + 
                     (customerMode === 'search' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200')}>
-                  🔍 Client existant
+                  🔍 Cliente existant
                 </button>
                 <button onClick={() => { setCustomerMode('manual'); setSelectedCustomer(null) }}
                   className={'flex-1 py-3 rounded-xl border-2 font-medium text-sm ' + 
                     (customerMode === 'manual' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200')}>
-                  ✏️ Nouveau client
+                  ✏️ Nuevo cliente
                 </button>
               </div>
 
@@ -462,7 +462,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                           <p className="text-sm text-gray-600">{selectedCustomer.email}</p>
                           <p className="text-sm text-gray-600">{selectedCustomer.phone}</p>
                         </div>
-                        <button onClick={() => setSelectedCustomer(null)} className="text-red-500 text-sm">Changer</button>
+                        <button onClick={() => setSelectedCustomer(null)} className="text-red-500 text-sm">Cambiar</button>
                       </div>
                     </div>
                   ) : searchResults.length > 0 ? (
@@ -477,7 +477,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                   ) : searchQuery.length >= 2 ? (
                     <p className="text-center text-gray-500 py-4">Aucun client trouvé</p>
                   ) : (
-                    <p className="text-center text-gray-400 py-4">Tapez au moins 2 caractères pour rechercher</p>
+                    <p className="text-center text-gray-400 py-4">Tapez au moins 2 caractères para rechercher</p>
                   )}
                 </div>
               )}
@@ -486,11 +486,11 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Prénom *</label>
+                      <label className="block text-sm font-medium mb-1">Apellidobre *</label>
                       <input type="text" value={customerForm.firstName} onChange={e => setCustomerForm({...customerForm, firstName: e.target.value})} className="w-full border-2 rounded-xl p-3" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Nom *</label>
+                      <label className="block text-sm font-medium mb-1">Apellido *</label>
                       <input type="text" value={customerForm.lastName} onChange={e => setCustomerForm({...customerForm, lastName: e.target.value})} className="w-full border-2 rounded-xl p-3" />
                     </div>
                   </div>
@@ -499,7 +499,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                     <input type="email" value={customerForm.email} onChange={e => setCustomerForm({...customerForm, email: e.target.value})} className="w-full border-2 rounded-xl p-3" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Téléphone *</label>
+                    <label className="block text-sm font-medium mb-1">Teléfono *</label>
                     <div className="flex gap-2">
                       <select value={customerForm.phonePrefix} onChange={e => setCustomerForm({...customerForm, phonePrefix: e.target.value})} className="border-2 rounded-xl p-3 w-28">
                         {COUNTRIES.map(c => (<option key={c.code} value={c.prefix}>{c.flag} {c.prefix}</option>))}
@@ -542,24 +542,24 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
 
           {step === 4 && (
             <div className="space-y-6">
-              <h3 className="font-semibold text-gray-700">💳 Paiement</h3>
+              <h3 className="font-semibold text-gray-700">💳 Pago</h3>
               <div className="p-4 bg-gray-50 rounded-xl space-y-2">
-                <div className="flex justify-between"><span>Location</span><span>{calculatedPrice}€</span></div>
-                {calculateOptionsTotal() > 0 && (<div className="flex justify-between"><span>Options</span><span>{calculateOptionsTotal()}€</span></div>)}
-                <div className="flex justify-between font-bold text-lg pt-2 border-t"><span>Total</span><span>{Math.round(calculatedPrice + calculateOptionsTotal())}€</span></div>
+                <div className="flex justify-between"><span>Alquiler</span><span>{calculatedPrice}€</span></div>
+                {calculateOpcionesTotal() > 0 && (<div className="flex justify-between"><span>Opciones</span><span>{calculateOpcionesTotal()}€</span></div>)}
+                <div className="flex justify-between font-bold text-lg pt-2 border-t"><span>Total</span><span>{Math.round(calculatedPrice + calculateOpcionesTotal())}€</span></div>
               </div>
 
               <div className="p-4 bg-blue-50 rounded-xl">
                 {isBookingToday() ? (
                   <div>
-                    <p className="font-bold text-blue-700">📅 Réservation pour aujourd'hui</p>
-                    <p className="text-sm text-blue-600 mt-1">Le client doit payer la totalité maintenant.</p>
+                    <p className="font-bold text-blue-700">📅 Réservation para aujourd'hui</p>
+                    <p className="text-sm text-blue-600 mt-1">El cliente debe pagar el total ahora.</p>
                     <p className="text-2xl font-bold text-blue-800 mt-2">{calculatePaymentAmount()}€</p>
                   </div>
                 ) : (
                   <div>
                     <p className="font-bold text-blue-700">📅 Réservation future</p>
-                    <p className="text-sm text-blue-600 mt-1">Acompte de {calculatedPrice + calculateOptionsTotal() < 100 ? '50%' : '30%'} requis</p>
+                    <p className="text-sm text-blue-600 mt-1">Acompte de {calculatedPrice + calculateOpcionesTotal() < 100 ? '50%' : '30%'} requis</p>
                     <p className="text-2xl font-bold text-blue-800 mt-2">{calculatePaymentAmount()}€</p>
                     <p className="text-sm text-gray-600 mt-1">Reste à payer le jour de la location : {getRemainingAmount()}€</p>
                     <label className="flex items-center gap-2 mt-4 cursor-pointer">
@@ -571,16 +571,16 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-3">Mode de paiement</label>
+                <label className="block text-sm font-medium mb-3">Método de pago</label>
                 <div className="flex gap-3">
-                  <button onClick={() => setPaymentMethod('card')} className={'flex-1 py-4 rounded-xl border-2 font-medium ' + (paymentMethod === 'card' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200')}>💳 Carte bancaire</button>
-                  <button onClick={() => setPaymentMethod('cash')} className={'flex-1 py-4 rounded-xl border-2 font-medium ' + (paymentMethod === 'cash' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200')}>💵 Espèces</button>
+                  <button onClick={() => setPaymentMethod('card')} className={'flex-1 py-4 rounded-xl border-2 font-medium ' + (paymentMethod === 'card' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200')}>💳 Tarjeta</button>
+                  <button onClick={() => setPaymentMethod('cash')} className={'flex-1 py-4 rounded-xl border-2 font-medium ' + (paymentMethod === 'cash' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200')}>💵 Efectivo</button>
                 </div>
               </div>
 
               <div className="p-3 bg-yellow-50 rounded-xl text-sm">
-                <p className="font-medium text-yellow-800">⚠️ Caution : {depositAmount}€</p>
-                <p className="text-yellow-700">À collecter séparément lors du check-in</p>
+                <p className="font-medium text-yellow-800">⚠️ Fianza: {depositAmount}€</p>
+                <p className="text-yellow-700">A cobrar por separado en el check-in</p>
               </div>
             </div>
           )}
@@ -588,7 +588,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
           {step === 5 && (
             <div className="space-y-4">
               <div className="p-4 bg-gray-50 rounded-xl">
-                <h3 className="font-bold mb-3">🚲 Véhicule</h3>
+                <h3 className="font-bold mb-3">🚲 Vehículo</h3>
                 <div className="flex items-center gap-3">
                   {selectedFleet?.vehicle?.imageUrl && (<img src={selectedFleet.vehicle.imageUrl} className="w-16 h-16 rounded-lg object-cover" />)}
                   <div><p className="font-bold">{selectedFleet?.vehicleNumber}</p><p className="text-sm text-gray-600">{getName(selectedFleet?.vehicle?.name)}</p></div>
@@ -596,41 +596,41 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
               </div>
 
               <div className="p-4 bg-gray-50 rounded-xl">
-                <h3 className="font-bold mb-3">📅 Période</h3>
+                <h3 className="font-bold mb-3">📅 Período</h3>
                 <p>{bookingStartDate} {bookingStartTime} → {bookingEndDate} {bookingEndTime}</p>
               </div>
 
               <div className="p-4 bg-gray-50 rounded-xl">
-                <h3 className="font-bold mb-3">👤 Client</h3>
+                <h3 className="font-bold mb-3">👤 Cliente</h3>
                 {customerMode === 'search' && selectedCustomer ? (
                   <div><p className="font-medium">{selectedCustomer.firstName} {selectedCustomer.lastName}</p><p className="text-sm text-gray-600">{selectedCustomer.email} • {selectedCustomer.phone}</p></div>
                 ) : (
-                  <div><p className="font-medium">{customerForm.firstName} {customerForm.lastName}</p><p className="text-sm text-gray-600">{customerForm.email} • {customerForm.phonePrefix}{customerForm.phone}</p><p className="text-xs text-green-600">Nouveau client - sera créé automatiquement</p></div>
+                  <div><p className="font-medium">{customerForm.firstName} {customerForm.lastName}</p><p className="text-sm text-gray-600">{customerForm.email} • {customerForm.phonePrefix}{customerForm.phone}</p><p className="text-xs text-green-600">Nuevo cliente - sera créé automatiquement</p></div>
                 )}
               </div>
 
               <div className="p-4 bg-blue-50 rounded-xl">
-                <h3 className="font-bold mb-3">💰 Paiement</h3>
+                <h3 className="font-bold mb-3">💰 Pago</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between"><span>Total réservation</span><span className="font-bold">{Math.round(calculatedPrice + calculateOptionsTotal())}€</span></div>
-                  <div className="flex justify-between text-green-600"><span>Payé aujourd'hui ({paymentMethod === 'card' ? '💳 CB' : '💵 Espèces'})</span><span className="font-bold">{calculatePaymentAmount()}€</span></div>
+                  <div className="flex justify-between"><span>Total reserva</span><span className="font-bold">{Math.round(calculatedPrice + calculateOpcionesTotal())}€</span></div>
+                  <div className="flex justify-between text-green-600"><span>Pagado hoy ({paymentMethod === 'card' ? '💳 CB' : '💵 Efectivo'})</span><span className="font-bold">{calculatePaymentAmount()}€</span></div>
                   {getRemainingAmount() > 0 && (<div className="flex justify-between text-orange-600"><span>Reste à payer</span><span className="font-bold">{getRemainingAmount()}€</span></div>)}
-                  <div className="flex justify-between text-sm text-gray-600 pt-2 border-t"><span>Caution (à collecter au check-in)</span><span>{depositAmount}€</span></div>
+                  <div className="flex justify-between text-sm text-gray-600 pt-2 border-t"><span>Fianza (a cobrar en el check-in)</span><span>{depositAmount}€</span></div>
                 </div>
               </div>
 
-              <div className="p-3 bg-green-50 rounded-xl text-sm text-green-700">✉️ Un email de confirmation sera envoyé au client avec les détails de la réservation</div>
+              <div className="p-3 bg-green-50 rounded-xl text-sm text-green-700">✉️ Se enviará un email de confirmación al cliente con los detalles de la reserva</div>
             </div>
           )}
         </div>
 
         <div className="p-4 border-t bg-gray-50 flex gap-3">
-          {step > 1 && (<button onClick={() => setStep(step - 1)} className="px-6 py-2 bg-gray-200 rounded-xl hover:bg-gray-300">← Retour</button>)}
+          {step > 1 && (<button onClick={() => setStep(step - 1)} className="px-6 py-2 bg-gray-200 rounded-xl hover:bg-gray-300">Volver</button>)}
           <div className="flex-1" />
           {step < 5 ? (
-            <button onClick={() => setStep(step + 1)} disabled={!canProceed()} className="px-8 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">Continuer →</button>
+            <button onClick={() => setStep(step + 1)} disabled={!canProceed()} className="px-8 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">Continuar</button>
           ) : (
-            <button onClick={handleCreateBooking} disabled={loading || !canProceed()} className="px-8 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50">{loading ? '⏳ Création...' : '✅ Créer la réservation'}</button>
+            <button onClick={handleCreateBooking} disabled={loading || !canProceed()} className="px-8 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50">{loading ? '⏳ Création...' : '✅ Crear reserva'}</button>
           )}
         </div>
       </div>

@@ -44,7 +44,7 @@ export default function App() {
       invoices: 'Factures',
       settings: 'Paramètres',
       logout: 'Déconnexion',
-      allAgencies: 'Toutes les agences',
+      allAgencies: 'Todas las agencias',
       loading: 'Chargement...',
       todayDepartures: 'Départs du jour',
       todayReturns: 'Retours du jour',
@@ -70,19 +70,19 @@ export default function App() {
       active: 'Actif',
       inactive: 'Inactif',
       vehicle: 'Véhicule',
-      today: "Aujourd'hui",
-      previous: 'Précédent',
-      next: 'Suivant',
-      confirmed: 'Confirmé',
-      confirmedAlt: 'Confirmé (alt)',
-      checkedIn: 'Check-in fait',
+      today: "Hoy",
+      previous: 'Anterior',
+      next: 'Siguiente',
+      confirmed: 'Confirmado',
+      confirmedAlt: 'Confirmado (alt)',
+      checkedIn: 'Check-in hecho',
       dragTip: 'Glissez-déposez pour déplacer • Tirez les bords pour étendre • Double-clic pour check-in • Clic droit pour options',
       openBackoffice: 'Ouvrir le Backoffice',
       cgvResume: 'CGV Résumé',
       cgvComplete: 'CGV Complètes',
       rgpd: 'RGPD',
       legalMentions: 'Mentions Légales',
-      french: 'Français',
+      french: 'Francés',
       spanish: 'Español',
       english: 'English',
       enterText: 'Entrez le texte en',
@@ -97,7 +97,7 @@ export default function App() {
       toDevelop: 'À développer',
       walkin: 'Walk-in',
       checkin: 'Check-in',
-      language: 'Langue',
+      language: 'Idioma',
       contractNumber: "N° Contrat",
       client: "Client",
       vehicleContract: "Véhicule",
@@ -119,7 +119,7 @@ export default function App() {
       totalHT: "Total HT",
       tva: "TVA",
       totalTTC: "Total TTC",
-      deposit: "Caution",
+      deposit: "Fianza",
       invoiceNumber: "N° Facture",
       invoiceDate: "Date facture",
       dueDate: "Échéance",
@@ -173,7 +173,7 @@ export default function App() {
       cgvComplete: 'CGV Completas',
       rgpd: 'RGPD',
       legalMentions: 'Menciones Legales',
-      french: 'Français',
+      french: 'Francés',
       spanish: 'Español',
       english: 'English',
       enterText: 'Ingrese el texto en',
@@ -616,7 +616,7 @@ export default function App() {
   const createWalkinCustomer = async () => {
     const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
     if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Informations client incomplètes')
+      alert('Información client incomplètes')
       return
     }
     
@@ -1056,7 +1056,7 @@ export default function App() {
   const createWalkinCustomer = async () => {
     const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
     if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Informations client incomplètes')
+      alert('Información client incomplètes')
       return
     }
     
@@ -1393,7 +1393,7 @@ export default function App() {
   const createWalkinCustomer = async () => {
     const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
     if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Informations client incomplètes')
+      alert('Información client incomplètes')
       return
     }
     
@@ -1507,7 +1507,7 @@ export default function App() {
   const createWalkinCustomer = async () => {
     const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
     if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Informations client incomplètes')
+      alert('Información client incomplètes')
       return
     }
     
@@ -1642,7 +1642,7 @@ export default function App() {
   const createWalkinCustomer = async () => {
     const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
     if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Informations client incomplètes')
+      alert('Información client incomplètes')
       return
     }
     
@@ -1791,7 +1791,7 @@ export default function App() {
   const createWalkinCustomer = async () => {
     const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
     if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Informations client incomplètes')
+      alert('Información client incomplètes')
       return
     }
     
@@ -1895,7 +1895,7 @@ export default function App() {
           {[
             { id: 'ALL', label: lang === 'fr' ? 'Tous' : 'Todos', color: 'bg-gray-100 text-gray-700' },
             { id: 'PENDING', label: lang === 'fr' ? 'En attente' : 'Pendiente', color: 'bg-yellow-100 text-yellow-700' },
-            { id: 'CONFIRMED', label: lang === 'fr' ? 'Confirmé' : 'Confirmado', color: 'bg-green-100 text-green-700' },
+            { id: 'CONFIRMED', label: lang === 'fr' ? 'Confirmado' : 'Confirmado', color: 'bg-green-100 text-green-700' },
             { id: 'CANCELLED', label: lang === 'fr' ? 'Annulé' : 'Cancelado', color: 'bg-red-100 text-red-700' },
           ].map(s => (
             <button key={s.id} onClick={() => setBookingStatusFilter(s.id)}
@@ -2295,12 +2295,12 @@ export default function App() {
                       {/* Coordonnées */}
                       <div className="grid grid-cols-2 gap-4 mb-6">
                         <div>
-                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Téléphone' : 'Teléfono'}</label>
+                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Teléfono' : 'Teléfono'}</label>
                           <p className="font-medium">{selectedCustomer.phone || '-'}</p>
                         </div>
                         <div>
-                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Langue' : 'Idioma'}</label>
-                          <p className="font-medium">{selectedCustomer.language === 'fr' ? '🇫🇷 Français' : selectedCustomer.language === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}</p>
+                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Idioma' : 'Idioma'}</label>
+                          <p className="font-medium">{selectedCustomer.language === 'fr' ? '🇫🇷 Francés' : selectedCustomer.language === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}</p>
                         </div>
                         <div>
                           <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Adresse' : 'Dirección'}</label>
@@ -2591,7 +2591,7 @@ export default function App() {
                 <label className="block text-sm font-medium mb-1">{t[lang].language}</label>
                 <select name="language" defaultValue={editingUser?.language || 'es'} className="w-full border rounded-lg px-3 py-2">
                   <option value="es">🇪🇸 Español</option>
-                  <option value="fr">🇫🇷 Français</option>
+                  <option value="fr">🇫🇷 Francés</option>
                 </select>
               </div>
               <div>
@@ -2608,7 +2608,7 @@ export default function App() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">{lang === 'fr' ? 'Agences autorisees' : 'Agencias autorizadas'}</label>
+                <label className="block text-sm font-medium mb-2">{lang === 'fr' ? 'Agencias autorisees' : 'Agencias autorizadas'}</label>
                 <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1">
                   {allAgencies.map((a: any) => (
                     <label key={a.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded">
@@ -2991,7 +2991,7 @@ export default function App() {
                 <input name="email" type="email" defaultValue={editingCustomer?.email || ''} required className="w-full border rounded-lg px-3 py-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Téléphone' : 'Teléfono'}</label>
+                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Teléfono' : 'Teléfono'}</label>
                 <input name="phone" defaultValue={editingCustomer?.phone || ''} className="w-full border rounded-lg px-3 py-2" />
               </div>
               <div>
@@ -3016,7 +3016,7 @@ export default function App() {
                 <label className="block text-sm font-medium mb-1">{t[lang].language}</label>
                 <select name="language" defaultValue={editingCustomer?.language || 'es'} className="w-full border rounded-lg px-3 py-2">
                   <option value="es">🇪🇸 Español</option>
-                  <option value="fr">🇫🇷 Français</option>
+                  <option value="fr">🇫🇷 Francés</option>
                   <option value="en">🇬🇧 English</option>
                 </select>
               </div>
@@ -3059,7 +3059,7 @@ export default function App() {
             <div className="p-4 border-b bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold">📋 Détails réservation</h2>
+                  <h2 className="text-xl font-bold">📋 Detalles reserva</h2>
                   <p className="text-blue-100 text-sm">{selectedBookingDetail.reference}</p>
                 </div>
                 <button onClick={() => setShowBookingDetail(false)} className="text-2xl opacity-70 hover:opacity-100">&times;</button>
@@ -3073,11 +3073,11 @@ export default function App() {
                   (selectedBookingDetail.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 
                    selectedBookingDetail.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 
                    selectedBookingDetail.checkedIn ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700')}>
-                  {selectedBookingDetail.checkedIn ? '✅ Check-in fait' : selectedBookingDetail.status}
+                  {selectedBookingDetail.checkedIn ? '✅ Check-in hecho' : selectedBookingDetail.status}
                 </span>
                 <span className={'px-3 py-1 rounded-full text-sm ' + 
                   (selectedBookingDetail.source === 'WIDGET' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700')}>
-                  {selectedBookingDetail.source === 'WIDGET' ? '🌐 En ligne' : '🏪 Walk-in (agence)'}
+                  {selectedBookingDetail.source === 'WIDGET' ? '🌐 En línea' : '🏪 Walk-in (agence)'}
                 </span>
               </div>
               
@@ -3086,11 +3086,11 @@ export default function App() {
                 <h3 className="font-bold text-gray-700 mb-3">👤 Client</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Nom complet</p>
+                    <p className="text-sm text-gray-500">Nombre completo</p>
                     <p className="font-medium">{selectedBookingDetail.customer?.firstName} {selectedBookingDetail.customer?.lastName}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Téléphone</p>
+                    <p className="text-sm text-gray-500">Teléfono</p>
                     <p className="font-medium">
                       <a href={'tel:' + selectedBookingDetail.customer?.phone} className="text-blue-600 hover:underline">
                         📞 {selectedBookingDetail.customer?.phone}
@@ -3102,8 +3102,8 @@ export default function App() {
                     <p className="font-medium text-sm">{selectedBookingDetail.customer?.email}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Langue</p>
-                    <p className="font-medium">{selectedBookingDetail.language === 'fr' ? '🇫🇷 Français' : selectedBookingDetail.language === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}</p>
+                    <p className="text-sm text-gray-500">Idioma</p>
+                    <p className="font-medium">{selectedBookingDetail.language === 'fr' ? '🇫🇷 Francés' : selectedBookingDetail.language === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}</p>
                   </div>
                 </div>
               </div>
@@ -3144,10 +3144,10 @@ export default function App() {
               
               {/* Dates */}
               <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">📅 Période de location</h3>
+                <h3 className="font-bold text-gray-700 mb-3">📅 Período de alquiler</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Début</p>
+                    <p className="text-sm text-gray-500">Inicio</p>
                     <p className="font-medium">{new Date(selectedBookingDetail.startDate).toLocaleDateString('fr-FR')} à {selectedBookingDetail.startTime}</p>
                   </div>
                   <div>
@@ -3172,16 +3172,16 @@ export default function App() {
                 </div>
               )}
               
-              {/* Tarification */}
+              {/* Tarificación */}
               <div className="bg-blue-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">💰 Tarification</h3>
+                <h3 className="font-bold text-gray-700 mb-3">💰 Tarificación</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Prix location</span>
+                    <span>Precio alquiler</span>
                     <span className="font-medium">{selectedBookingDetail.totalPrice?.toFixed(2)}€</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>Caution</span>
+                    <span>Fianza</span>
                     <span>{selectedBookingDetail.depositAmount?.toFixed(2)}€</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold pt-2 border-t border-blue-200">
@@ -3191,29 +3191,29 @@ export default function App() {
                 </div>
               </div>
               
-              {/* Paiement réservation */}
+              {/* Pago reserva */}
               <div className="bg-green-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">💳 Paiement réservation</h3>
+                <h3 className="font-bold text-gray-700 mb-3">💳 Pago reserva</h3>
                 <div className="space-y-2">
                   {(selectedBookingDetail.paidAmount || 0) > 0 ? (
                     <>
                       <div className="flex justify-between text-green-700">
-                        <span>Acompte payé</span>
+                        <span>Anticipo pagado</span>
                         <span className="font-bold">{selectedBookingDetail.paidAmount?.toFixed(2)}€</span>
                       </div>
                       <div className="text-sm text-green-600">
                         📅 {new Date(selectedBookingDetail.createdAt).toLocaleDateString('fr-FR')} • 
-                        {selectedBookingDetail.source === 'WIDGET' ? ' 🌐 En ligne • 💳 CB' : 
-                         ` 🏪 En agence • ${selectedBookingDetail.paymentMethod === 'card' ? '💳 CB' : selectedBookingDetail.paymentMethod === 'cash' ? '💵 Espèces' : '💳 CB/💵 Espèces'}`}
+                        {selectedBookingDetail.source === 'WIDGET' ? ' 🌐 En línea • 💳 CB' : 
+                         ` 🏪 En agencia • ${selectedBookingDetail.paymentMethod === 'card' ? '💳 CB' : selectedBookingDetail.paymentMethod === 'cash' ? '💵 Espèces' : '💳 CB/💵 Espèces'}`}
                       </div>
                       <div className="flex justify-between pt-2 border-t border-green-200">
-                        <span>Reste à payer</span>
+                        <span>Pendiente de pago</span>
                         <span className="font-bold text-orange-600">{((selectedBookingDetail.totalPrice || 0) - (selectedBookingDetail.paidAmount || 0)).toFixed(2)}€</span>
                       </div>
                     </>
                   ) : (
                     <div className="text-orange-600">
-                      ⚠️ Aucun acompte perçu
+                      ⚠️ Sin anticipo
                     </div>
                   )}
                 </div>
@@ -3221,14 +3221,14 @@ export default function App() {
               
               {/* Infos réservation */}
               <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">📝 Informations</h3>
+                <h3 className="font-bold text-gray-700 mb-3">📝 Información</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-500">Date de réservation</p>
+                    <p className="text-gray-500">Fecha de reserva</p>
                     <p className="font-medium">{new Date(selectedBookingDetail.createdAt).toLocaleDateString('fr-FR')} à {new Date(selectedBookingDetail.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Agence</p>
+                    <p className="text-gray-500">Agencia</p>
                     <p className="font-medium">{getName(selectedBookingDetail.agency?.name)}</p>
                   </div>
                 </div>
@@ -3240,7 +3240,7 @@ export default function App() {
               {!selectedBookingDetail.fleetVehicleId && (
                 <button onClick={() => { setShowBookingDetail(false); openAssignModal(selectedBookingDetail) }}
                   className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                  🚲 Assigner véhicule
+                  🚲 Asignar vehículo
                 </button>
               )}
               {!selectedBookingDetail.checkedIn && selectedBookingDetail.fleetVehicleId && (
@@ -3294,12 +3294,12 @@ export default function App() {
                   }
                 }}
                   className="py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">
-                  📧 Renvoyer email
+                  📧 Reenviar email
                 </button>
               )}
               <button onClick={() => setShowBookingDetail(false)}
                 className="py-2 px-4 bg-gray-200 rounded-lg hover:bg-gray-300 ml-auto">
-                Fermer
+                Cerrar
               </button>
             </div>
           </div>
@@ -3365,7 +3365,7 @@ export default function App() {
               {walkinMode === 'tablet' && walkinStatus === 'completed' && walkinData && (
                 <div className="space-y-4">
                   <div className="p-4 bg-green-50 rounded-xl">
-                    <p className="font-bold text-green-700">✅ Informations reçues !</p>
+                    <p className="font-bold text-green-700">✅ Información reçues !</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div><span className="text-gray-500">Prénom:</span> <strong>{walkinData.firstName}</strong></div>
@@ -3405,7 +3405,7 @@ export default function App() {
                       className="w-full border-2 rounded-xl p-3" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Téléphone *</label>
+                    <label className="block text-sm font-medium mb-1">Teléfono *</label>
                     <div className="flex gap-2">
                       <select value={walkinForm.phonePrefix}
                         onChange={e => setWalkinForm({...walkinForm, phonePrefix: e.target.value})}
@@ -3461,7 +3461,7 @@ export default function App() {
             
             <div className="p-4 border-t">
               <button onClick={cancelWalkin} className="w-full py-2 text-gray-600 hover:text-gray-800">
-                Fermer
+                Cerrar
               </button>
             </div>
           </div>

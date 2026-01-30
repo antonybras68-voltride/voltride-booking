@@ -3,11 +3,11 @@ import { api } from './api'
 import { getName } from './types'
 
 const FUEL_LEVELS = [
-  { id: 'FULL', label: 'Plein', labelEs: 'Lleno', icon: '⛽' },
+  { id: 'FULL', label: 'Lleno', labelEs: 'Lleno', icon: '⛽' },
   { id: 'THREE_QUARTERS', label: '¾', labelEs: '¾', icon: '🔋' },
   { id: 'HALF', label: '½', labelEs: '½', icon: '🔋' },
   { id: 'QUARTER', label: '¼', labelEs: '¼', icon: '🪫' },
-  { id: 'EMPTY', label: 'Vide', labelEs: 'Vacío', icon: '⚠️' }
+  { id: 'EMPTY', label: 'Vacío', labelEs: 'Vacío', icon: '⚠️' }
 ]
 
 interface CheckInModalProps {
@@ -32,9 +32,9 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   
   // Step 2 - Documents
   const [idCardUrl, setIdCardUrl] = useState('')
-  const [idCardVersoUrl, setIdCardVersoUrl] = useState('')
+  const [idCardReversoUrl, setIdCardReversoUrl] = useState('')
   const [licenseUrl, setLicenseUrl] = useState('')
-  const [licenseVersoUrl, setLicenseVersoUrl] = useState('')
+  const [licenseReversoUrl, setLicenseReversoUrl] = useState('')
   
   // Step 3 - Equipment
   const [equipment, setEquipment] = useState(() => {
@@ -91,17 +91,17 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
     if (isMotorRent) {
       return [
         { key: 'front', label: 'Delantero', required: true },
-        { key: 'left', label: 'Gauche', required: true },
-        { key: 'right', label: 'Droite', required: true },
+        { key: 'left', label: 'Izquierda', required: true },
+        { key: 'right', label: 'Derecha', required: true },
         { key: 'rear', label: 'Trasero', required: true },
-        { key: 'counter', label: 'Compteur', required: false }
+        { key: 'counter', label: 'Contador', required: false }
       ]
     } else {
       // Voltride: seulement gauche et droite obligatoires
       return [
-        { key: 'left', label: 'Gauche', required: true },
-        { key: 'right', label: 'Droite', required: true },
-        { key: 'counter', label: 'Compteur', required: false }
+        { key: 'left', label: 'Izquierda', required: true },
+        { key: 'right', label: 'Derecha', required: true },
+        { key: 'counter', label: 'Contador', required: false }
       ]
     }
   }
@@ -200,11 +200,11 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
       case 2: // Documents
         if (isMotorRent) {
           // Motor-Rent: permis obligatoire recto/verso
-          return licenseUrl && licenseVersoUrl
+          return licenseUrl && licenseReversoUrl
         } else {
           // Voltride: si véhicule avec plaque -> permis obligatoire
           if (requiresLicense) {
-            return licenseUrl && licenseVersoUrl
+            return licenseUrl && licenseReversoUrl
           }
           // Sans plaque: CNI obligatoire
           return idCardUrl
@@ -230,9 +230,9 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
         startMileage,
         fuelLevelStart: fuelLevel,
         idCardUrl,
-        idCardVersoUrl,
+        idCardReversoUrl,
         licenseUrl,
-        licenseVersoUrl,
+        licenseReversoUrl,
         signatureUrl: signature,
         checkInPhotos: photos,
         depositMethod,
@@ -348,27 +348,27 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                         ) : (
                           <div className="h-full flex flex-col items-center justify-center text-gray-400">
                             <span className="text-2xl">🪪</span>
-                            <span className="text-sm">Recto *</span>
+                            <span className="text-sm">Anverso *</span>
                           </div>
                         )}
                       </label>
                       <label className={`block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ${
-                        licenseVersoUrl ? 'border-green-500 bg-green-50' : 'border-orange-300 hover:border-orange-400'
+                        licenseReversoUrl ? 'border-green-500 bg-green-50' : 'border-orange-300 hover:border-orange-400'
                       }`}>
                         <input type="file" accept="image/*" capture="environment" className="hidden"
                           onChange={async e => {
                             const file = e.target.files?.[0]
                             if (file) {
                               const url = await uploadPhoto(file)
-                              if (url) setLicenseVersoUrl(url)
+                              if (url) setLicenseReversoUrl(url)
                             }
                           }} />
-                        {licenseVersoUrl ? (
-                          <img src={licenseVersoUrl} className="w-full h-full object-contain" />
+                        {licenseReversoUrl ? (
+                          <img src={licenseReversoUrl} className="w-full h-full object-contain" />
                         ) : (
                           <div className="h-full flex flex-col items-center justify-center text-gray-400">
                             <span className="text-2xl">🪪</span>
-                            <span className="text-sm">Verso *</span>
+                            <span className="text-sm">Reverso *</span>
                           </div>
                         )}
                       </label>
@@ -378,7 +378,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   {/* CNI optionnel Motor-Rent */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Carte d'identité <span className="text-gray-400 text-xs">(optionnel maintenant, obligatoire au check-out)</span>
+                      Pasaporte o DNI <span className="text-gray-400 text-xs">(optionnel maintenant, obligatoire au check-out)</span>
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       <label className={`block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ${
@@ -397,27 +397,27 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                         ) : (
                           <div className="h-full flex flex-col items-center justify-center text-gray-400">
                             <span className="text-2xl">🪪</span>
-                            <span className="text-sm">Recto</span>
+                            <span className="text-sm">Anverso</span>
                           </div>
                         )}
                       </label>
                       <label className={`block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ${
-                        idCardVersoUrl ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-gray-400'
+                        idCardReversoUrl ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-gray-400'
                       }`}>
                         <input type="file" accept="image/*" capture="environment" className="hidden"
                           onChange={async e => {
                             const file = e.target.files?.[0]
                             if (file) {
                               const url = await uploadPhoto(file)
-                              if (url) setIdCardVersoUrl(url)
+                              if (url) setIdCardReversoUrl(url)
                             }
                           }} />
-                        {idCardVersoUrl ? (
-                          <img src={idCardVersoUrl} className="w-full h-full object-contain" />
+                        {idCardReversoUrl ? (
+                          <img src={idCardReversoUrl} className="w-full h-full object-contain" />
                         ) : (
                           <div className="h-full flex flex-col items-center justify-center text-gray-400">
                             <span className="text-2xl">🪪</span>
-                            <span className="text-sm">Verso</span>
+                            <span className="text-sm">Reverso</span>
                           </div>
                         )}
                       </label>
@@ -454,27 +454,27 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                             ) : (
                               <div className="h-full flex flex-col items-center justify-center text-gray-400">
                                 <span className="text-2xl">🪪</span>
-                                <span className="text-sm">Recto *</span>
+                                <span className="text-sm">Anverso *</span>
                               </div>
                             )}
                           </label>
                           <label className={`block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ${
-                            licenseVersoUrl ? 'border-green-500 bg-green-50' : 'border-orange-300 hover:border-orange-400'
+                            licenseReversoUrl ? 'border-green-500 bg-green-50' : 'border-orange-300 hover:border-orange-400'
                           }`}>
                             <input type="file" accept="image/*" capture="environment" className="hidden"
                               onChange={async e => {
                                 const file = e.target.files?.[0]
                                 if (file) {
                                   const url = await uploadPhoto(file)
-                                  if (url) setLicenseVersoUrl(url)
+                                  if (url) setLicenseReversoUrl(url)
                                 }
                               }} />
-                            {licenseVersoUrl ? (
-                              <img src={licenseVersoUrl} className="w-full h-full object-contain" />
+                            {licenseReversoUrl ? (
+                              <img src={licenseReversoUrl} className="w-full h-full object-contain" />
                             ) : (
                               <div className="h-full flex flex-col items-center justify-center text-gray-400">
                                 <span className="text-2xl">🪪</span>
-                                <span className="text-sm">Verso *</span>
+                                <span className="text-sm">Reverso *</span>
                               </div>
                             )}
                           </label>
@@ -482,7 +482,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">
-                          Carte d'identité <span className="text-gray-400 text-xs">(optionnel maintenant)</span>
+                          Pasaporte o DNI <span className="text-gray-400 text-xs">(optionnel maintenant)</span>
                         </label>
                         <div className="grid grid-cols-2 gap-3">
                           <label className={`block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ${
@@ -501,27 +501,27 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                             ) : (
                               <div className="h-full flex flex-col items-center justify-center text-gray-400">
                                 <span className="text-2xl">🪪</span>
-                                <span className="text-sm">Recto</span>
+                                <span className="text-sm">Anverso</span>
                               </div>
                             )}
                           </label>
                           <label className={`block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ${
-                            idCardVersoUrl ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-gray-400'
+                            idCardReversoUrl ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-gray-400'
                           }`}>
                             <input type="file" accept="image/*" capture="environment" className="hidden"
                               onChange={async e => {
                                 const file = e.target.files?.[0]
                                 if (file) {
                                   const url = await uploadPhoto(file)
-                                  if (url) setIdCardVersoUrl(url)
+                                  if (url) setIdCardReversoUrl(url)
                                 }
                               }} />
-                            {idCardVersoUrl ? (
-                              <img src={idCardVersoUrl} className="w-full h-full object-contain" />
+                            {idCardReversoUrl ? (
+                              <img src={idCardReversoUrl} className="w-full h-full object-contain" />
                             ) : (
                               <div className="h-full flex flex-col items-center justify-center text-gray-400">
                                 <span className="text-2xl">🪪</span>
-                                <span className="text-sm">Verso</span>
+                                <span className="text-sm">Reverso</span>
                               </div>
                             )}
                           </label>
@@ -536,7 +536,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">
-                          Carte d'identité <span className="text-red-500">*</span>
+                          Pasaporte o DNI <span className="text-red-500">*</span>
                         </label>
                         <div className="grid grid-cols-2 gap-3">
                           <label className={`block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ${
@@ -555,27 +555,27 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                             ) : (
                               <div className="h-full flex flex-col items-center justify-center text-gray-400">
                                 <span className="text-2xl">🪪</span>
-                                <span className="text-sm">Recto *</span>
+                                <span className="text-sm">Anverso *</span>
                               </div>
                             )}
                           </label>
                           <label className={`block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ${
-                            idCardVersoUrl ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-gray-400'
+                            idCardReversoUrl ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-gray-400'
                           }`}>
                             <input type="file" accept="image/*" capture="environment" className="hidden"
                               onChange={async e => {
                                 const file = e.target.files?.[0]
                                 if (file) {
                                   const url = await uploadPhoto(file)
-                                  if (url) setIdCardVersoUrl(url)
+                                  if (url) setIdCardReversoUrl(url)
                                 }
                               }} />
-                            {idCardVersoUrl ? (
-                              <img src={idCardVersoUrl} className="w-full h-full object-contain" />
+                            {idCardReversoUrl ? (
+                              <img src={idCardReversoUrl} className="w-full h-full object-contain" />
                             ) : (
                               <div className="h-full flex flex-col items-center justify-center text-gray-400">
                                 <span className="text-2xl">🪪</span>
-                                <span className="text-sm">Verso</span>
+                                <span className="text-sm">Reverso</span>
                               </div>
                             )}
                           </label>
@@ -628,7 +628,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
               ) : (
                 <div className="p-6 text-center text-gray-400">
                   <p className="text-4xl mb-2">📦</p>
-                  <p>Aucune option sélectionnée</p>
+                  <p>Ninguna opción seleccionada</p>
                 </div>
               )}
             </div>
@@ -808,7 +808,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
           {step === 6 && (
             <div className="space-y-4">
               <div className="p-3 bg-green-50 rounded-xl text-green-700 text-sm">
-                ✅ Dernière étape ! Prenez les photos du véhicule et relevez le kilométrage.
+                ✅ ¡Último paso! Tome las fotos del vehículo y registre el kilometraje.
               </div>
               
               {/* Photos */}
@@ -840,15 +840,15 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
               
               {/* Kilométrage */}
               <div>
-                <label className="block text-sm font-medium mb-2">Kilométrage au départ</label>
+                <label className="block text-sm font-medium mb-2">Kilometraje de salida</label>
                 <input type="number" value={startMileage} onChange={e => setStartMileage(parseInt(e.target.value) || 0)}
                   className="w-full border-2 rounded-xl px-4 py-3 text-xl" />
-                <p className="text-sm text-gray-500 mt-1">Dernier relevé: {fleetVehicle?.currentMileage || 0} km</p>
+                <p className="text-sm text-gray-500 mt-1">Último registro: {fleetVehicle?.currentMileage || 0} km</p>
               </div>
               
-              {/* Niveau de carburant */}
+              {/* Nivel de combustible */}
               <div>
-                <label className="block text-sm font-medium mb-2">Niveau de carburant</label>
+                <label className="block text-sm font-medium mb-2">Nivel de combustible</label>
                 <div className="grid grid-cols-5 gap-2">
                   {FUEL_LEVELS.map(f => (
                     <button key={f.id} onClick={() => setFuelLevel(f.id)}

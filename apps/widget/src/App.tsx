@@ -201,7 +201,12 @@ const DepositCardForm = ({
 }
 
 function App() {
-  const [lang, setLang] = useState<Lang>('fr')
+  const [lang, setLang] = useState<Lang>(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlLang = urlParams.get('lang')
+    if (urlLang === 'es' || urlLang === 'en' || urlLang === 'fr') return urlLang
+    return 'fr'
+  })
   const [step, setStep] = useState<Step>('dates')
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
@@ -607,7 +612,7 @@ if (ref) {
           amount: calculateDeposit(),
           customerEmail: customer.email,
           locale: lang,
-          successUrl: window.location.origin + window.location.pathname + `?success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}&email=${encodeURIComponent(customer.email)}&name=${encodeURIComponent(customer.firstName + ' ' + customer.lastName)}`,
+          successUrl: window.location.origin + window.location.pathname + `?success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}&email=${encodeURIComponent(customer.email)}&name=${encodeURIComponent(customer.firstName + ' ' + customer.lastName)}&lang=${lang}`,
           cancelUrl: window.location.origin + window.location.pathname + '?canceled=true'
         })
       })

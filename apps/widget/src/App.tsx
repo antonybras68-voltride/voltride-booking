@@ -606,7 +606,7 @@ if (ref) {
           bookingId: booking.id,
           amount: calculateDeposit(),
           customerEmail: customer.email,
-        successUrl: window.location.origin + window.location.pathname + `?success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}&email=${encodeURIComponent(customer.email)}&name=${encodeURIComponent(customer.firstName + ' ' + customer.lastName)}`,
+          locale: lang,
           cancelUrl: window.location.origin + window.location.pathname + '?canceled=true'
         })
       })

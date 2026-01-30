@@ -3406,6 +3406,8 @@ app.post('/api/bookings/operator', async (req, res) => {
       unitPrice,
       totalPrice,
       depositAmount,
+      paidAmount = 0,
+      paymentMethod,
       language = 'fr'
     } = req.body
     
@@ -3452,6 +3454,7 @@ app.post('/api/bookings/operator', async (req, res) => {
         endTime,
         totalPrice,
         depositAmount,
+        paidAmount: paidAmount || 0,
         status: 'CONFIRMED',
         language,
         source: 'WALK_IN',

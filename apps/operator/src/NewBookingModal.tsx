@@ -477,7 +477,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                   ) : searchQuery.length >= 2 ? (
                     <p className="text-center text-gray-500 py-4">Aucun client trouvé</p>
                   ) : (
-                    <p className="text-center text-gray-400 py-4">Tapez au moins 2 caractères para rechercher</p>
+                    <p className="text-center text-gray-400 py-4">Escriba al menos 2 caracteres para buscar</p>
                   )}
                 </div>
               )}

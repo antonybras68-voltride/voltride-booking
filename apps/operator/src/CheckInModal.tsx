@@ -175,11 +175,11 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   }
   
   const stopDrawing = () => {
-    setIsDrawing(false)
-    if (canvasRef.current) {
+    if (isDrawing && canvasRef.current) {
       setSignature(canvasRef.current.toDataURL())
       setHasSigned(true)
     }
+    setIsDrawing(false)
   }
   
   const clearSignature = () => {

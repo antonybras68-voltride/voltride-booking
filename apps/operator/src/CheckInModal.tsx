@@ -62,6 +62,79 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   const [signature, setSignature] = useState('')
   const [hasSigned, setHasSigned] = useState(false)
   const [showTextModal, setShowTextModal] = useState<{type: 'cgv' | 'rgpd', text: string} | null>(null)
+
+  // Traductions selon la langue sélectionnée
+  const t = {
+    // Navigation
+    next: termsLang === 'fr' ? 'Suivant' : termsLang === 'es' ? 'Siguiente' : 'Next',
+    back: termsLang === 'fr' ? 'Retour' : termsLang === 'es' ? 'Volver' : 'Back',
+    finish: termsLang === 'fr' ? 'Terminer le check-in' : termsLang === 'es' ? t.finish : 'Finish check-in',
+    loading: termsLang === 'fr' ? 'En cours...' : termsLang === 'es' ? t.loading : 'Loading...',
+    
+    // Étapes
+    steps: termsLang === 'fr' 
+      ? t.steps
+      : termsLang === 'es'
+      ? ['Vehículo', 'Documentos', 'Equipamiento', 'Firma', 'Pago', 'Inspección']
+      : ['Vehicle', 'Documents', 'Equipment', 'Signature', 'Payment', 'Inspection'],
+    
+    // Étape 1
+    assignedVehicle: termsLang === 'fr' ? 'Véhicule assigné' : termsLang === 'es' ? 'Vehículo asignado' : 'Assigned vehicle',
+    rentalPeriod: termsLang === 'fr' ? 'Période de location' : termsLang === 'es' ? 'Período de alquiler' : 'Rental period',
+    start: termsLang === 'fr' ? 'Début' : termsLang === 'es' ? 'Inicio' : 'Start',
+    end: termsLang === 'fr' ? 'Fin' : termsLang === 'es' ? 'Fin' : 'End',
+    
+    // Étape 2
+    clientDocuments: termsLang === 'fr' ? 'Documents du client' : termsLang === 'es' ? 'Documentos del cliente' : 'Client documents',
+    idCard: termsLang === 'fr' ? 'Pièce d\'identité' : termsLang === 'es' ? 'Documento de identidad' : 'ID Card',
+    driverLicense: termsLang === 'fr' ? 'Permis de conduire' : termsLang === 'es' ? 'Permiso de conducir' : 'Driver\'s license',
+    verified: termsLang === 'fr' ? 'Vérifié' : termsLang === 'es' ? 'Verificado' : 'Verified',
+    toVerify: termsLang === 'fr' ? 'À vérifier' : termsLang === 'es' ? 'Pendiente' : 'To verify',
+    vehicleWithLicense: termsLang === 'fr' ? 'Véhicule nécessitant un permis - Permis + CNI obligatoires' : termsLang === 'es' ? 'Vehículo que requiere permiso - Permiso + DNI obligatorios' : 'Vehicle requiring license - License + ID required',
+    vehicleWithoutLicense: termsLang === 'fr' ? 'Véhicule sans permis - Carte d\'identité obligatoire' : termsLang === 'es' ? 'Vehículo sin permiso - DNI obligatorio' : 'Vehicle without license - ID required',
+    
+    // Étape 3
+    includedEquipment: termsLang === 'fr' ? 'Équipements inclus' : termsLang === 'es' ? 'Equipamiento incluido' : 'Included equipment',
+    helmet: termsLang === 'fr' ? 'Casque' : termsLang === 'es' ? 'Casco' : 'Helmet',
+    lock: termsLang === 'fr' ? 'Antivol' : termsLang === 'es' ? 'Antirrobo' : 'Lock',
+    charger: termsLang === 'fr' ? 'Chargeur' : termsLang === 'es' ? 'Cargador' : 'Charger',
+    
+    // Étape 4
+    cgvLanguage: termsLang === 'fr' ? 'Langue des CGV' : termsLang === 'es' ? 'Idioma de las CGV' : 'Terms language',
+    acceptCgv: termsLang === 'fr' ? 'J\'ai lu et j\'accepte les' : termsLang === 'es' ? 'He leído y acepto las' : 'I have read and accept the',
+    cgv: termsLang === 'fr' ? 'Conditions Générales de Vente' : termsLang === 'es' ? 'Condiciones Generales de Venta' : 'Terms and Conditions',
+    acceptRgpd: termsLang === 'fr' ? 'J\'accepte le traitement de mes données personnelles' : termsLang === 'es' ? 'Acepto el tratamiento de mis datos personales' : 'I accept the processing of my personal data',
+    clientSignature: termsLang === 'fr' ? 'Signature du client' : termsLang === 'es' ? 'Firma del cliente' : 'Client signature',
+    clearSignature: termsLang === 'fr' ? 'Effacer la signature' : termsLang === 'es' ? 'Borrar firma' : 'Clear signature',
+    close: termsLang === 'fr' ? 'Fermer' : termsLang === 'es' ? 'Cerrar' : 'Close',
+    cgvUnavailable: termsLang === 'fr' ? 'CGV non disponibles' : termsLang === 'es' ? 'CGV no disponibles' : 'Terms not available',
+    rgpdUnavailable: termsLang === 'fr' ? 'RGPD non disponible' : termsLang === 'es' ? 'RGPD no disponible' : 'GDPR not available',
+    
+    // Étape 5
+    totalRental: termsLang === 'fr' ? 'Total location' : termsLang === 'es' ? 'Total alquiler' : 'Total rental',
+    bookingDeposit: termsLang === 'fr' ? 'Acompte réservation' : termsLang === 'es' ? 'Anticipo reserva' : 'Booking deposit',
+    online: termsLang === 'fr' ? 'En ligne' : termsLang === 'es' ? 'En línea' : 'Online',
+    inAgency: termsLang === 'fr' ? 'En agence' : termsLang === 'es' ? 'En agencia' : 'In agency',
+    card: termsLang === 'fr' ? 'CB' : termsLang === 'es' ? 'Tarjeta' : 'Card',
+    cash: termsLang === 'fr' ? 'Espèces' : termsLang === 'es' ? 'Efectivo' : 'Cash',
+    remainingPayment: termsLang === 'fr' ? 'Reste à payer' : termsLang === 'es' ? 'Pendiente de pago' : 'Remaining payment',
+    securityDeposit: termsLang === 'fr' ? 'Caution' : termsLang === 'es' ? 'Fianza' : 'Security deposit',
+    noDeposit: termsLang === 'fr' ? 'Aucun acompte perçu à la réservation' : termsLang === 'es' ? 'Sin anticipo en la reserva' : 'No deposit received',
+    commercialDiscount: termsLang === 'fr' ? 'Remise commerciale (optionnel)' : termsLang === 'es' ? 'Descuento comercial (opcional)' : 'Commercial discount (optional)',
+    amountEuro: termsLang === 'fr' ? 'Montant en €' : termsLang === 'es' ? 'Importe en €' : 'Amount in €',
+    discountReason: termsLang === 'fr' ? 'Motif de la remise' : termsLang === 'es' ? 'Motivo del descuento' : 'Discount reason',
+    rentalPaid: termsLang === 'fr' ? 'Location payée' : termsLang === 'es' ? 'Alquiler pagado' : 'Rental paid',
+    depositCollected: termsLang === 'fr' ? 'Caution encaissée' : termsLang === 'es' ? 'Fianza cobrada' : 'Deposit collected',
+    
+    // Étape 6
+    vehicleInspection: termsLang === 'fr' ? 'Inspection du véhicule' : termsLang === 'es' ? 'Inspección del vehículo' : 'Vehicle inspection',
+    generalCondition: termsLang === 'fr' ? 'État général' : termsLang === 'es' ? 'Estado general' : 'General condition',
+    goodCondition: termsLang === 'fr' ? 'Bon état' : termsLang === 'es' ? 'Buen estado' : 'Good condition',
+    existingDamages: termsLang === 'fr' ? 'Dommages existants' : termsLang === 'es' ? 'Daños existentes' : 'Existing damages',
+    batteryLevel: termsLang === 'fr' ? 'Niveau de batterie' : termsLang === 'es' ? 'Nivel de batería' : 'Battery level',
+    mileage: termsLang === 'fr' ? 'Kilométrage' : termsLang === 'es' ? 'Kilometraje' : 'Mileage',
+  }
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   
@@ -83,8 +156,8 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   
   // Étapes avec noms
   const stepNames = isMotorRent 
-    ? ['Véhicule', 'Documents', 'Équipements', 'Signature', 'Paiement', 'Inspection']
-    : ['Véhicule', 'Documents', 'Équipements', 'Signature', 'Paiement', 'Inspection']
+    ? t.steps
+    : t.steps
   
   // Photos requises selon la marque
   const getRequiredPhotos = () => {
@@ -893,7 +966,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   ? 'bg-green-600 text-white hover:bg-green-700' 
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}>
-              {loading ? 'En curso...' : 'Finalizar check-in'}
+              {loading ? t.loading : t.finish}
             </button>
           )}
         </div>

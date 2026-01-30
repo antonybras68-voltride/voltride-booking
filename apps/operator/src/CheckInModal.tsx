@@ -60,6 +60,8 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [rgpdAccepted, setRgpdAccepted] = useState(false)
   const [signature, setSignature] = useState('')
+  const [hasSigned, setHasSigned] = useState(false)
+  const [showTextModal, setShowTextModal] = useState<{type: 'cgv' | 'rgpd', text: string} | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   
@@ -176,6 +178,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
     setIsDrawing(false)
     if (canvasRef.current) {
       setSignature(canvasRef.current.toDataURL())
+      setHasSigned(true)
     }
   }
   
@@ -187,6 +190,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
     ctx.fillStyle = 'white'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     setSignature('')
+    setHasSigned(false)
   }
   
   // Validation par étape
@@ -206,7 +210,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
           return idCardUrl
         }
       case 3: return true // Équipements
-      case 4: return termsAccepted && rgpdAccepted && signature && signature // Signature
+      case 4: return termsAccepted && rgpdAccepted && hasSigned // Signature obligatoire
       case 5: return locationPaid && depositPaid // Paiement
       case 6: // Inspection
         const requiredPhotos = getRequiredPhotos().filter(p => p.required)

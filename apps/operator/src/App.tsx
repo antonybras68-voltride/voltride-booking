@@ -3180,13 +3180,13 @@ export default function App() {
                     <span>Precio alquiler</span>
                     <span className="font-medium">{selectedBookingDetail.totalPrice?.toFixed(2)}€</span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Fianza</span>
-                    <span>{selectedBookingDetail.depositAmount?.toFixed(2)}€</span>
-                  </div>
                   <div className="flex justify-between text-lg font-bold pt-2 border-t border-blue-200">
                     <span>Total</span>
-                    <span className="text-blue-600">{((selectedBookingDetail.totalPrice || 0) + (selectedBookingDetail.depositAmount || 0)).toFixed(2)}€</span>
+                    <span className="text-blue-600">{(selectedBookingDetail.totalPrice || 0).toFixed(2)}€</span>
+                  </div>
+                  <div className="flex justify-between text-gray-500 text-sm pt-2 mt-2 border-t border-dashed border-gray-300">
+                    <span>Fianza (garantía)</span>
+                    <span>{(selectedBookingDetail.depositAmount || 0).toFixed(2)}€</span>
                   </div>
                 </div>
               </div>

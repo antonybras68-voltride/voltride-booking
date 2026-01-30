@@ -223,6 +223,7 @@ model Booking {
   checkedOut            Boolean         @default(false)
   checkedOutAt          DateTime?
   paidAmount            Float           @default(0)
+  paymentMethod         String?         // CARD, CASH, ONLINE
   conflictingExtensions ContractExtension[] @relation("ConflictingBooking")
   
   // Stripe deposit fields

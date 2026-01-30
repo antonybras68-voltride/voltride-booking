@@ -558,8 +558,10 @@ app.post('/api/create-checkout-session', async (req, res) => {
         price_data: {
           currency: 'eur',
           product_data: {
-            name: brand === 'MOTOR-RENT' ? 'Réservation Motor-Rent' : 'Réservation Voltride',
-            description: `Acompte réservation #${bookingId}`,
+            name: brand === 'MOTOR-RENT' 
+              ? (stripeLocale === 'es' ? 'Reserva Motor-Rent' : stripeLocale === 'en' ? 'Motor-Rent Booking' : 'Réservation Motor-Rent')
+              : (stripeLocale === 'es' ? 'Reserva Voltride' : stripeLocale === 'en' ? 'Voltride Booking' : 'Réservation Voltride'),
+            description: stripeLocale === 'es' ? `Anticipo reserva #${bookingId}` : stripeLocale === 'en' ? `Booking deposit #${bookingId}` : `Acompte réservation #${bookingId}`,
           },
           unit_amount: Math.round(amount * 100),
         },

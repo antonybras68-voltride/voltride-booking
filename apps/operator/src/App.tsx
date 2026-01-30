@@ -2071,7 +2071,15 @@ export default function App() {
                         </button>
                       )}
                       {b.fleetVehicleId && b.status === 'CONFIRMED' && !b.checkedIn && (
-                        <button onClick={() => { setCheckInBooking(b); setShowCheckIn(true) }} 
+                        <button onClick={() => { 
+                          const today = new Date().toISOString().split('T')[0];
+                          const startDate = new Date(b.startDate).toISOString().split('T')[0];
+                          if (startDate !== today) {
+                            alert('⚠️ Le check-in ne peut être effectué que le jour du départ de la location.');
+                            return;
+                          }
+                          setCheckInBooking(b); setShowCheckIn(true) 
+                        }} 
                           className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600">
                           Check-in
                         </button>
@@ -2638,7 +2646,16 @@ export default function App() {
       {contextMenu && (
         <div className="fixed bg-white rounded-lg shadow-xl border py-2 z-50" style={{ left: contextMenu.x, top: contextMenu.y }}>
           {!contextMenu.booking.checkedIn && (
-            <button onClick={() => { setCheckInBooking(contextMenu.booking); setShowCheckIn(true); setContextMenu(null) }}
+            <button onClick={() => { 
+              const today = new Date().toISOString().split('T')[0];
+              const startDate = new Date(contextMenu.booking.startDate).toISOString().split('T')[0];
+              if (startDate !== today) {
+                alert('⚠️ Le check-in ne peut être effectué que le jour du départ de la location.');
+                setContextMenu(null);
+                return;
+              }
+              setCheckInBooking(contextMenu.booking); setShowCheckIn(true); setContextMenu(null) 
+            }}
               className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2">
               ✅ Check-in
             </button>
@@ -3227,7 +3244,15 @@ export default function App() {
                 </button>
               )}
               {!selectedBookingDetail.checkedIn && selectedBookingDetail.fleetVehicleId && (
-                <button onClick={() => { setShowBookingDetail(false); setCheckInBooking(selectedBookingDetail); setShowCheckIn(true) }}
+                <button onClick={() => { 
+                  const today = new Date().toISOString().split('T')[0];
+                  const startDate = new Date(selectedBookingDetail.startDate).toISOString().split('T')[0];
+                  if (startDate !== today) {
+                    alert('⚠️ Le check-in ne peut être effectué que le jour du départ de la location.');
+                    return;
+                  }
+                  setShowBookingDetail(false); setCheckInBooking(selectedBookingDetail); setShowCheckIn(true) 
+                }}
                   className="py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
                   ✅ Check-in
                 </button>

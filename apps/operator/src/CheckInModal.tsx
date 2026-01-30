@@ -206,7 +206,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
           return idCardUrl
         }
       case 3: return true // Équipements
-      case 4: return termsAccepted && rgpdAccepted && signature // Signature
+      case 4: return termsAccepted && rgpdAccepted && signature && signature // Signature
       case 5: return locationPaid && depositPaid // Paiement
       case 6: // Inspection
         const requiredPhotos = getRequiredPhotos().filter(p => p.required)
@@ -656,7 +656,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     className="w-5 h-5 mt-0.5 rounded cursor-pointer" />
                   <span className="text-sm">
                     J'ai lu et j'accepte les {settings?.cgvResume?.[termsLang] ? (
-                      <a href={settings.cgvResume[termsLang]} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-blue-600 underline font-medium hover:text-blue-800">Conditions Générales de Vente</a>
+                      <span className="text-blue-600 font-medium cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); alert(settings.cgvResume?.[termsLang] || 'CGV non disponibles'); }}>Conditions Générales de Vente</span>
                     ) : (
                       <span className="text-gray-400">(CGV non disponible)</span>
                     )}
@@ -667,7 +667,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     className="w-5 h-5 mt-0.5 rounded cursor-pointer" />
                   <span className="text-sm">
                     J'accepte le traitement de mes données personnelles {settings?.rgpd?.[termsLang] ? (
-                      <a href={settings.rgpd[termsLang]} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-blue-600 underline font-medium hover:text-blue-800">(RGPD)</a>
+                      <span className="text-blue-600 font-medium cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); alert(settings.rgpd?.[termsLang] || 'RGPD non disponible'); }}>(RGPD)</span>
                     ) : (
                       <span className="text-gray-400">(RGPD non disponible)</span>
                     )}

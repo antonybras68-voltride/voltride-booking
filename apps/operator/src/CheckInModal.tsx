@@ -262,7 +262,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
         {/* Header */}
         <div className="bg-gradient-to-r from-green-500 to-teal-500 text-white p-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">✅ Check-in</h2>
+            <h2 className="text-xl font-bold">Check-in</h2>
             <button onClick={onClose} className="text-white/80 hover:text-white text-2xl">&times;</button>
           </div>
           <p className="text-sm opacity-90">{booking?.customer?.firstName} {booking?.customer?.lastName}</p>
@@ -308,7 +308,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     <p className="text-sm text-gray-500 mt-1">🔢 {fleetVehicle.licensePlate}</p>
                   )}
                   <p className="text-sm text-blue-600 mt-2">
-                    📅 {new Date(booking?.startDate).toLocaleDateString('fr-FR')} → {new Date(booking?.endDate).toLocaleDateString('fr-FR')}
+                    {new Date(booking?.startDate).toLocaleDateString('fr-FR')} → {new Date(booking?.endDate).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
               </div>
@@ -325,11 +325,11 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                 <>
                   {/* Motor-Rent: Permis obligatoire */}
                   <div className="p-3 bg-orange-50 rounded-xl text-orange-700 text-sm">
-                    ⚠️ <strong>Permis de conduire obligatoire</strong> (recto + verso)
+                    <strong>Permiso de conducir obligatoire</strong> (recto + verso)
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Permis de conduire <span className="text-red-500">*</span>
+                      Permiso de conducir <span className="text-red-500">*</span>
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       <label className={`block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ${
@@ -431,11 +431,11 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                     <>
                       {/* Catégorie avec permis */}
                       <div className="p-3 bg-orange-50 rounded-xl text-orange-700 text-sm">
-                        ⚠️ <strong>Véhicule nécessitant un permis</strong> - Permis + CNI obligatoires
+                        <strong>Véhicule nécessitant un permis</strong> - Permis + CNI obligatoires
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">
-                          Permis de conduire <span className="text-red-500">*</span>
+                          Permiso de conducir <span className="text-red-500">*</span>
                         </label>
                         <div className="grid grid-cols-2 gap-3">
                           <label className={`block border-2 border-dashed rounded-xl h-32 cursor-pointer transition-all overflow-hidden ${
@@ -638,7 +638,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
           {step === 4 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Langue des CGV</label>
+                <label className="block text-sm font-medium mb-2">Idioma de las CGV</label>
                 <div className="flex gap-2">
                   <button onClick={() => setTermsLang('fr')}
                     className={`px-4 py-2 rounded-lg flex items-center gap-2 ${termsLang === 'fr' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}>
@@ -660,8 +660,8 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)}
                     className="w-5 h-5 mt-0.5 rounded cursor-pointer" />
                   <span className="text-sm">
-                    J'ai lu et j'accepte les {settings?.cgvResume?.[termsLang] ? (
-                      <span className="text-blue-600 font-medium cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); setShowTextModal({ type: 'cgv', text: settings?.cgvResume?.[termsLang] || 'CGV non disponibles' }); }}>Conditions Générales de Vente</span>
+                    He leído y acepto las {settings?.cgvResume?.[termsLang] ? (
+                      <span className="text-blue-600 font-medium cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); setShowTextModal({ type: 'cgv', text: settings?.cgvResume?.[termsLang] || 'CGV no disponibles' }); }}>Condiciones Generales de Venta</span>
                     ) : (
                       <span className="text-gray-400">(CGV non disponible)</span>
                     )}
@@ -671,17 +671,17 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   <input type="checkbox" checked={rgpdAccepted} onChange={e => setRgpdAccepted(e.target.checked)}
                     className="w-5 h-5 mt-0.5 rounded cursor-pointer" />
                   <span className="text-sm">
-                    J'accepte le traitement de mes données personnelles {settings?.rgpd?.[termsLang] ? (
-                      <span className="text-blue-600 font-medium cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); setShowTextModal({ type: 'rgpd', text: settings?.rgpd?.[termsLang] || 'RGPD non disponible' }); }}>(RGPD)</span>
+                    Acepto el tratamiento de mis datos personales {settings?.rgpd?.[termsLang] ? (
+                      <span className="text-blue-600 font-medium cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); setShowTextModal({ type: 'rgpd', text: settings?.rgpd?.[termsLang] || 'RGPD no disponible' }); }}>(RGPD)</span>
                     ) : (
-                      <span className="text-gray-400">(RGPD non disponible)</span>
+                      <span className="text-gray-400">(RGPD no disponible)</span>
                     )}
                   </span>
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Signature du client <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium mb-2">Firma del cliente <span className="text-red-500">*</span></label>
                 <div className="border-2 border-dashed rounded-xl overflow-hidden bg-white">
                   <canvas
                     ref={canvasRef}
@@ -698,7 +698,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   />
                 </div>
                 <button onClick={clearSignature} className="mt-2 text-sm text-red-600 hover:underline">
-                  🗑️ Effacer la signature
+                  Borrar firma
                 </button>
               </div>
             </div>
@@ -710,26 +710,26 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
               {/* Récapitulatif des montants */}
               <div className="p-4 bg-gray-50 rounded-xl space-y-2">
                 <div className="flex justify-between">
-                  <span>Total location :</span>
+                  <span>Total alquiler:</span>
                   <span className="font-bold">{(booking?.totalPrice || 0).toFixed(2)} €</span>
                 </div>
                 {/* Acompte payé à la réservation */}
                 {(booking?.paidAmount || 0) > 0 && (
                   <div className="p-2 bg-green-50 rounded-lg border border-green-200">
                     <div className="flex justify-between text-green-700">
-                      <span>Acompte réservation :</span>
+                      <span>Anticipo reserva:</span>
                       <span className="font-bold">-{(booking?.paidAmount || 0).toFixed(2)} €</span>
                     </div>
                     <div className="text-xs text-green-600 mt-1">
-                      📅 {booking?.createdAt ? new Date(booking.createdAt).toLocaleDateString('fr-FR') : ''} 
-                      {booking?.source === 'WIDGET' ? ' • 🌐 En ligne • 💳 CB' : ` • 🏪 En agence • ${booking?.paymentMethod === 'card' ? '💳 CB' : booking?.paymentMethod === 'cash' ? '💵 Espèces' : '💳/💵'}`}
+                      {booking?.createdAt ? new Date(booking.createdAt).toLocaleDateString('fr-FR') : ''} 
+                      {booking?.source === 'WIDGET' ? ' • En línea • Tarjeta' : ` • En agencia • ${booking?.paymentMethod === 'card' ? 'Tarjeta' : booking?.paymentMethod === 'cash' ? 'Efectivo' : 'Tarjeta/Efectivo'}`}
                     </div>
                   </div>
                 )}
                 {(booking?.paidAmount || 0) === 0 && (
                   <div className="p-2 bg-orange-50 rounded-lg border border-orange-200">
                     <div className="text-orange-700 text-sm">
-                      ⚠️ Aucun acompte perçu à la réservation
+                      Sin anticipo en la reserva
                     </div>
                   </div>
                 )}
@@ -740,62 +740,62 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-300">
-                  <span>Reste à payer :</span>
+                  <span>Pendiente de pago:</span>
                   <span className="text-blue-600">{Math.max(0, (booking?.totalPrice || 0) - (booking?.paidAmount || 0) - discount).toFixed(2)} €</span>
                 </div>
                 <div className="flex justify-between text-lg mt-2 pt-2 border-t">
-                  <span>Caution :</span>
+                  <span>Fianza:</span>
                   <span className="font-bold">{booking?.depositAmount || fleetVehicle?.vehicle?.deposit || 100} €</span>
                 </div>
               </div>
               
               {/* Remise commerciale */}
               <div className="p-4 bg-orange-50 rounded-xl">
-                <label className="block text-sm font-medium mb-2">🏷️ Remise commerciale (optionnel)</label>
+                <label className="block text-sm font-medium mb-2">🏷️ Descuento comercial (opcional)</label>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <input type="number" value={discount || ''} onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
-                      placeholder="Montant en €" className="w-full border rounded-lg p-2" />
+                      placeholder="Importe en €" className="w-full border rounded-lg p-2" />
                   </div>
                   <div>
                     <input type="text" value={discountReason} onChange={e => setDiscountReason(e.target.value)}
-                      placeholder="Motif de la remise" className="w-full border rounded-lg p-2" />
+                      placeholder="Motivo del descuento" className="w-full border rounded-lg p-2" />
                   </div>
                 </div>
               </div>
               
-              {/* Location payée */}
+              {/* Alquiler pagado */}
               <div className="p-4 bg-gray-50 rounded-xl">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={locationPaid} onChange={e => setLocationPaid(e.target.checked)}
                     className="w-6 h-6 rounded" />
-                  <span className="font-medium">✅ Location payée</span>
+                  <span className="font-medium">Alquiler pagado</span>
                 </label>
                 {locationPaid && (
                   <div className="mt-3 flex gap-2">
                     {['CARD', 'CASH'].map(m => (
                       <button key={m} onClick={() => setPaymentMethod(m)}
                         className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${paymentMethod === m ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
-                        {m === 'CARD' ? '💳 CB' : '💵 Espèces'}
+                        {m === 'CARD' ? 'Tarjeta' : 'Efectivo'}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
               
-              {/* Caution encaissée */}
+              {/* Fianza cobrada */}
               <div className="p-4 bg-gray-50 rounded-xl">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={depositPaid} onChange={e => setDepositPaid(e.target.checked)}
                     className="w-6 h-6 rounded" />
-                  <span className="font-medium">✅ Caution encaissée</span>
+                  <span className="font-medium">Fianza cobrada</span>
                 </label>
                 {depositPaid && (
                   <div className="mt-3 flex gap-2">
                     {['CARD', 'CASH'].map(m => (
                       <button key={m} onClick={() => setDepositMethod(m)}
                         className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${depositMethod === m ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
-                        {m === 'CARD' ? '💳 CB' : '💵 Espèces'}
+                        {m === 'CARD' ? 'Tarjeta' : 'Efectivo'}
                       </button>
                     ))}
                   </div>
@@ -808,7 +808,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
           {step === 6 && (
             <div className="space-y-4">
               <div className="p-3 bg-green-50 rounded-xl text-green-700 text-sm">
-                ✅ Dernière étape ! Prenez les photos du véhicule et relevez le kilométrage.
+                Dernière étape ! Prenez les photos du véhicule et relevez le kilométrage.
               </div>
               
               {/* Photos */}
@@ -838,9 +838,9 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                 {uploading && <p className="text-blue-600 text-sm mt-2">⏳ Upload en cours...</p>}
               </div>
               
-              {/* Kilométrage */}
+              {/* Kilometraje */}
               <div>
-                <label className="block text-sm font-medium mb-2">Kilométrage au départ</label>
+                <label className="block text-sm font-medium mb-2">Kilometraje au départ</label>
                 <input type="number" value={startMileage} onChange={e => setStartMileage(parseInt(e.target.value) || 0)}
                   className="w-full border-2 rounded-xl px-4 py-3 text-xl" />
                 <p className="text-sm text-gray-500 mt-1">Dernier relevé: {fleetVehicle?.currentMileage || 0} km</p>
@@ -871,7 +871,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
           {step > 1 && (
             <button onClick={() => setStep(step - 1)}
               className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300">
-              ← Retour
+              Volver
             </button>
           )}
           <div className="flex-1" />
@@ -883,7 +883,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   ? 'bg-green-600 text-white hover:bg-green-700' 
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}>
-              Suivant →
+              Siguiente
             </button>
           ) : (
             <button onClick={handleComplete}
@@ -893,7 +893,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
                   ? 'bg-green-600 text-white hover:bg-green-700' 
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}>
-              {loading ? '⏳ En cours...' : '✅ Terminer le check-in'}
+              {loading ? 'En curso...' : 'Finalizar check-in'}
             </button>
           )}
         </div>
@@ -905,14 +905,14 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={() => setShowTextModal(null)}>
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
           <div className="bg-green-600 text-white p-4 flex justify-between items-center">
-            <h3 className="text-lg font-bold">{showTextModal.type === 'cgv' ? '📋 Conditions Générales de Vente' : '🔒 Politique RGPD'}</h3>
+            <h3 className="text-lg font-bold">{showTextModal.type === 'cgv' ? ' Condiciones Generales de Venta' : 'Política RGPD'}</h3>
             <button onClick={() => setShowTextModal(null)} className="text-white hover:text-gray-200 text-2xl">×</button>
           </div>
           <div className="p-6 overflow-y-auto max-h-[60vh]">
             <div className="whitespace-pre-wrap text-sm text-gray-700">{showTextModal.text}</div>
           </div>
           <div className="p-4 border-t flex justify-end">
-            <button onClick={() => setShowTextModal(null)} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Fermer</button>
+            <button onClick={() => setShowTextModal(null)} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Cerrar</button>
           </div>
         </div>
       </div>

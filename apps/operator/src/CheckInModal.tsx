@@ -256,6 +256,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   }
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
@@ -898,5 +899,24 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
         </div>
       </div>
     </div>
+    
+    {/* Modal CGV/RGPD */}
+    {showTextModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={() => setShowTextModal(null)}>
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-green-600 text-white p-4 flex justify-between items-center">
+            <h3 className="text-lg font-bold">{showTextModal.type === 'cgv' ? '📋 Conditions Générales de Vente' : '🔒 Politique RGPD'}</h3>
+            <button onClick={() => setShowTextModal(null)} className="text-white hover:text-gray-200 text-2xl">×</button>
+          </div>
+          <div className="p-6 overflow-y-auto max-h-[60vh]">
+            <div className="whitespace-pre-wrap text-sm text-gray-700">{showTextModal.text}</div>
+          </div>
+          <div className="p-4 border-t flex justify-end">
+            <button onClick={() => setShowTextModal(null)} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Fermer</button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

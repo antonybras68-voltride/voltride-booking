@@ -3174,6 +3174,34 @@ export default function App() {
                 </div>
               </div>
               
+              {/* Paiement réservation */}
+              <div className="bg-green-50 rounded-xl p-4">
+                <h3 className="font-bold text-gray-700 mb-3">💳 Paiement réservation</h3>
+                <div className="space-y-2">
+                  {(selectedBookingDetail.paidAmount || 0) > 0 ? (
+                    <>
+                      <div className="flex justify-between text-green-700">
+                        <span>Acompte payé</span>
+                        <span className="font-bold">{selectedBookingDetail.paidAmount?.toFixed(2)}€</span>
+                      </div>
+                      <div className="text-sm text-green-600">
+                        📅 {new Date(selectedBookingDetail.createdAt).toLocaleDateString('fr-FR')} • 
+                        {selectedBookingDetail.source === 'WIDGET' ? ' 🌐 En ligne • 💳 CB' : 
+                         ` 🏪 En agence • ${selectedBookingDetail.paymentMethod === 'card' ? '💳 CB' : selectedBookingDetail.paymentMethod === 'cash' ? '💵 Espèces' : '💳 CB/💵 Espèces'}`}
+                      </div>
+                      <div className="flex justify-between pt-2 border-t border-green-200">
+                        <span>Reste à payer</span>
+                        <span className="font-bold text-orange-600">{((selectedBookingDetail.totalPrice || 0) - (selectedBookingDetail.paidAmount || 0)).toFixed(2)}€</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-orange-600">
+                      ⚠️ Aucun acompte perçu
+                    </div>
+                  )}
+                </div>
+              </div>
+              
               {/* Infos réservation */}
               <div className="bg-gray-50 rounded-xl p-4">
                 <h3 className="font-bold text-gray-700 mb-3">📝 Informations</h3>

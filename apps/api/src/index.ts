@@ -544,12 +544,16 @@ app.delete('/api/bookings/:id', async (req, res) => {
 // ============== STRIPE CHECKOUT ==============
 app.post('/api/create-checkout-session', async (req, res) => {
   try {
-    const { brand, bookingId, amount, customerEmail, successUrl, cancelUrl } = req.body
+    const { brand, bookingId, amount, customerEmail, successUrl, cancelUrl, locale } = req.body
     const stripe = getStripeInstance(brand)
+    
+    // Mapper la langue pour Stripe (fr, es, en)
+    const stripeLocale = locale === 'es' ? 'es' : locale === 'en' ? 'en' : 'fr'
     
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       customer_email: customerEmail,
+      locale: stripeLocale,
       line_items: [{
         price_data: {
           currency: 'eur',

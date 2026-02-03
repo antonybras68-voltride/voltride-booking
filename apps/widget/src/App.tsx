@@ -129,7 +129,7 @@ const DepositCardForm = ({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-gray-800">🔒 {t.depositCardTitle}</h2>
+      <h2 className="text-xl font-bold text-gray-800">{t.depositCardTitle}</h2>
       
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
         <p className="text-sm text-blue-700">{t.depositCardDesc}</p>
@@ -366,6 +366,10 @@ function App() {
     }
   }, [])
   
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.parent.postMessage({ type: 'voltride-widget-scroll-top' }, '*')
+  }, [step])
   useEffect(() => { if (selectedAgency) loadVehicles() }, [selectedAgency])
   useEffect(() => { if (selectedAgency && startDate && endDate) loadFleetAvailability() }, [startDate, endDate])
   useEffect(() => { if (startDate && !startTimeSlots.includes(startTime)) setStartTime(startTimeSlots[0] || '10:00') }, [startDate, startTimeSlots])
@@ -841,7 +845,7 @@ function App() {
 
           {step === 'customer' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-800">👤 {t.yourInfo} {getPlatedVehiclesCount() > 1 && <span className="text-sm font-normal text-gray-500">({lang === 'fr' ? 'Conducteur 1' : lang === 'es' ? 'Conductor 1' : 'Driver 1'})</span>}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t.yourInfo} {getPlatedVehiclesCount() > 1 && <span className="text-sm font-normal text-gray-500">({lang === 'fr' ? 'Conducteur 1' : lang === 'es' ? 'Conductor 1' : 'Driver 1'})</span>}</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">{t.firstName}</label>
@@ -890,7 +894,7 @@ function App() {
               
               {additionalDrivers.map((driver, index) => (
                 <div key={index} className="border-t border-gray-200 pt-4 mt-4">
-                  <h3 className="text-lg font-bold text-gray-800 mb-3">👤 {lang === 'fr' ? `Conducteur ${index + 2}` : lang === 'es' ? `Conductor ${index + 2}` : `Driver ${index + 2}`}</h3>
+                  <h3 className="text-lg font-bold text-gray-800 mb-3">{lang === 'fr' ? `Conducteur ${index + 2}` : lang === 'es' ? `Conductor ${index + 2}` : `Driver ${index + 2}`}</h3>
                   <div className="grid grid-cols-2 gap-4 mb-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-1">{t.firstName}</label>
@@ -921,12 +925,12 @@ function App() {
 
           {step === 'payment' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-800">💳 {t.payment}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t.payment}</h2>
               <div className="bg-gradient-to-br from-[#abdee6]/20 to-[#ffaf10]/20 rounded-xl p-4 space-y-3">
                 <h3 className="font-bold text-gray-700">{t.summary}</h3>
                 <div className="text-sm text-gray-600 border-b border-[#ffaf10]/30 pb-2 mb-2">
-                  <p>📅 {startDate} {startTime} → {endDate} {endTime}</p>
-                  <p>📍 {agencies.find(a => a.id === selectedAgency)?.city}</p>
+                  <p>{startDate} {startTime} → {endDate} {endTime}</p>
+                  <p>{agencies.find(a => a.id === selectedAgency)?.city}</p>
                 </div>
                 {Object.entries(selectedVehicles).filter(([, qty]) => qty > 0).map(([id, qty]) => {
                   const v = vehicles.find(x => x.id === id)!
@@ -944,7 +948,7 @@ function App() {
                 <p className="text-xs text-gray-500 text-right">IVA inclusa (21%)</p>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                <p className="font-bold text-green-800">✅ {t.depositToPay}: {calculateDeposit()}€</p>
+                <p className="font-bold text-green-800">{t.depositToPay}: {calculateDeposit()}€</p>
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="font-bold text-amber-800">⚠️ {t.securityDeposit}: {calculateSecurityDeposit()}€</p>
@@ -984,12 +988,24 @@ function App() {
 
           {step === 'confirmation' && (
             <div className="text-center space-y-4">
+              {(() => {
+                const redirectUrls: Record<string, string> = { fr: 'https://voltride.es/fr/', es: 'https://voltride.es/', en: 'https://voltride.es/en/' }
+                setTimeout(() => {
+                  const url = redirectUrls[lang] || redirectUrls.es
+                  if (window.top !== window.self) {
+                    window.parent.postMessage({ type: 'voltride-widget-redirect', url }, '*')
+                  } else {
+                    window.location.href = url
+                  }
+                }, 15000)
+                return null
+              })()}
               <h2 className="text-2xl font-bold text-gray-800">{t.confirmation}</h2>
               <div className="bg-gradient-to-br from-[#abdee6]/20 to-[#ffaf10]/20 rounded-xl p-4">
                 <p className="text-gray-600">{t.bookingRef}</p>
                 <p className="text-2xl font-bold text-[#ffaf10]">{bookingRef}</p>
               </div>
-              <p className="text-gray-600">📧 {t.emailSent}</p>
+              <p className="text-gray-600">{t.emailSent}</p>
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-left">
                 <h3 className="font-bold text-blue-800 mb-2">{t.requiredDocs}</h3>
                 <ul className="text-sm text-blue-600 space-y-1">
@@ -999,7 +1015,7 @@ function App() {
               </div>
               <div className={`rounded-xl p-4 text-left ${cardRegistered ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
   <h3 className={`font-bold ${cardRegistered ? 'text-green-800' : 'text-amber-800'}`}>
-    {cardRegistered ? '✅' : '💰'} {t.securityDeposit}: {returnedDepositAmount || calculateSecurityDeposit()}€
+    {t.securityDeposit}: {returnedDepositAmount || calculateSecurityDeposit()}€
   </h3>
   <p className={`text-sm ${cardRegistered ? 'text-green-600' : 'text-amber-600'}`}>
     {cardRegistered 

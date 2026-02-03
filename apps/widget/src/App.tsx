@@ -194,6 +194,10 @@ function App() {
     if (!cat) return []
     return cat.split(',')
   })
+  const [returnUrl] = useState<string>(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    return urlParams.get('returnUrl') || window.location.origin + window.location.pathname
+  })
   const [step, setStep] = useState<Step>('dates')
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
@@ -618,8 +622,8 @@ if (ref) {
           amount: calculateDeposit(),
           customerEmail: customer.email,
           locale: lang,
-          successUrl: (window.top || window).location.origin + (window.top || window).location.pathname + `?success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}&email=${encodeURIComponent(customer.email)}&name=${encodeURIComponent(customer.firstName + ' ' + customer.lastName)}&lang=${lang}`,
-          cancelUrl: window.location.origin + window.location.pathname + '?canceled=true'
+          successUrl: returnUrl + `?success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}&email=${encodeURIComponent(customer.email)}&name=${encodeURIComponent(customer.firstName + ' ' + customer.lastName)}&lang=${lang}`,
+          cancelUrl: returnUrl + '?canceled=true'
         })
       })
       const { url } = await stripeRes.json()

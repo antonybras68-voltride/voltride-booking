@@ -651,7 +651,117 @@ if (ref) {
   return (
     <div className="min-h-screen p-4 relative overflow-hidden" style={{ background: 'transparent' }}>
       <div className="max-w-2xl mx-auto relative z-10">
-        
+        <div className="flex justify-between mb-6 px-4">
+          {['dates', 'vehicles', 'options', 'customer', 'payment', 'deposit'].map((s, i) => (
+            <div key={s} className={`flex items-center ${i < 5 ? 'flex-1' : ''}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-md ${['dates', 'vehicles', 'options', 'customer', 'payment', 'deposit'].indexOf(step) >= i ? 'bg-white text-[#ffaf10]' : 'bg-white/50 text-gray-500'}`}>{i + 1}</div>
+              {i < 5 && <div className={`flex-1 h-1 mx-2 rounded ${['dates', 'vehicles', 'options', 'customer', 'payment', 'deposit'].indexOf(step) > i ? 'bg-white' : 'bg-white/50'}`} />}
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6">
+          {step === 'dates' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-gray-800">{t.selectDates}</h2>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">{t.selectAgency}</label>
+                <select value={selectedAgency} onChange={(e) => setSelectedAgency(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
+                  {agencies.map(a => <option key={a.id} value={a.id}>{getName(a.name)}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.pickupDate}</label>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.pickupTime}</label>
+                  <select value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
+                    {startTimeSlots.map(ts => <option key={ts} value={ts}>{ts}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.returnDate}</label>
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} min={startDate || new Date().toISOString().split('T')[0]} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.returnTime}</label>
+                  <select value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
+                    {endTimeSlots.map(ts => <option key={ts} value={ts}>{ts}</option>)}
+                  </select>
+                </div>
+              </div>
+              {(isSundayBlocked(startDate) || isSundayBlocked(endDate)) && <p className="text-red-500 text-sm mb-2">{lang === "fr" ? "⚠️ Cette agence est fermée le dimanche. Veuillez choisir une autre date." : lang === "es" ? "⚠️ Esta agencia está cerrada los domingos. Por favor, elija otra fecha." : "⚠️ This agency is closed on Sundays. Please choose another date."}</p>}
+              <button onClick={() => setStep("vehicles")} disabled={!startDate || !endDate || isSundayBlocked(startDate) || isSundayBlocked(endDate)} className="w-full py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
+                {t.continue}
+              </button>
+            </div>
+          )}
+
+          {step === 'vehicles' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-gray-800">{t.selectVehicles}</h2>
+              <p className="text-gray-500">{calculateDays()} {t.days} {calculateExtraHours() > 0 && `+ ${calculateExtraHours()} ${t.hours}`}</p>
+              
+              {vehicles.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">{t.noVehicles}</p>
+              ) : (
+                <div className="space-y-3">
+                  {[...vehicles].sort((a, b) => getVehiclePrice(a, calculateDays(), calculateExtraHours()) - getVehiclePrice(b, calculateDays(), calculateExtraHours())).map(vehicle => {
+                    const available = getAvailableQuantity(vehicle)
+                    const maxQty = getMaxQuantity(vehicle)
+                    const price = getVehiclePrice(vehicle, calculateDays(), calculateExtraHours())
+                    const isPlated = vehicle.hasPlate
+                    const otherPlatedSelected = hasPlatedVehicleSelected() && !selectedVehicles[vehicle.id]
+                    
+                    return (
+                      <div key={vehicle.id} className={`border rounded-xl p-4 flex gap-4 transition ${isPlated ? 'border-amber-300 bg-amber-50/50' : 'border-gray-200 hover:shadow-md'}`}>
+                        <div className="w-24 h-24 bg-gradient-to-br from-[#abdee6]/30 to-[#ffaf10]/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                          {vehicle.imageUrl ? <img src={vehicle.imageUrl} alt={getName(vehicle.name)} className="w-full h-full object-cover rounded-lg" /> : <span className="text-4xl">🚲</span>}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-gray-800">{getName(vehicle.name)}</h3>
+                          </div>
+                          <p className="text-sm text-gray-500">{getName(vehicle.category?.name)}</p>
+                          <p className="text-sm text-gray-400">{t.deposit}: {vehicle.deposit}€</p>
+                          
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {getName(vehicle.licenseType) && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">🪪 {getName(vehicle.licenseType)}</span>}
+                            {getName(vehicle.kmIncluded) && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">📍 {getName(vehicle.kmIncluded)}</span>}
+                          </div>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="font-bold text-[#ffaf10] text-lg">{price * (selectedVehicles[vehicle.id] || 1)}€ {(selectedVehicles[vehicle.id] || 0) > 1 && <span className="text-sm font-normal text-gray-500">({price}€ x {selectedVehicles[vehicle.id]})</span>}</span>
+                            <div className="flex items-center gap-2">
+                              {(() => {
+                                const currentAgency = agencies.find(a => a.id === selectedAgency)
+                                if (available === 0) {
+                                  const otherAgency = agencies.find(a => a.id !== selectedAgency && a.isActive)
+                                  return otherAgency ? (
+                                    <button onClick={() => { setSelectedAgency(''); setStep('dates'); }} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-lg hover:bg-red-200">
+                                      {lang === 'fr' ? 'Voir autre agence' : lang === 'es' ? 'Ver otra agencia' : 'See other agency'}
+                                    </button>
+                                  ) : <span className="text-xs text-red-500">{lang === 'fr' ? 'Indisponible' : lang === 'es' ? 'No disponible' : 'Unavailable'}</span>
+                                }
+                                if (currentAgency?.showStockUrgency && available <= 3) {
+                                  return <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-lg font-medium animate-pulse">{lang === 'fr' ? `Plus que ${available} !` : lang === 'es' ? `¡Solo quedan ${available}!` : `Only ${available} left!`}</span>
+                                }
+                                return null
+                              })()}
+                              <select 
+                                value={selectedVehicles[vehicle.id] || 0} 
+                                onChange={(e) => handleVehicleSelect(vehicle.id, parseInt(e.target.value))}
+                                disabled={available === 0 || (isPlated && otherPlatedSelected)}
+                                className="p-2 border border-gray-200 rounded-lg disabled:opacity-50"
+                              >
+                                {[...Array(maxQty + 1)].map((_, i) => <option key={i} value={i}>{i}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )
                   })}

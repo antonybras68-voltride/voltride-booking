@@ -165,7 +165,7 @@ const DepositCardForm = ({
         <button
           type="submit"
           disabled={!stripe || processing}
-          className="w-full py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-white font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50"
+          className="w-full py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50"
         >
           {processing ? t.processing : t.saveCard}
         </button>
@@ -641,23 +641,23 @@ if (ref) {
           ))}
         </div>
 
-        <div className="bg-white/75 backdrop-blur-sm rounded-2xl shadow-2xl p-6">
+        <div className="bg-white/85 backdrop-blur-sm rounded-2xl shadow-2xl p-6">
           {step === 'dates' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-white">{t.selectDates}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t.selectDates}</h2>
               <div>
-                <label className="block text-sm font-medium text-white mb-1">{t.selectAgency}</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">{t.selectAgency}</label>
                 <select value={selectedAgency} onChange={(e) => setSelectedAgency(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
                   {agencies.map(a => <option key={a.id} value={a.id}>{getName(a.name)}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-1">{t.pickupDate}</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.pickupDate}</label>
                   <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-1">{t.pickupTime}</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.pickupTime}</label>
                   <select value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
                     {startTimeSlots.map(ts => <option key={ts} value={ts}>{ts}</option>)}
                   </select>
@@ -665,18 +665,18 @@ if (ref) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-1">{t.returnDate}</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.returnDate}</label>
                   <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} min={startDate || new Date().toISOString().split('T')[0]} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-1">{t.returnTime}</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.returnTime}</label>
                   <select value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
                     {endTimeSlots.map(ts => <option key={ts} value={ts}>{ts}</option>)}
                   </select>
                 </div>
               </div>
               {(isSundayBlocked(startDate) || isSundayBlocked(endDate)) && <p className="text-red-500 text-sm mb-2">{lang === "fr" ? "⚠️ Cette agence est fermée le dimanche. Veuillez choisir une autre date." : lang === "es" ? "⚠️ Esta agencia está cerrada los domingos. Por favor, elija otra fecha." : "⚠️ This agency is closed on Sundays. Please choose another date."}</p>}
-              <button onClick={() => setStep("vehicles")} disabled={!startDate || !endDate || isSundayBlocked(startDate) || isSundayBlocked(endDate)} className="w-full py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-white font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
+              <button onClick={() => setStep("vehicles")} disabled={!startDate || !endDate || isSundayBlocked(startDate) || isSundayBlocked(endDate)} className="w-full py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
                 {t.continue}
               </button>
             </div>
@@ -684,7 +684,7 @@ if (ref) {
 
           {step === 'vehicles' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-white">{t.selectVehicles}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t.selectVehicles}</h2>
               <p className="text-gray-500">{calculateDays()} {t.days} {calculateExtraHours() > 0 && `+ ${calculateExtraHours()} ${t.hours}`}</p>
               
               {vehicles.length === 0 ? (
@@ -751,7 +751,7 @@ if (ref) {
               
               <div className="flex gap-3">
                 <button onClick={() => setStep('dates')} className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition">{t.back}</button>
-                <button onClick={() => setStep('options')} disabled={!hasSelectedVehicles()} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-white font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
+                <button onClick={() => setStep('options')} disabled={!hasSelectedVehicles()} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
                   {t.continue}
                 </button>
               </div>
@@ -760,7 +760,7 @@ if (ref) {
 
           {step === 'options' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-white">{t.options}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t.options}</h2>
               <div className="space-y-3">
                 {getFilteredOptions().map(option => {
                   const isIncluded = option.includedByDefault;
@@ -795,7 +795,7 @@ if (ref) {
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setStep('vehicles')} className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition">{t.back}</button>
-                <button onClick={() => setStep('customer')} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-white font-bold rounded-xl hover:shadow-lg transition">{t.continue}</button>
+                <button onClick={() => setStep('customer')} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition">{t.continue}</button>
               </div>
             </div>
           )}
@@ -805,21 +805,21 @@ if (ref) {
               <h2 className="text-xl font-bold text-gray-800">👤 {t.yourInfo} {getPlatedVehiclesCount() > 1 && <span className="text-sm font-normal text-gray-500">({lang === 'fr' ? 'Conducteur 1' : lang === 'es' ? 'Conductor 1' : 'Driver 1'})</span>}</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-1">{t.firstName}</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.firstName}</label>
                   <input type="text" value={customer.firstName} onChange={(e) => setCustomer({ ...customer, firstName: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-1">{t.lastName}</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.lastName}</label>
                   <input type="text" value={customer.lastName} onChange={(e) => setCustomer({ ...customer, lastName: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-white mb-1">{t.email}</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">{t.email}</label>
                 <input type="email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} className={`w-full p-3 border rounded-xl focus:outline-none ${customer.email && !isValidEmail(customer.email) ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-[#ffaf10]'}`} />
                 {customer.email && !isValidEmail(customer.email) && <p className="text-xs text-red-500 mt-1">{lang === 'fr' ? 'Email invalide' : lang === 'es' ? 'Email inválido' : 'Invalid email'}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-white mb-1">{t.phone}</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">{t.phone}</label>
                 <div className="flex gap-2">
                   <select value={phonePrefix} onChange={(e) => setPhonePrefix(e.target.value)} className="p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
                     {phonePrefixes.map(p => <option key={p.code} value={p.code}>{p.country} {p.code !== 'other' ? p.code : ''}</option>)}
@@ -829,20 +829,20 @@ if (ref) {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-white mb-1">{t.address}</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">{t.address}</label>
                 <input type="text" value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-1">{t.postalCode}</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.postalCode}</label>
                   <input type="text" value={customer.postalCode} onChange={(e) => setCustomer({ ...customer, postalCode: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-1">{t.city}</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.city}</label>
                   <input type="text" value={customer.city} onChange={(e) => setCustomer({ ...customer, city: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-1">{t.country}</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.country}</label>
                   <select value={customer.country} onChange={(e) => setCustomer({ ...customer, country: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
                     {countries.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -854,20 +854,20 @@ if (ref) {
                   <h3 className="text-lg font-bold text-gray-800 mb-3">👤 {lang === 'fr' ? `Conducteur ${index + 2}` : lang === 'es' ? `Conductor ${index + 2}` : `Driver ${index + 2}`}</h3>
                   <div className="grid grid-cols-2 gap-4 mb-3">
                     <div>
-                      <label className="block text-sm font-medium text-white mb-1">{t.firstName}</label>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">{t.firstName}</label>
                       <input type="text" value={driver.firstName} onChange={(e) => { const newDrivers = [...additionalDrivers]; newDrivers[index].firstName = e.target.value; setAdditionalDrivers(newDrivers); }} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-white mb-1">{t.lastName}</label>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">{t.lastName}</label>
                       <input type="text" value={driver.lastName} onChange={(e) => { const newDrivers = [...additionalDrivers]; newDrivers[index].lastName = e.target.value; setAdditionalDrivers(newDrivers); }} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                     </div>
                   </div>
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-white mb-1">{t.email}</label>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">{t.email}</label>
                     <input type="email" value={driver.email} onChange={(e) => { const newDrivers = [...additionalDrivers]; newDrivers[index].email = e.target.value; setAdditionalDrivers(newDrivers); }} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-white mb-1">{t.phone}</label>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">{t.phone}</label>
                     <input type="tel" value={driver.phone} onChange={(e) => { const newDrivers = [...additionalDrivers]; newDrivers[index].phone = e.target.value; setAdditionalDrivers(newDrivers); }} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                   </div>
                 </div>
@@ -875,7 +875,7 @@ if (ref) {
               
               <div className="flex gap-3">
                 <button onClick={() => setStep('options')} className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition">{t.back}</button>
-                <button onClick={() => setStep('payment')} disabled={!customer.firstName || !customer.lastName || !customer.email || !isValidEmail(customer.email) || !customer.phone || (phonePrefix === "other" && !customPrefix) || additionalDrivers.some(d => !d.firstName || !d.lastName || !d.email || !d.phone)} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-white font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">{t.continue}</button>
+                <button onClick={() => setStep('payment')} disabled={!customer.firstName || !customer.lastName || !customer.email || !isValidEmail(customer.email) || !customer.phone || (phonePrefix === "other" && !customPrefix) || additionalDrivers.some(d => !d.firstName || !d.lastName || !d.email || !d.phone)} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">{t.continue}</button>
               </div>
             </div>
           )}
@@ -913,7 +913,7 @@ if (ref) {
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setStep('customer')} className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition">{t.back}</button>
-                <button onClick={handleSubmit} disabled={processing} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-white font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
+                <button onClick={handleSubmit} disabled={processing} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
                   {processing ? t.processing : t.payNow}
                 </button>
               </div>

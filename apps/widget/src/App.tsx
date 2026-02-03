@@ -21,12 +21,15 @@ const translations = {
 
 const generateTimeSlots = (openTime: string, closeTime: string): string[] => {
   const startH = parseInt(openTime.split(':')[0])
+  const startM = parseInt(openTime.split(':')[1] || '0')
   const endH = parseInt(closeTime.split(':')[0])
+  const endM = parseInt(closeTime.split(':')[1] || '0')
   const slots: string[] = []
   for (let h = startH; h <= endH; h++) {
-    for (const m of ['00', '15', '30', '45']) {
-      if (h === endH && m !== '00') continue
-      slots.push(`${h.toString().padStart(2, '0')}:${m}`)
+    for (const m of [0, 15, 30, 45]) {
+      if (h === startH && m < startM) continue
+      if (h === endH && m > endM) continue
+      slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`)
     }
   }
   return slots

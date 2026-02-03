@@ -613,14 +613,14 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
         // 3. Envoyer l'email de confirmation
         if (booking && booking.customer?.email) {
           const vehicleItem = booking.items?.[0]
+          const brand = booking.agency?.brand || 'VOLTRIDE'
+          const language = (booking.language || 'es') as 'fr' | 'es' | 'en'
           const rawVehicleName = vehicleItem?.vehicle?.name
           const vehicleName = typeof rawVehicleName === 'object' && rawVehicleName !== null
             ? ((rawVehicleName as any)[language] || (rawVehicleName as any).es || (rawVehicleName as any).fr || (rawVehicleName as any).en || 'Véhicule')
             : (rawVehicleName || 'Véhicule')
           const vehicleNumber = booking.fleetVehicle?.licensePlate || booking.fleetVehicle?.vehicleNumber || (typeof rawVehicleName === 'string' ? rawVehicleName : '') || ''
           const isRegisteredVehicle = vehicleItem?.vehicle?.hasPlate ?? false
-          const brand = booking.agency?.brand || 'VOLTRIDE'
-          const language = (booking.language || 'es') as 'fr' | 'es' | 'en'
           const t = emailTemplates[language] || emailTemplates.fr
           const brandName = brand === 'VOLTRIDE' ? 'Voltride' : brand === 'MOTOR-RENT' ? 'Motor-Rent' : 'Trivium Buggy'
           const brandColor = brand === 'VOLTRIDE' ? '#0e7490' : brand === 'MOTOR-RENT' ? '#ffaf10' : '#16a34a'

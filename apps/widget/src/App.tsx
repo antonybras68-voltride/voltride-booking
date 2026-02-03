@@ -339,12 +339,26 @@ if (ref) {
         } else {
           setStep('confirmation')
         }
-        window.history.replaceState({}, '', window.location.pathname)
+        (() => {
+          const keep = new URLSearchParams()
+          const cur = new URLSearchParams(window.location.search)
+          if (cur.get('lang')) keep.set('lang', cur.get('lang')!)
+          if (cur.get('category')) keep.set('category', cur.get('category')!)
+          if (cur.get('returnUrl')) keep.set('returnUrl', cur.get('returnUrl')!)
+          window.history.replaceState({}, '', window.location.pathname + '?' + keep.toString())
+        })()
       }
     }
     if (params.get('canceled') === 'true') {
       alert(lang === 'fr' ? 'Paiement annulé' : lang === 'es' ? 'Pago cancelado' : 'Payment canceled')
-      window.history.replaceState({}, '', window.location.pathname)
+      (() => {
+          const keep = new URLSearchParams()
+          const cur = new URLSearchParams(window.location.search)
+          if (cur.get('lang')) keep.set('lang', cur.get('lang')!)
+          if (cur.get('category')) keep.set('category', cur.get('category')!)
+          if (cur.get('returnUrl')) keep.set('returnUrl', cur.get('returnUrl')!)
+          window.history.replaceState({}, '', window.location.pathname + '?' + keep.toString())
+        })()
     }
   }, [])
   

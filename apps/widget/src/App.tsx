@@ -293,6 +293,19 @@ function App() {
   
   const [additionalDrivers, setAdditionalDrivers] = useState<Array<{ firstName: string; lastName: string; email: string; phone: string }>>([])
   
+
+  // Auto-resize iframe
+  useEffect(() => {
+    const sendHeight = () => {
+      const height = document.documentElement.scrollHeight
+      window.parent.postMessage({ type: 'voltride-widget-resize', height }, '*')
+    }
+    sendHeight()
+    const observer = new ResizeObserver(sendHeight)
+    observer.observe(document.body)
+    return () => observer.disconnect()
+  }, [step])
+
   useEffect(() => {
     const platedCount = getPlatedVehiclesCount()
     const driversNeeded = Math.max(0, platedCount - 1)

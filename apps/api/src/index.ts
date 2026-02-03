@@ -593,10 +593,127 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
       const bookingId = session.metadata?.bookingId
       
       if (bookingId) {
+        // 1. Mettre à jour le statut de la réservation
         await prisma.booking.update({
           where: { id: bookingId },
           data: { status: 'CONFIRMED' }
         })
+
+        // 2. Charger toutes les données du booking pour l'email
+        const booking = await prisma.booking.findUnique({
+          where: { id: bookingId },
+          include: {
+            customer: true,
+            agency: true,
+            items: { include: { vehicle: true } },
+            fleetVehicle: true
+          }
+        })
+
+        // 3. Envoyer l'email de confirmation
+        if (booking && booking.customer?.email) {
+          const vehicleItem = booking.items?.[0]
+          const vehicleName = vehicleItem?.vehicle?.name || 'Véhicule'
+          const vehicleNumber = booking.fleetVehicle?.registrationNumber || vehicleItem?.vehicle?.name || ''
+          const isRegisteredVehicle = booking.fleetVehicle?.requiresLicense ?? vehicleItem?.vehicle?.requiresLicense ?? false
+          const brand = booking.agency?.brand || 'VOLTRIDE'
+          const language = (booking.language || 'es') as 'fr' | 'es' | 'en'
+          const t = emailTemplates[language] || emailTemplates.fr
+          const brandName = brand === 'VOLTRIDE' ? 'Voltride' : brand === 'MOTOR-RENT' ? 'Motor-Rent' : 'Trivium Buggy'
+          const brandColor = brand === 'VOLTRIDE' ? '#0e7490' : brand === 'MOTOR-RENT' ? '#ffaf10' : '#16a34a'
+          const logoUrl = brand === 'VOLTRIDE' 
+            ? 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1766883143/IMG-20251228-WA0001-removebg-preview_n0fsq5.png'
+            : brand === 'MOTOR-RENT'
+            ? 'https://res.cloudinary.com/dof8xnabp/image/upload/v1737372450/MOTOR_RENT_LOGO_copy_kxwqjk.png'
+            : 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1766883143/IMG-20251228-WA0001-removebg-preview_n0fsq5.png'
+          
+          const documents = isRegisteredVehicle ? t.documentsRegistered : t.documentsNonRegistered
+          const remainingAmount = booking.totalPrice - booking.paidAmount
+
+          const formatDate = (date: Date) => {
+            return date.toLocaleDateString(language === 'en' ? 'en-GB' : language === 'es' ? 'es-ES' : 'fr-FR')
+          }
+
+          // Adresse de l'agence formatée
+          const agencyAddress = booking.agency 
+            ? `${booking.agency.name} - ${booking.agency.address}, ${booking.agency.postalCode} ${booking.agency.city}`
+            : ''
+
+          const agencyAddressLabel = language === 'es' ? 'Dirección de recogida' : language === 'en' ? 'Pick-up location' : 'Adresse de retrait'
+
+          const html = `
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="UTF-8"></head>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+            <div style="background: ${brandColor}; color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+              <img src="${logoUrl}" alt="${brandName}" style="max-width: 200px; max-height: 80px; margin-bottom: 10px;" />
+              <p style="margin: 10px 0 0 0; font-size: 18px;">${t.subject}</p>
+            </div>
+            <div style="padding: 25px; border: 1px solid #ddd; border-top: none; background: white;">
+              <p style="font-size: 16px;">${t.greeting} ${booking.customer.firstName},</p>
+              <p>${t.confirmationText}</p>
+              
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${brandColor};">
+                <h3 style="margin-top: 0; color: ${brandColor};">🚲 ${t.vehicleLabel}</h3>
+                <p style="margin: 0; font-size: 16px;"><strong>${vehicleNumber}</strong>${vehicleNumber !== vehicleName ? ' - ' + vehicleName : ''}</p>
+              </div>
+              
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${brandColor};">
+                <h3 style="margin-top: 0; color: ${brandColor};">📅 ${t.periodLabel}</h3>
+                <p style="margin: 0;">${t.from} <strong>${formatDate(booking.startDate)}</strong> ${t.at} <strong>${booking.startTime || ''}</strong></p>
+                <p style="margin: 5px 0 0 0;">${t.to} <strong>${formatDate(booking.endDate)}</strong> ${t.at} <strong>${booking.endTime || ''}</strong></p>
+              </div>
+
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${brandColor};">
+                <h3 style="margin-top: 0; color: ${brandColor};">📍 ${agencyAddressLabel}</h3>
+                <p style="margin: 0;">${agencyAddress}</p>
+              </div>
+              
+              <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #0e7490;">💰 ${t.paymentTitle}</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr><td style="padding: 8px 0;">${t.totalLabel}</td><td style="text-align: right; padding: 8px 0;"><strong>${booking.totalPrice}€</strong></td></tr>
+                  <tr><td style="padding: 8px 0;">${t.paidLabel} (${t.card})</td><td style="text-align: right; padding: 8px 0; color: green;"><strong>${booking.paidAmount}€</strong></td></tr>
+                  ${remainingAmount > 0 ? '<tr><td style="padding: 8px 0;">' + t.remainingLabel + '</td><td style="text-align: right; padding: 8px 0; color: orange;"><strong>' + remainingAmount.toFixed(2) + '€</strong></td></tr>' : ''}
+                  <tr style="border-top: 2px solid #ccc;"><td style="padding: 12px 0; font-weight: bold;">${t.depositLabel}</td><td style="text-align: right; padding: 12px 0;"><strong>${booking.depositAmount || 100}€</strong></td></tr>
+                </table>
+              </div>
+              
+              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffc107;">
+                <h3 style="margin-top: 0; color: #856404;">📋 ${t.documentsTitle}</h3>
+                <ul style="margin: 0; padding-left: 20px; color: #856404;">
+                  ${documents.map((doc: string) => '<li style="margin-bottom: 8px;">' + doc + '</li>').join('')}
+                </ul>
+              </div>
+              
+              <p style="text-align: center; color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                ${t.footer}<br/>
+                <strong>${t.team} ${brandName}</strong>
+              </p>
+            </div>
+            <div style="text-align: center; padding: 15px; color: #999; font-size: 12px;">
+              © ${new Date().getFullYear()} ${brandName} - Todos los derechos reservados
+            </div>
+          </body>
+          </html>
+          `
+
+          const fromEmail = brand === 'VOLTRIDE' ? 'reservations@voltride.es' : brand === 'MOTOR-RENT' ? 'reservations@motor-rent.es' : 'reservations@voltride.es'
+
+          try {
+            const result = await resend.emails.send({
+              from: brandName + ' <' + fromEmail + '>',
+              to: booking.customer.email,
+              subject: t.subject + ' - ' + booking.reference,
+              html
+            })
+            console.log('[WEBHOOK EMAIL] Confirmation sent to', booking.customer.email, 'for booking', booking.reference, 'Result:', JSON.stringify(result))
+          } catch (emailError) {
+            console.error('[WEBHOOK EMAIL] Failed to send confirmation:', emailError)
+            // On ne bloque pas le webhook si l'email échoue
+          }
+        }
       }
     }
     

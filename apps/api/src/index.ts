@@ -613,8 +613,11 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
         // 3. Envoyer l'email de confirmation
         if (booking && booking.customer?.email) {
           const vehicleItem = booking.items?.[0]
-          const vehicleName = vehicleItem?.vehicle?.name || 'Véhicule'
-          const vehicleNumber = booking.fleetVehicle?.licensePlate || booking.fleetVehicle?.vehicleNumber || vehicleItem?.vehicle?.name || ''
+          const rawVehicleName = vehicleItem?.vehicle?.name
+          const vehicleName = typeof rawVehicleName === 'object' && rawVehicleName !== null
+            ? ((rawVehicleName as any)[language] || (rawVehicleName as any).es || (rawVehicleName as any).fr || (rawVehicleName as any).en || 'Véhicule')
+            : (rawVehicleName || 'Véhicule')
+          const vehicleNumber = booking.fleetVehicle?.licensePlate || booking.fleetVehicle?.vehicleNumber || (typeof rawVehicleName === 'string' ? rawVehicleName : '') || ''
           const isRegisteredVehicle = vehicleItem?.vehicle?.hasPlate ?? false
           const brand = booking.agency?.brand || 'VOLTRIDE'
           const language = (booking.language || 'es') as 'fr' | 'es' | 'en'
@@ -635,8 +638,12 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
           }
 
           // Adresse de l'agence formatée
+          const rawAgencyName = booking.agency?.name
+          const agencyName = typeof rawAgencyName === 'object' && rawAgencyName !== null
+            ? ((rawAgencyName as any)[language] || (rawAgencyName as any).es || (rawAgencyName as any).fr || (rawAgencyName as any).en || '')
+            : (rawAgencyName || '')
           const agencyAddress = booking.agency 
-            ? `${booking.agency.name} - ${booking.agency.address}, ${booking.agency.postalCode} ${booking.agency.city}`
+            ? `${agencyName} - ${booking.agency.address}, ${booking.agency.postalCode} ${booking.agency.city}`
             : ''
 
           const agencyAddressLabel = language === 'es' ? 'Dirección de recogida' : language === 'en' ? 'Pick-up location' : 'Adresse de retrait'

@@ -19,19 +19,23 @@ const translations = {
   en: { title: 'Bike & E-Bike Rental', selectAgency: 'Agency', selectDates: 'Select your dates', pickupDate: 'Pickup date', returnDate: 'Return date', pickupTime: 'Pickup time', returnTime: 'Return time', continue: 'Continue', back: 'Back', selectVehicles: 'Choose your vehicles', quantity: 'Quantity', available: 'available', deposit: 'Deposit', perDay: '/day', options: 'Options & Accessories', yourInfo: 'Your information', firstName: 'First name', lastName: 'Last name', email: 'Email', phone: 'Phone', address: 'Address', postalCode: 'Postal code', city: 'City', country: 'Country', payment: 'Payment', summary: 'Summary', total: 'Total', depositToPay: 'Deposit to pay', depositInfo20: '20% because amount > 100€', depositInfo50: '50% because amount ≤ 100€', payNow: 'Pay now', confirmation: 'Booking confirmed!', bookingRef: 'Reference', emailSent: 'A confirmation email has been sent.', requiredDocs: 'Required documents', docId: 'ID card or passport', docLicense: 'AM/A1/A2/B license depending on vehicle', securityDeposit: 'Security deposit payable on site', cashOrCard: 'Cash or credit card (no debit cards)', days: 'day(s)', hours: 'extra hour(s)', noVehicles: 'No vehicles available for this agency', processing: 'Processing...', licensePlateWarning: 'only 1 per booking', helmetIncluded: 'Helmet included', free: 'Free', included: 'Included', depositCardTitle: 'Security deposit registration', depositCardDesc: 'Your card will be pre-authorized the day before your rental. No amount will be charged if the vehicle is returned in good condition.', depositCardAmount: 'Deposit amount', saveCard: 'Save my card', cardSaved: 'Card saved!', skipDeposit: 'Pay deposit on site' }
 }
 
-const getTimeSlots = (dateStr: string): string[] => {
-  const date = dateStr ? new Date(dateStr) : new Date()
-  const month = date.getMonth()
-  const isSummer = month >= 3 && month <= 8
-  const endHour = isSummer ? 19 : 16
+const generateTimeSlots = (openTime: string, closeTime: string): string[] => {
+  const startH = parseInt(openTime.split(':')[0])
+  const endH = parseInt(closeTime.split(':')[0])
   const slots: string[] = []
-  for (let h = 10; h <= endHour; h++) {
+  for (let h = startH; h <= endH; h++) {
     for (const m of ['00', '15', '30', '45']) {
-      if (h === endHour && m !== '00') continue
+      if (h === endH && m !== '00') continue
       slots.push(`${h.toString().padStart(2, '0')}:${m}`)
     }
   }
   return slots
+}
+const getTimeSlotsDefault = (dateStr: string): string[] => {
+  const date = dateStr ? new Date(dateStr) : new Date()
+  const month = date.getMonth()
+  const isSummer = month >= 3 && month <= 8
+  return generateTimeSlots('10:00', isSummer ? '19:00' : '16:00')
 }
 
 
@@ -200,6 +204,8 @@ function App() {
   })
   const [step, setStep] = useState<Step>('dates')
   const [agencies, setAgencies] = useState<Agency[]>([])
+  const [startSchedule, setStartSchedule] = useState<{open: string, close: string} | null>(null)
+  const [endSchedule, setEndSchedule] = useState<{open: string, close: string} | null>(null)
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [fleetAvailability, setFleetAvailability] = useState<Record<string, number>>({})
   const [options, setOptions] = useState<Option[]>([])
@@ -315,8 +321,8 @@ function App() {
   const [processing, setProcessing] = useState(false)
 
   const t = translations[lang]
-  const startTimeSlots = getTimeSlots(startDate)
-  const endTimeSlots = getTimeSlots(endDate)
+  const startTimeSlots = startSchedule ? generateTimeSlots(startSchedule.open, startSchedule.close) : getTimeSlotsDefault(startDate)
+  const endTimeSlots = endSchedule ? generateTimeSlots(endSchedule.open, endSchedule.close) : getTimeSlotsDefault(endDate)
 
   useEffect(() => { 
     // Lire params depuis search OU hash (Stripe redirige avec #)
@@ -372,6 +378,28 @@ function App() {
   }, [step])
   useEffect(() => { if (selectedAgency) loadVehicles() }, [selectedAgency])
   useEffect(() => { if (selectedAgency && startDate && endDate) loadFleetAvailability() }, [startDate, endDate])
+  useEffect(() => {
+    if (selectedAgency && startDate) {
+      fetch(`${API_URL}/api/agencies/${selectedAgency}/schedule?date=${startDate}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.openTime && data.closeTime) setStartSchedule({ open: data.openTime, close: data.closeTime })
+          else setStartSchedule(null)
+        })
+        .catch(() => setStartSchedule(null))
+    }
+  }, [selectedAgency, startDate])
+  useEffect(() => {
+    if (selectedAgency && endDate) {
+      fetch(`${API_URL}/api/agencies/${selectedAgency}/schedule?date=${endDate}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.openTime && data.closeTime) setEndSchedule({ open: data.openTime, close: data.closeTime })
+          else setEndSchedule(null)
+        })
+        .catch(() => setEndSchedule(null))
+    }
+  }, [selectedAgency, endDate])
   useEffect(() => { if (startDate && !startTimeSlots.includes(startTime)) setStartTime(startTimeSlots[0] || '10:00') }, [startDate, startTimeSlots])
   useEffect(() => { if (endDate && !endTimeSlots.includes(endTime)) setEndTime(endTimeSlots[0] || '10:00') }, [endDate, endTimeSlots])
 

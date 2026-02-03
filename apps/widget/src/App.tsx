@@ -188,6 +188,12 @@ function App() {
     if (urlLang === 'es' || urlLang === 'en' || urlLang === 'fr') return urlLang
     return 'fr'
   })
+  const [categoryFilter] = useState<string[]>(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const cat = urlParams.get('category')
+    if (!cat) return []
+    return cat.split(',')
+  })
   const [step, setStep] = useState<Step>('dates')
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
@@ -381,7 +387,13 @@ if (ref) {
       const res = await fetch(`${API_URL}/api/vehicles?agencyId=${selectedAgency}`)
       const data = await res.json()
       const filtered = (Array.isArray(data) ? data : []).filter((v: Vehicle) => {
-        return v.category?.brand === BRAND
+        if (v.category?.brand !== BRAND) return false
+        if (categoryFilter.length > 0) {
+          const catName = v.category?.name
+          const catStr = typeof catName === 'object' ? JSON.stringify(catName).toLowerCase() : ''
+          return categoryFilter.some(f => catStr.includes(f.toLowerCase()))
+        }
+        return true
       })
       setVehicles(filtered)
       await loadFleetAvailability()
@@ -699,8 +711,8 @@ if (ref) {
                     const otherPlatedSelected = hasPlatedVehicleSelected() && !selectedVehicles[vehicle.id]
                     
                     return (
-                      <div key={vehicle.id} className={`border rounded-xl p-4 flex gap-4 transition ${isPlated ? 'border-amber-300 bg-amber-50/50' : 'border-gray-200 hover:shadow-md'}`}>
-                        <div className="w-24 h-24 bg-gradient-to-br from-[#abdee6]/30 to-[#ffaf10]/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div key={vehicle.id} className={`border rounded-xl p-4 flex flex-col sm:flex-row gap-4 transition ${isPlated ? 'border-amber-300 bg-amber-50/50' : 'border-gray-200 hover:shadow-md'}`}>
+                        <div className="w-full sm:w-24 h-32 sm:h-24 bg-gradient-to-br from-[#abdee6]/30 to-[#ffaf10]/30 rounded-lg flex items-center justify-center flex-shrink-0">
                           {vehicle.imageUrl ? <img src={vehicle.imageUrl} alt={getName(vehicle.name)} className="w-full h-full object-cover rounded-lg" /> : <span className="text-4xl">🚲</span>}
                         </div>
                         <div className="flex-1">
@@ -778,7 +790,12 @@ if (ref) {
                             <h3 className="font-bold text-gray-800">{getName(option.name)}</h3>
                             {isIncluded && <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full">✓ {t.included}</span>}
                           </div>
-                          {option.description && getName(option.description) && <p className="text-xs text-gray-500">{getName(option.description)}</p>}
+                          {option.description && getName(option.description) && (
+                          <details className="mt-1">
+                            <summary className="text-xs text-blue-500 cursor-pointer hover:text-blue-700">{lang === 'fr' ? "+ d'infos" : lang === 'es' ? '+ info' : '+ info'}</summary>
+                            <p className="text-xs text-gray-500 mt-1">{getName(option.description)}</p>
+                          </details>
+                        )}
                           <p className="text-sm text-[#ffaf10]">{isIncluded ? t.free : (price > 0 ? price + '€' : t.free)}</p>
                         </div>
                       </div>

@@ -618,14 +618,14 @@ if (ref) {
           amount: calculateDeposit(),
           customerEmail: customer.email,
           locale: lang,
-          successUrl: window.location.origin + window.location.pathname + `?success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}&email=${encodeURIComponent(customer.email)}&name=${encodeURIComponent(customer.firstName + ' ' + customer.lastName)}&lang=${lang}`,
+          successUrl: (window.top || window).location.origin + (window.top || window).location.pathname + `?success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}&email=${encodeURIComponent(customer.email)}&name=${encodeURIComponent(customer.firstName + ' ' + customer.lastName)}&lang=${lang}`,
           cancelUrl: window.location.origin + window.location.pathname + '?canceled=true'
         })
       })
       const { url } = await stripeRes.json()
       
       if (url) {
-        window.location.href = url
+        (window.top || window).location.href = url
       }
     } catch (error) {
       console.error(error)

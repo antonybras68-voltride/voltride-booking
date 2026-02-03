@@ -319,9 +319,12 @@ function App() {
   const endTimeSlots = getTimeSlots(endDate)
 
   useEffect(() => { 
-    const params = new URLSearchParams(window.location.search)
+    // Lire params depuis search OU hash (Stripe redirige avec #)
+    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''))
+    const searchParams = new URLSearchParams(window.location.search)
+    const params = hashParams.get('ref') ? hashParams : searchParams
     const isSuccess = params.get('success') === 'true' || (params.get('ref') !== null && params.get('bookingId') !== null)
-    const isCanceled = params.get('canceled') === 'true'
+    const isCanceled = params.get('canceled') === 'true' || hashParams.get('canceled') === 'true'
     
     loadData()
     
@@ -637,8 +640,8 @@ function App() {
           amount: calculateDeposit(),
           customerEmail: customer.email,
           locale: lang,
-          successUrl: returnUrl + `?success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}&email=${encodeURIComponent(customer.email)}&name=${encodeURIComponent(customer.firstName + ' ' + customer.lastName)}&lang=${lang}`,
-          cancelUrl: returnUrl + '?canceled=true'
+          successUrl: returnUrl + `#success=true&ref=${booking.reference}&bookingId=${booking.id}&deposit=${calculateSecurityDeposit()}&email=${encodeURIComponent(customer.email)}&name=${encodeURIComponent(customer.firstName + ' ' + customer.lastName)}&lang=${lang}`,
+          cancelUrl: returnUrl + '#canceled=true'
         })
       })
       const { url } = await stripeRes.json()

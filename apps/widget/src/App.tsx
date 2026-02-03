@@ -350,7 +350,7 @@ if (ref) {
       }
     }
     if (params.get('canceled') === 'true') {
-      alert(lang === 'fr' ? 'Paiement annulé' : lang === 'es' ? 'Pago cancelado' : 'Payment canceled')
+      alert(lang === 'fr' ? 'Paiement annulé' : lang === 'es' ? 'Pago cancelado' : 'Payment canceled');
       (() => {
           const keep = new URLSearchParams()
           const cur = new URLSearchParams(window.location.search)

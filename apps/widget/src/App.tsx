@@ -888,21 +888,21 @@ function App() {
               <h2 className="text-xl font-bold text-gray-800">{t.yourInfo} {getPlatedVehiclesCount() > 1 && <span className="text-sm font-normal text-gray-500">({lang === 'fr' ? 'Conducteur 1' : lang === 'es' ? 'Conductor 1' : 'Driver 1'})</span>}</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.firstName}</label>
-                  <input type="text" value={customer.firstName} onChange={(e) => setCustomer({ ...customer, firstName: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.firstName} <span className="text-red-500">*</span></label>
+                  <input type="text" required value={customer.firstName} onChange={(e) => setCustomer({ ...customer, firstName: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.lastName}</label>
-                  <input type="text" value={customer.lastName} onChange={(e) => setCustomer({ ...customer, lastName: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.lastName} <span className="text-red-500">*</span></label>
+                  <input type="text" required value={customer.lastName} onChange={(e) => setCustomer({ ...customer, lastName: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{t.email}</label>
-                <input type="email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} className={`w-full p-3 border rounded-xl focus:outline-none ${customer.email && !isValidEmail(customer.email) ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-[#ffaf10]'}`} />
+                <label className="block text-sm font-medium text-gray-600 mb-1">{t.email} <span className="text-red-500">*</span></label>
+                <input type="email" required value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} className={`w-full p-3 border rounded-xl focus:outline-none ${customer.email && !isValidEmail(customer.email) ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-[#ffaf10]'}`} />
                 {customer.email && !isValidEmail(customer.email) && <p className="text-xs text-red-500 mt-1">{lang === 'fr' ? 'Email invalide' : lang === 'es' ? 'Email inválido' : 'Invalid email'}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{t.phone}</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">{t.phone} <span className="text-red-500">*</span></label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="flex gap-2">
                     <select value={phonePrefix} onChange={(e) => setPhonePrefix(e.target.value)} className="p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none text-sm">
@@ -914,17 +914,17 @@ function App() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{t.address}</label>
-                <input type="text" value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                <label className="block text-sm font-medium text-gray-600 mb-1">{t.address} <span className="text-red-500">*</span></label>
+                <input type="text" required value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.postalCode}</label>
-                  <input type="text" value={customer.postalCode} onChange={(e) => setCustomer({ ...customer, postalCode: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.postalCode} <span className="text-red-500">*</span></label>
+                  <input type="text" required value={customer.postalCode} onChange={(e) => setCustomer({ ...customer, postalCode: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.city}</label>
-                  <input type="text" value={customer.city} onChange={(e) => setCustomer({ ...customer, city: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
+                  <label className="block text-sm font-medium text-gray-600 mb-1">{t.city} <span className="text-red-500">*</span></label>
+                  <input type="text" required value={customer.city} onChange={(e) => setCustomer({ ...customer, city: e.target.value })} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">{t.country}</label>
@@ -960,7 +960,7 @@ function App() {
               
               <div className="flex gap-3">
                 <button onClick={() => setStep('options')} className="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition">{t.back}</button>
-                <button onClick={() => setStep('payment')} disabled={!customer.firstName || !customer.lastName || !customer.email || !isValidEmail(customer.email) || !customer.phone || (phonePrefix === "other" && !customPrefix) || additionalDrivers.some(d => !d.firstName || !d.lastName || !d.email || !d.phone)} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">{t.continue}</button>
+                <button onClick={() => setStep('payment')} disabled={!customer.firstName || !customer.lastName || !customer.email || !isValidEmail(customer.email) || !customer.phone || !customer.address || !customer.postalCode || !customer.city || (phonePrefix === "other" && !customPrefix) || additionalDrivers.some(d => !d.firstName || !d.lastName || !d.email || !d.phone)} className="flex-1 py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">{t.continue}</button>
               </div>
             </div>
           )}

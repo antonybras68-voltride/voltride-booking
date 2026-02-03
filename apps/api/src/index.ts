@@ -615,7 +615,7 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
           const vehicleItem = booking.items?.[0]
           const vehicleName = vehicleItem?.vehicle?.name || 'Véhicule'
           const vehicleNumber = booking.fleetVehicle?.licensePlate || booking.fleetVehicle?.vehicleNumber || vehicleItem?.vehicle?.name || ''
-          const isRegisteredVehicle = booking.fleetVehicle?.hasPlate ?? vehicleItem?.vehicle?.hasPlate ?? false
+          const isRegisteredVehicle = vehicleItem?.vehicle?.hasPlate ?? false
           const brand = booking.agency?.brand || 'VOLTRIDE'
           const language = (booking.language || 'es') as 'fr' | 'es' | 'en'
           const t = emailTemplates[language] || emailTemplates.fr

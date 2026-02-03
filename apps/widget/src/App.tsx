@@ -196,7 +196,7 @@ function App() {
   })
   const [returnUrl] = useState<string>(() => {
     const urlParams = new URLSearchParams(window.location.search)
-    return urlParams.get('returnUrl') || window.location.origin + window.location.pathname
+    return urlParams.get('returnUrl') || window.location.href.split('?')[0]
   })
   const [step, setStep] = useState<Step>('dates')
   const [agencies, setAgencies] = useState<Agency[]>([])

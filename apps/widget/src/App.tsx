@@ -320,7 +320,7 @@ function App() {
 
   useEffect(() => { 
     const params = new URLSearchParams(window.location.search)
-    const isSuccess = params.get('success') === 'true'
+    const isSuccess = params.get('success') === 'true' || (params.get('ref') !== null && params.get('bookingId') !== null)
     const isCanceled = params.get('canceled') === 'true'
     
     loadData()

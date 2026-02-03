@@ -502,7 +502,7 @@ function App() {
     let total = Number(pricing[dayKey]) || 0
     if (days > 14) {
       const dailyRate = (Number(pricing.day14) || 0) / 14
-      total += (days - 14) * dailyRate
+      total += Math.floor((days - 14) * dailyRate)
     }
     for (let i = 1; i <= Math.min(extraHours, 4); i++) {
       total += Number(pricing[`extraHour${i}` as keyof typeof pricing]) || 0
@@ -530,7 +530,7 @@ function App() {
   const getOptionPrice = (option: Option, days: number): number => {
     const dayKey = ("day" + Math.min(days, 14)) as keyof Option
     let total = Number(option[dayKey]) || 0
-    if (days > 14) total += (days - 14) * (Number(option.day14) || 0) / 14
+    if (days > 14) total += Math.floor((days - 14) * (Number(option.day14) || 0) / 14)
     return total
   }
   

@@ -701,13 +701,22 @@ function App() {
   return (
     <div className="min-h-screen p-4 relative overflow-hidden" style={{ background: 'transparent' }}>
       <div className="max-w-2xl mx-auto relative z-10">
-        <div className="flex justify-between mb-6 px-4">
-          {['dates', 'vehicles', 'options', 'customer', 'payment', 'deposit'].map((s, i) => (
-            <div key={s} className={`flex items-center ${i < 5 ? 'flex-1' : ''}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-md ${['dates', 'vehicles', 'options', 'customer', 'payment', 'deposit'].indexOf(step) >= i ? 'bg-white text-[#ffaf10]' : 'bg-white/50 text-gray-500'}`}>{i + 1}</div>
-              {i < 5 && <div className={`flex-1 h-1 mx-2 rounded ${['dates', 'vehicles', 'options', 'customer', 'payment', 'deposit'].indexOf(step) > i ? 'bg-white' : 'bg-white/50'}`} />}
-            </div>
-          ))}
+        <div className="mb-6 px-4">
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-gradient-to-r from-[#abdee6] to-[#ffaf10] h-2.5 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${Math.round(((['dates', 'vehicles', 'options', 'customer', 'payment', 'deposit', 'confirmation'].indexOf(step) + 1) / 7) * 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1 text-center">
+            {step === 'dates' ? (lang === 'fr' ? 'Étape 1/6 - Dates' : lang === 'es' ? 'Paso 1/6 - Fechas' : 'Step 1/6 - Dates') :
+             step === 'vehicles' ? (lang === 'fr' ? 'Étape 2/6 - Véhicules' : lang === 'es' ? 'Paso 2/6 - Vehículos' : 'Step 2/6 - Vehicles') :
+             step === 'options' ? (lang === 'fr' ? 'Étape 3/6 - Options' : lang === 'es' ? 'Paso 3/6 - Opciones' : 'Step 3/6 - Options') :
+             step === 'customer' ? (lang === 'fr' ? 'Étape 4/6 - Informations' : lang === 'es' ? 'Paso 4/6 - Datos' : 'Step 4/6 - Information') :
+             step === 'payment' ? (lang === 'fr' ? 'Étape 5/6 - Paiement' : lang === 'es' ? 'Paso 5/6 - Pago' : 'Step 5/6 - Payment') :
+             step === 'deposit' ? (lang === 'fr' ? 'Étape 6/6 - Caution' : lang === 'es' ? 'Paso 6/6 - Fianza' : 'Step 6/6 - Deposit') :
+             step === 'confirmation' ? (lang === 'fr' ? 'Terminé !' : lang === 'es' ? '¡Completado!' : 'Completed!') : ''}
+          </p>
         </div>
 
         <div className="bg-white/85 backdrop-blur-sm rounded-2xl shadow-2xl p-6">
@@ -894,12 +903,14 @@ function App() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">{t.phone}</label>
-                <div className="flex gap-2">
-                  <select value={phonePrefix} onChange={(e) => setPhonePrefix(e.target.value)} className="p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none">
-                    {phonePrefixes.map(p => <option key={p.code} value={p.code}>{p.country} {p.code !== 'other' ? p.code : ''}</option>)}
-                  </select>
-                  {phonePrefix === 'other' && <input type="text" value={customPrefix} onChange={(e) => setCustomPrefix(e.target.value)} className="w-20 p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" placeholder="+XX" />}
-                  <input type="tel" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} className="flex-1 p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" placeholder="612345678" />
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex gap-2">
+                    <select value={phonePrefix} onChange={(e) => setPhonePrefix(e.target.value)} className="p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none text-sm">
+                      {phonePrefixes.map(p => <option key={p.code} value={p.code}>{p.country} {p.code !== 'other' ? p.code : ''}</option>)}
+                    </select>
+                    {phonePrefix === 'other' && <input type="text" value={customPrefix} onChange={(e) => setCustomPrefix(e.target.value)} className="w-20 p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" placeholder="+XX" />}
+                  </div>
+                  <input type="tel" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} className="w-full sm:flex-1 p-3 border border-gray-200 rounded-xl focus:border-[#ffaf10] focus:outline-none" placeholder="612345678" />
                 </div>
               </div>
               <div>

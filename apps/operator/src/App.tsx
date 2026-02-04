@@ -359,7 +359,7 @@ export default function App() {
   })
 
   useEffect(() => { loadData() }, [selectedAgency, brand])
-  useEffect(() => { if (tab === "contracts" || tab === "invoices") loadContracts() }, [tab, brand])
+  useEffect(() => { if (tab === "contracts") loadContracts() }, [tab, brand])
   // Charger les permissions
   const loadPermissions = async () => {
     try {
@@ -548,10 +548,10 @@ export default function App() {
     if (perm) return perm.allowed
     // Permissions par défaut si pas trouvé
     const defaults: Record<string, string[]> = {
-      MANAGER: ['planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices'],
+      MANAGER: ['planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts'],
       OPERATOR: ['planning', 'bookings', 'checkout'],
       COLLABORATOR: ['planning', 'fleet', 'checkout', 'contracts'],
-      FRANCHISEE: ['planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices']
+      FRANCHISEE: ['planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts']
     }
     return defaults[user.role]?.includes(permissionId) ?? false
   }
@@ -1167,7 +1167,6 @@ export default function App() {
             { id: 'checkout', label: t[lang].checkout, icon: '✅' },
             { id: 'customers', label: t[lang].customers, icon: '👥' },
             { id: 'contracts', label: t[lang].contracts, icon: '📄' },
-            { id: 'invoices', label: t[lang].invoices, icon: '💰' },
             
           ].filter(item => hasPermission(item.id)).map(item => (
             <button key={item.id} onClick={() => { setTab(item.id); setMobileMenuOpen(false) }}
@@ -2464,60 +2463,6 @@ export default function App() {
               </div>
             </div>
           )}
-          {!loading && tab === 'invoices' && (
-            <div className="space-y-4">
-              <div className="bg-white rounded-xl shadow p-4 flex flex-wrap gap-4 items-end">
-                <div className="flex-1 min-w-[200px]">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'fr' ? 'Rechercher' : 'Buscar'}</label>
-                  <input type="text" value={contractSearch} onChange={(e) => setContractSearch(e.target.value)} placeholder={lang === 'fr' ? 'Cliente, véhicule, n° contrat...' : 'Clientee, vehículo, n° contrato...'} className="border rounded-lg px-3 py-2 w-full" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].from}</label>
-                  <input type="date" value={contractsFilter.startDate} onChange={(e) => setContractsFilter({...contractsFilter, startDate: e.target.value})} className="border rounded-lg px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].to}</label>
-                  <input type="date" value={contractsFilter.endDate} onChange={(e) => setContractsFilter({...contractsFilter, endDate: e.target.value})} className="border rounded-lg px-3 py-2" />
-                </div>
-                <button onClick={() => setContractsFilter({ startDate: '', endDate: '', status: '' })} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Reset</button>
-              </div>
-              <div className="bg-white rounded-xl shadow overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].invoiceNumber}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].client}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].invoiceDate}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].totalHT}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].tva}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].totalTTC}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].actions}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {contracts.filter(c => {
-                      if (c.status !== 'COMPLETED' && c.status !== 'CHECKED_IN') return false;
-                      if (contractsFilter.startDate && new Date(c.currentStartDate) < new Date(contractsFilter.startDate)) return false;
-                      if (contractsFilter.endDate && new Date(c.currentEndDate) > new Date(contractsFilter.endDate)) return false;
-                      return true;
-                    }).map((contract: any) => (
-                      <tr key={contract.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium">FAC-{contract.contractNumber}</td>
-                        <td className="px-4 py-3">{contract.customer?.firstName} {contract.customer?.lastName}</td>
-                        <td className="px-4 py-3">{new Date(contract.actualEndDate || contract.currentEndDate).toLocaleDateString('fr-FR')}</td>
-                        <td className="px-4 py-3">{Number(contract.subtotal).toFixed(2)} EUR</td>
-                        <td className="px-4 py-3">{Number(contract.taxAmount).toFixed(2)} EUR ({Number(contract.taxRate)}%)</td>
-                        <td className="px-4 py-3 font-semibold">{(Number(contract.totalAmount) || 0).toFixed(2)} EUR</td>
-                        <td className="px-4 py-3">
-                          <a href={API_URL + '/api/contracts/' + contract.id + '/invoice-pdf'} target="_blank" className="text-green-600 hover:underline text-sm">{t[lang].downloadPdf}</a>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {contracts.filter(c => c.status === 'COMPLETED' || c.status === 'CHECKED_IN').length === 0 && <div className="p-8 text-center text-gray-500">{t[lang].noInvoices}</div>}
-              </div>
-            </div>
           )}
         </div>
       </div>

@@ -4865,3 +4865,62 @@ app.post('/api/invoices/generate-from-checkout', async (req, res) => {
 })
 
 console.log('Invoice routes loaded')
+
+// ============== EXPENSE ROUTES ==============
+
+// GET /api/expenses
+app.get('/api/expenses', async (req, res) => {
+  try {
+    const { brand, category } = req.query
+    const where: any = {}
+    if (brand) where.brand = brand
+    if (category) where.category = category
+    const expenses = await prisma.expense.findMany({ where, orderBy: { date: 'desc' } })
+    res.json(expenses)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/expenses
+app.post('/api/expenses', async (req, res) => {
+  try {
+    const { date, supplier, description, category, brand, subtotal, taxRate, taxAmount, totalTTC, paidAmount, status, documentUrl, notes } = req.body
+    if (!supplier || !description) return res.status(400).json({ error: 'supplier and description required' })
+    const year = new Date().getFullYear()
+    const count = await prisma.expense.count({ where: { brand: brand || 'VOLTRIDE' } })
+    const expenseNumber = 'EX-' + year + '-' + String(count + 1).padStart(5, '0')
+    const expense = await prisma.expense.create({
+      data: {
+        expenseNumber, date: date ? new Date(date) : new Date(), supplier, description, category: category || 'Otros',
+        brand: brand || 'VOLTRIDE', subtotal: subtotal || 0, taxRate: taxRate || 21, taxAmount: taxAmount || 0,
+        totalTTC: totalTTC || 0, paidAmount: paidAmount || 0, status: status || 'PENDING', documentUrl, notes
+      }
+    })
+    res.status(201).json(expense)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// PUT /api/expenses/:id
+app.put('/api/expenses/:id', async (req, res) => {
+  try {
+    const expense = await prisma.expense.update({ where: { id: req.params.id }, data: req.body })
+    res.json(expense)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// DELETE /api/expenses/:id
+app.delete('/api/expenses/:id', async (req, res) => {
+  try {
+    await prisma.expense.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+console.log('Expense routes loaded')

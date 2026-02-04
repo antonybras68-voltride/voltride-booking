@@ -1507,3 +1507,29 @@ model Invoice {
   @@index([status])
   @@index([date])
 }
+
+// ============== EXPENSES ==============
+model Expense {
+  id              String   @id @default(cuid())
+  expenseNumber   String   @unique
+  date            DateTime @default(now())
+  supplier        String
+  description     String
+  category        String
+  brand           String   @default("VOLTRIDE")
+  subtotal        Float    @default(0)
+  taxRate         Float    @default(21)
+  taxAmount       Float    @default(0)
+  totalTTC        Float    @default(0)
+  paidAmount      Float    @default(0)
+  status          String   @default("PENDING")
+  documentUrl     String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([brand])
+  @@index([category])
+  @@index([date])
+  @@index([status])
+}

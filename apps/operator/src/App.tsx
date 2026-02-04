@@ -1917,10 +1917,11 @@ export default function App() {
         <span className="text-sm text-gray-600 font-medium">{lang === 'fr' ? 'Statut:' : 'Estado:'}</span>
         <div className="flex gap-1">
           {[
-            { id: 'ALL', label: lang === 'fr' ? 'Tous' : 'Todos', color: 'bg-gray-100 text-gray-700' },
-            { id: 'PENDING', label: lang === 'fr' ? 'En attente' : 'Pendiente', color: 'bg-yellow-100 text-yellow-700' },
-            { id: 'CONFIRMED', label: lang === 'fr' ? 'Confirmado' : 'Confirmado', color: 'bg-green-100 text-green-700' },
-            { id: 'CANCELLED', label: lang === 'fr' ? 'Annulé' : 'Cancelado', color: 'bg-red-100 text-red-700' },
+            { id: "ALL", label: lang === "fr" ? "Tous" : "Todos", color: "bg-gray-100 text-gray-700" },
+            { id: "CONFIRMED", label: lang === "fr" ? "Confirmé" : "Confirmado", color: "bg-blue-100 text-blue-700" },
+            { id: "CHECKED_IN", label: "Check-in", color: "bg-purple-100 text-purple-700" },
+            { id: "COMPLETED", label: lang === "fr" ? "Terminé" : "Completado", color: "bg-green-100 text-green-700" },
+            { id: "CANCELLED", label: lang === "fr" ? "Annulé" : "Cancelado", color: "bg-red-100 text-red-700" },
           ].map(s => (
             <button key={s.id} onClick={() => setBookingStatusFilter(s.id)}
               className={'px-3 py-1 rounded-lg text-xs font-medium transition ' + 
@@ -1931,23 +1932,6 @@ export default function App() {
         </div>
       </div>
       
-      {/* Filtre par assignation */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600 font-medium">{lang === 'fr' ? 'Vehículo:' : 'Vehículo:'}</span>
-        <div className="flex gap-1">
-          {[
-            { id: 'ALL', label: lang === 'fr' ? 'Tous' : 'Todos' },
-            { id: 'ASSIGNED', label: lang === 'fr' ? 'Assigné' : 'Asignado' },
-            { id: 'UNASSIGNED', label: lang === 'fr' ? 'Non assigné' : 'Sin asignar' },
-          ].map(s => (
-            <button key={s.id} onClick={() => setBookingAssignFilter(s.id)}
-              className={'px-3 py-1 rounded-lg text-xs font-medium transition ' + 
-                (bookingAssignFilter === s.id ? 'bg-blue-100 text-blue-700 ring-2 ring-offset-1 ring-blue-400' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
       
       {/* Filtre par source */}
       <div className="flex items-center gap-2">

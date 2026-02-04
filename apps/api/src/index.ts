@@ -516,6 +516,9 @@ app.put("/api/bookings/:id/cancel", async (req, res) => {
       where: { id: req.params.id },
       data: { status: "CANCELLED" }
     });
+    if (booking.fleetVehicleId) {
+      await prisma.fleet.update({ where: { id: booking.fleetVehicleId }, data: { status: "AVAILABLE" } });
+    }
     res.json(booking);
   } catch (error) {
     console.error("Cancel booking error:", error);

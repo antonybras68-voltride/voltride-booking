@@ -2172,7 +2172,7 @@ app.post("/api/contracts/:id/send", async (req, res) => {
     if (!email) return res.status(400).json({ error: "No email provided" })
     const brand = contract.fleetVehicle?.vehicle?.category?.brand || "VOLTRIDE"
     const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
-    const lang = req.body.lang || "es"
+    const lang = "es"
     const pdfBuffer = await generateContractPDF(contract, brandSettings, lang)
     const vehicleName = contract.fleetVehicle?.vehicle?.name || "Vehículo"
     const parsed = typeof vehicleName === "string" ? (() => { try { return JSON.parse(vehicleName) } catch { return { es: vehicleName } } })() : vehicleName

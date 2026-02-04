@@ -1,7 +1,7 @@
 import PDFDocument from 'pdfkit';
 
 const LOGOS: Record<string, string> = {
-  'VOLTRIDE': 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1766928342/d5uv1qrfwr86rd1abtd1.png',
+  'VOLTRIDE': 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1769278425/IMG-20260111-WA0001_1_-removebg-preview_zzajxa.png',
   'MOTOR-RENT': 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1766930480/logo-2024-e1699439584325-removebg-preview_sv6yxg.png'
 };
 

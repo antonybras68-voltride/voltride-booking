@@ -226,6 +226,21 @@ model Booking {
   paymentMethod         String?         // CARD, CASH, ONLINE
   conflictingExtensions ContractExtension[] @relation("ConflictingBooking")
   
+  // Check-in fields
+  startMileage            Int?
+  fuelLevelStart          String?
+  photoFront              String?
+  photoLeft               String?
+  photoRight              String?
+  photoRear               String?
+  photoCounter            String?
+  idCardUrl               String?
+  idCardVersoUrl          String?
+  licenseUrl              String?
+  licenseVersoUrl         String?
+  signatureUrl            String?
+  depositMethod           String?
+
   // Stripe deposit fields
   stripeCustomerId        String?
   stripePaymentMethodId   String?

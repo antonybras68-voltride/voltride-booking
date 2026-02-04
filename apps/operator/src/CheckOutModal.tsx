@@ -73,15 +73,16 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
       if (contractRes.ok) {
         const contractData = await contractRes.json()
         setContract(contractData)
-        setEndMileage(contractData.startMileage || booking.fleetVehicle?.currentMileage || 0)
+        setEndMileage(contractData.startMileage || booking.startMileage || booking.fleetVehicle?.currentMileage || 0)
         
-        // Get check-in photos
+        // Get check-in photos from contract OR booking
         const photos: string[] = []
-        if (contractData.photoFront) photos.push(contractData.photoFront)
-        if (contractData.photoLeft) photos.push(contractData.photoLeft)
-        if (contractData.photoRight) photos.push(contractData.photoRight)
-        if (contractData.photoRear) photos.push(contractData.photoRear)
-        if (contractData.photoCounter) photos.push(contractData.photoCounter)
+        const src = contractData.photoFront ? contractData : booking
+        if (src.photoFront) photos.push(src.photoFront)
+        if (src.photoLeft) photos.push(src.photoLeft)
+        if (src.photoRight) photos.push(src.photoRight)
+        if (src.photoRear) photos.push(src.photoRear)
+        if (src.photoCounter) photos.push(src.photoCounter)
         setCheckInPhotos(photos)
         
         // Initialize validations

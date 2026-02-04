@@ -3464,6 +3464,26 @@ app.put('/api/bookings/:id', async (req, res) => {
     if (checkedOut !== undefined) updateData.checkedOut = checkedOut
     if (checkedOutAt) updateData.checkedOutAt = new Date(checkedOutAt)
     
+    // Check-in fields
+    if (req.body.startMileage !== undefined) updateData.startMileage = req.body.startMileage
+    if (req.body.fuelLevelStart) updateData.fuelLevelStart = req.body.fuelLevelStart
+    if (req.body.depositMethod) updateData.depositMethod = req.body.depositMethod
+    if (req.body.paidAmount !== undefined) updateData.paidAmount = req.body.paidAmount
+    if (req.body.idCardUrl) updateData.idCardUrl = req.body.idCardUrl
+    if (req.body.idCardReversoUrl) updateData.idCardVersoUrl = req.body.idCardReversoUrl
+    if (req.body.licenseUrl) updateData.licenseUrl = req.body.licenseUrl
+    if (req.body.licenseReversoUrl) updateData.licenseVersoUrl = req.body.licenseReversoUrl
+    if (req.body.signatureUrl) updateData.signatureUrl = req.body.signatureUrl
+    // Check-in photos
+    if (req.body.checkInPhotos) {
+      const photos = req.body.checkInPhotos
+      if (photos.front) updateData.photoFront = photos.front
+      if (photos.left) updateData.photoLeft = photos.left
+      if (photos.right) updateData.photoRight = photos.right
+      if (photos.rear) updateData.photoRear = photos.rear
+      if (photos.counter) updateData.photoCounter = photos.counter
+    }
+    
     // Mise à jour des options si fournies
     if (options && Array.isArray(options)) {
       console.log('Updating options for booking:', id, 'Options:', JSON.stringify(options))

@@ -363,41 +363,39 @@ app.put('/api/customers/:id', async (req, res) => {
     const { id } = req.params
     const { email, phone } = req.body
     
-    // Vérifier si un autre client existe avec cet email ou téléphone
-    const existingCustomer = await prisma.customer.findFirst({
-      where: {
-        AND: [
-          { id: { not: id } },
-          {
-            OR: [
-              { email: email },
-              { phone: phone }
-            ]
-          }
-        ]
-      }
-    })
-    
-    if (existingCustomer) {
-      return res.status(400).json({ 
-        error: 'duplicate',
-        message: existingCustomer.email === email ? 'Un client avec cet email existe déjà' : 'Un client avec ce téléphone existe déjà',
-        existingCustomer
+    // Vérifier si un autre client existe avec cet email ou téléphone (seulement si email/phone fournis)
+    if (email || phone) {
+      const orConditions = []
+      if (email) orConditions.push({ email })
+      if (phone) orConditions.push({ phone })
+      const existingCustomer = await prisma.customer.findFirst({
+        where: { AND: [{ id: { not: id } }, { OR: orConditions }] }
       })
+      if (existingCustomer) {
+        return res.status(400).json({ 
+          error: 'duplicate',
+          message: existingCustomer.email === email ? 'Un client avec cet email existe déjà' : 'Un client avec ce téléphone existe déjà',
+          existingCustomer
+        })
+      }
     }
     
     const customer = await prisma.customer.update({
       where: { id },
       data: {
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        email: req.body.email,
-        phone: req.body.phone,
-        address: req.body.address,
-        postalCode: req.body.postalCode,
-        city: req.body.city,
-        country: req.body.country,
-        language: req.body.language
+        ...(req.body.firstName && { firstName: req.body.firstName }),
+        ...(req.body.lastName && { lastName: req.body.lastName }),
+        ...(req.body.email && { email: req.body.email }),
+        ...(req.body.phone && { phone: req.body.phone }),
+        ...(req.body.address !== undefined && { address: req.body.address }),
+        ...(req.body.postalCode !== undefined && { postalCode: req.body.postalCode }),
+        ...(req.body.city !== undefined && { city: req.body.city }),
+        ...(req.body.country && { country: req.body.country }),
+        ...(req.body.language && { language: req.body.language }),
+        ...(req.body.idDocumentUrl && { idDocumentUrl: req.body.idDocumentUrl }),
+        ...(req.body.licenseDocumentUrl && { licenseDocumentUrl: req.body.licenseDocumentUrl }),
+        ...(req.body.idDocumentExpiry && { idDocumentExpiry: new Date(req.body.idDocumentExpiry) }),
+        ...(req.body.licenseDocumentExpiry && { licenseDocumentExpiry: new Date(req.body.licenseDocumentExpiry) }),
       }
     })
     res.json(customer)

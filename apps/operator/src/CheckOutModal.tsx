@@ -69,7 +69,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
   const loadData = async () => {
     try {
       // Load contract
-      const contractRes = await fetch(`${API_URL}/api/contracts/booking/${booking.id}`)
+      const contractRes = await fetch(API_URL + "/api/contracts/booking/" + booking.id)
       if (contractRes.ok) {
         const contractData = await contractRes.json()
         setContract(contractData)
@@ -123,7 +123,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
 
       // Load spare parts
       if (booking.fleetVehicle?.id) {
-        const partsRes = await fetch(`${API_URL}/api/fleet/${booking.fleetVehicle.id}/spare-parts`)
+        const partsRes = await fetch(API_URL + "/api/fleet/" + (booking.fleetVehicleId || booking.fleetVehicle?.id) + "/spare-parts")
         if (partsRes.ok) {
           setSpareParts(await partsRes.json())
         }
@@ -289,7 +289,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
     if (!booking.depositPaymentIntentId) return
     setProcessingDeposit(true)
     try {
-      const res = await fetch(`${API_URL}/api/release-deposit`, {
+      const res = await fetch(API_URL + "/api/release-deposit", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookingId: booking.id, brand })
@@ -311,7 +311,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
     if (!booking.depositPaymentIntentId || captureAmount <= 0) return
     setProcessingDeposit(true)
     try {
-      const res = await fetch(`${API_URL}/api/capture-deposit`, {
+      const res = await fetch(API_URL + "/api/capture-deposit", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -340,7 +340,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
     try {
       // Update contract
       if (contract?.id) {
-        await fetch(`${API_URL}/api/contracts/${contract.id}`, {
+        await fetch(API_URL + "/api/contracts/" + contract.id, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -355,7 +355,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
 
         // Create deductions in DB
         for (const d of deductions) {
-          await fetch(`${API_URL}/api/contracts/${contract.id}/deductions`, {
+          await fetch(API_URL + "/api/contracts/" + contract.id + "/deductions", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -372,7 +372,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
 
         // Add fuel charge if any
         if (fuelCharge > 0) {
-          await fetch(`${API_URL}/api/contracts/${contract.id}/deductions`, {
+          await fetch(API_URL + "/api/contracts/" + contract.id + "/deductions", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -387,7 +387,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
 
         // Add extra km charge if any
         if (extraKmCharge > 0) {
-          await fetch(`${API_URL}/api/contracts/${contract.id}/deductions`, {
+          await fetch(API_URL + "/api/contracts/" + contract.id + "/deductions", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

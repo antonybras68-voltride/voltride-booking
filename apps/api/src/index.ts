@@ -546,11 +546,17 @@ app.post('/api/bookings/:id/send-invoice', async (req, res) => {
     }
     const t = translations[language] || translations.es
     const formatD = (d: string | Date) => new Date(d).toLocaleDateString(language === 'en' ? 'en-GB' : language === 'es' ? 'es-ES' : 'fr-FR')
-    const subtotal = booking.totalPrice
-    const taxAmount = Math.round(subtotal * 0.21 * 100) / 100
-    const totalTTC = Math.round((subtotal + taxAmount) * 100) / 100
+    const totalTTC = booking.totalPrice
+    const taxRate = 21
+    const subtotal = Math.round(totalTTC / 1.21 * 100) / 100
+    const taxAmount = Math.round((totalTTC - subtotal) * 100) / 100
     const paidAmount = booking.paidAmount || 0
     const remainingAmt = Math.max(0, totalTTC - paidAmount)
+
+
+
+
+
     const gn = (obj: any) => typeof obj === 'object' ? (obj[language] || obj.es || '') : (obj || '')
     let itemRows = ''
     for (const item of booking.items) {
@@ -4731,10 +4737,10 @@ app.post('/api/invoices', async (req, res) => {
     const year = new Date().getFullYear()
     const count = await prisma.invoice.count({ where: { brand: booking.agency?.brand || 'VOLTRIDE' } })
     const invoiceNumber = 'VR-' + year + '-' + String(count + 1).padStart(5, '0')
-    const subtotal = booking.totalPrice
+    const totalTTC = booking.totalPrice
     const taxRate = 21
-    const taxAmount = Math.round(subtotal * taxRate / 100 * 100) / 100
-    const totalTTC = Math.round((subtotal + taxAmount) * 100) / 100
+    const subtotal = Math.round(totalTTC / 1.21 * 100) / 100
+    const taxAmount = Math.round((totalTTC - subtotal) * 100) / 100
     const paidAmount = booking.paidAmount || 0
     const items = booking.items.map(item => {
       const vName = item.vehicle?.name
@@ -4834,10 +4840,10 @@ app.post('/api/invoices/generate-from-checkout', async (req, res) => {
     const year = new Date().getFullYear()
     const count = await prisma.invoice.count({ where: { brand: booking.agency?.brand || 'VOLTRIDE' } })
     const invoiceNumber = 'VR-' + year + '-' + String(count + 1).padStart(5, '0')
-    const subtotal = booking.totalPrice
+    const totalTTC = booking.totalPrice
     const taxRate = 21
-    const taxAmount = Math.round(subtotal * taxRate / 100 * 100) / 100
-    const totalTTC = Math.round((subtotal + taxAmount) * 100) / 100
+    const subtotal = Math.round(totalTTC / 1.21 * 100) / 100
+    const taxAmount = Math.round((totalTTC - subtotal) * 100) / 100
     const paidAmount = booking.paidAmount || 0
     const items = booking.items.map(item => {
       const vName = item.vehicle?.name

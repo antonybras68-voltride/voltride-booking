@@ -4676,3 +4676,186 @@ app.get('/api/cron/authorize-deposits/preview', async (req, res) => {
   }
 })
 console.log('Deposit/Caution routes loaded')
+
+// ============== INVOICE ROUTES ==============
+
+// GET /api/invoices - List invoices
+app.get('/api/invoices', async (req, res) => {
+  try {
+    const { brand, status } = req.query
+    const where: any = {}
+    if (brand) where.brand = brand
+    if (status) where.status = status
+    const invoices = await prisma.invoice.findMany({
+      where,
+      orderBy: { date: 'desc' }
+    })
+    // Enrich with customer/booking/agency data
+    const enriched = await Promise.all(invoices.map(async (inv) => {
+      const [customer, booking, agency] = await Promise.all([
+        prisma.customer.findUnique({ where: { id: inv.customerId } }),
+        prisma.booking.findUnique({ where: { id: inv.bookingId }, include: { items: { include: { vehicle: true } }, fleetVehicle: { include: { vehicle: true } } } }),
+        prisma.agency.findUnique({ where: { id: inv.agencyId } })
+      ])
+      const agencyName = agency?.name || ''
+      const parsedName = typeof agencyName === 'string' ? (() => { try { return JSON.parse(agencyName) } catch { return { es: agencyName } } })() : agencyName
+      return {
+        ...inv,
+        customerName: customer ? customer.firstName + ' ' + customer.lastName : 'N/A',
+        customerEmail: customer?.email || '',
+        bookingRef: booking?.reference || '',
+        agencyName: (parsedName as any)?.es || (parsedName as any)?.en || JSON.stringify(parsedName),
+        vehicleName: booking?.fleetVehicle?.vehicle?.name ? ((typeof booking.fleetVehicle.vehicle.name === 'string' ? (() => { try { return JSON.parse(booking.fleetVehicle.vehicle.name) } catch { return { es: booking.fleetVehicle.vehicle.name } } })() : booking.fleetVehicle.vehicle.name) as any)?.es || '' : ''
+      }
+    }))
+    res.json(enriched)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/invoices - Create invoice from booking
+app.post('/api/invoices', async (req, res) => {
+  try {
+    const { bookingId } = req.body
+    if (!bookingId) return res.status(400).json({ error: 'bookingId required' })
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { items: { include: { vehicle: true } }, options: { include: { option: true } }, customer: true, agency: true, fleetVehicle: { include: { vehicle: true } } }
+    })
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    // Check if invoice already exists
+    const existing = await prisma.invoice.findFirst({ where: { bookingId } })
+    if (existing) return res.status(400).json({ error: 'Invoice already exists', invoice: existing })
+    // Generate invoice number: VR-YYYY-XXXXX
+    const year = new Date().getFullYear()
+    const count = await prisma.invoice.count({ where: { brand: booking.agency?.brand || 'VOLTRIDE' } })
+    const invoiceNumber = 'VR-' + year + '-' + String(count + 1).padStart(5, '0')
+    const subtotal = booking.totalPrice
+    const taxRate = 21
+    const taxAmount = Math.round(subtotal * taxRate / 100 * 100) / 100
+    const totalTTC = Math.round((subtotal + taxAmount) * 100) / 100
+    const paidAmount = booking.paidAmount || 0
+    const items = booking.items.map(item => {
+      const vName = item.vehicle?.name
+      const parsed = typeof vName === 'string' ? (() => { try { return JSON.parse(vName) } catch { return { es: vName } } })() : vName
+      return {
+        description: (parsed as any)?.es || (parsed as any)?.en || 'Vehicle',
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        total: item.totalPrice
+      }
+    })
+    const options = booking.options.map(opt => {
+      const oName = opt.option?.name
+      const parsed = typeof oName === 'string' ? (() => { try { return JSON.parse(oName) } catch { return { es: oName } } })() : oName
+      return {
+        description: (parsed as any)?.es || (parsed as any)?.en || 'Option',
+        quantity: opt.quantity,
+        unitPrice: opt.unitPrice,
+        total: opt.totalPrice
+      }
+    })
+    const invoice = await prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        bookingId,
+        customerId: booking.customerId,
+        agencyId: booking.agencyId,
+        brand: booking.agency?.brand || 'VOLTRIDE',
+        subtotal,
+        taxRate,
+        taxAmount,
+        totalTTC,
+        paidAmount,
+        remainingAmount: Math.max(0, totalTTC - paidAmount),
+        items,
+        options,
+        status: 'DRAFT'
+      }
+    })
+    res.status(201).json(invoice)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// PUT /api/invoices/:id - Update invoice
+app.put('/api/invoices/:id', async (req, res) => {
+  try {
+    const { status, paidAmount, notes, deductions, depositRefunded } = req.body
+    const data: any = {}
+    if (status) data.status = status
+    if (paidAmount !== undefined) {
+      data.paidAmount = paidAmount
+      const inv = await prisma.invoice.findUnique({ where: { id: req.params.id } })
+      if (inv) data.remainingAmount = Math.max(0, inv.totalTTC - paidAmount)
+    }
+    if (notes !== undefined) data.notes = notes
+    if (deductions !== undefined) data.deductions = deductions
+    if (depositRefunded !== undefined) data.depositRefunded = depositRefunded
+    const invoice = await prisma.invoice.update({ where: { id: req.params.id }, data })
+    res.json(invoice)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/invoices/:id/send - Send invoice by email
+app.post('/api/invoices/:id/send', async (req, res) => {
+  try {
+    const invoice = await prisma.invoice.findUnique({ where: { id: req.params.id } })
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+    const customer = await prisma.customer.findUnique({ where: { id: invoice.customerId } })
+    if (!customer?.email) return res.status(400).json({ error: 'Customer has no email' })
+    // Update status to SENT
+    await prisma.invoice.update({ where: { id: req.params.id }, data: { status: 'SENT' } })
+    // TODO: Send actual email with PDF
+    res.json({ success: true, message: 'Invoice marked as sent to ' + customer.email })
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/invoices/generate-from-checkout - Auto-generate after checkout
+app.post('/api/invoices/generate-from-checkout', async (req, res) => {
+  try {
+    const { bookingId } = req.body
+    if (!bookingId) return res.status(400).json({ error: 'bookingId required' })
+    // Check if already exists
+    const existing = await prisma.invoice.findFirst({ where: { bookingId } })
+    if (existing) return res.json(existing)
+    // Trigger creation via the POST /api/invoices logic
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { items: { include: { vehicle: true } }, options: { include: { option: true } }, customer: true, agency: true, fleetVehicle: { include: { vehicle: true } } }
+    })
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    const year = new Date().getFullYear()
+    const count = await prisma.invoice.count({ where: { brand: booking.agency?.brand || 'VOLTRIDE' } })
+    const invoiceNumber = 'VR-' + year + '-' + String(count + 1).padStart(5, '0')
+    const subtotal = booking.totalPrice
+    const taxRate = 21
+    const taxAmount = Math.round(subtotal * taxRate / 100 * 100) / 100
+    const totalTTC = Math.round((subtotal + taxAmount) * 100) / 100
+    const paidAmount = booking.paidAmount || 0
+    const items = booking.items.map(item => {
+      const vName = item.vehicle?.name
+      const parsed = typeof vName === 'string' ? (() => { try { return JSON.parse(vName) } catch { return { es: vName } } })() : vName
+      return { description: (parsed as any)?.es || 'Vehicle', quantity: item.quantity, unitPrice: item.unitPrice, total: item.totalPrice }
+    })
+    const options = booking.options.map(opt => {
+      const oName = opt.option?.name
+      const parsed = typeof oName === 'string' ? (() => { try { return JSON.parse(oName) } catch { return { es: oName } } })() : oName
+      return { description: (parsed as any)?.es || 'Option', quantity: opt.quantity, unitPrice: opt.unitPrice, total: opt.totalPrice }
+    })
+    const invoice = await prisma.invoice.create({
+      data: { invoiceNumber, bookingId, customerId: booking.customerId, agencyId: booking.agencyId, brand: booking.agency?.brand || 'VOLTRIDE', subtotal, taxRate, taxAmount, totalTTC, paidAmount, remainingAmount: Math.max(0, totalTTC - paidAmount), items, options, status: 'DRAFT' }
+    })
+    res.status(201).json(invoice)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+console.log('Invoice routes loaded')

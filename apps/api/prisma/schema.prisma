@@ -1474,3 +1474,36 @@ model Message {
   @@index([createdAt])
 }
 // Regenerate Prisma Tue Jan 20 21:00:35 UTC 2026
+
+// ============== INVOICES ==============
+model Invoice {
+  id              String   @id @default(cuid())
+  invoiceNumber   String   @unique
+  bookingId       String
+  customerId      String
+  agencyId        String
+  brand           String   @default("VOLTRIDE")
+  date            DateTime @default(now())
+  dueDate         DateTime?
+  subtotal        Float    @default(0)
+  taxRate         Float    @default(21)
+  taxAmount       Float    @default(0)
+  totalTTC        Float    @default(0)
+  paidAmount      Float    @default(0)
+  remainingAmount Float    @default(0)
+  deductions      Float    @default(0)
+  depositRefunded Float    @default(0)
+  status          String   @default("DRAFT")
+  items           Json?
+  options         Json?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([agencyId])
+  @@index([brand])
+  @@index([status])
+  @@index([date])
+}

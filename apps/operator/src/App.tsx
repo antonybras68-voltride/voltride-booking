@@ -1326,9 +1326,9 @@ export default function App() {
                   className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">{t[lang].next} →</button>
               </div>
 
-              <div className="bg-white rounded-xl shadow overflow-hidden">
+              <div className="bg-white rounded-xl shadow overflow-hidden overflow-x-auto">
                 <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
-                  <table className="w-full border-collapse" style={{ minWidth: '1000px' }}>
+                  <table className="w-full border-collapse" >
                     <thead className="sticky top-0 z-30 bg-gray-50">
                       <tr className="bg-gray-50">
                         <th className="sticky left-0 bg-gray-50 px-3 py-3 text-left font-medium w-44 z-20 border-r">{t[lang].vehicle}</th>
@@ -1867,14 +1867,14 @@ export default function App() {
 {!loading && tab === 'bookings' && (
   <div className="space-y-4">
     {/* Header avec titre et recherche */}
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
       <h2 className="text-2xl font-bold">{lang === "fr" ? "Réservations" : "Reservas"}</h2>
       <input
         type="text"
         placeholder={lang === 'fr' ? "Rechercher (nom, email, tel, ref...)" : "Buscar (nombre, email, tel, ref...)"}
         value={bookingSearch}
         onChange={(e) => setBookingSearch(e.target.value)}
-        className="px-4 py-2 border rounded-lg w-80 text-sm"
+        className="px-4 py-2 border rounded-lg w-full md:w-80 text-sm"
       />
     </div>
     
@@ -1943,7 +1943,7 @@ export default function App() {
     </div>
     
     {/* Tableau */}
-    <div className="bg-white rounded-xl shadow overflow-hidden">
+    <div className="bg-white rounded-xl shadow overflow-hidden overflow-x-auto">
       <table className="w-full">
         <thead className="bg-gray-50">
           <tr>
@@ -2079,9 +2079,9 @@ export default function App() {
           {/* FLEET */}
           {!loading && tab === 'fleet' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-4">
                 <h2 className="text-2xl font-bold">Flotte</h2>
-                <div className="flex-1 mx-4 max-w-md">
+                <div className="w-full md:flex-1 md:mx-4 md:max-w-md">
                   <input type="text" value={fleetSearch} onChange={(e) => setFleetSearch(e.target.value)} 
                     placeholder={lang === 'fr' ? 'Rechercher (n°, modèle, plaque...)' : 'Buscar (n°, modelo, matrícula...)'} 
                     className="w-full border rounded-lg px-3 py-2" />
@@ -2094,7 +2094,7 @@ export default function App() {
                 )}
               </div>
               
-              <div className="flex gap-2 mb-4">
+              <div className="flex flex-wrap gap-2 mb-4">
                 {[
                   { id: 'ALL', label: 'Tous', color: 'bg-gray-100 text-gray-700' },
                   { id: 'AVAILABLE', label: 'Disponibles', color: 'bg-green-100 text-green-700' },
@@ -2200,7 +2200,7 @@ export default function App() {
           {/* SETTINGS */}
           {!loading && tab === 'customers' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
                 <h2 className="text-2xl font-bold">{t[lang].customers}</h2>
                 <button onClick={() => { setEditingCustomer(null); setShowCustomerModal(true) }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
@@ -2413,7 +2413,7 @@ export default function App() {
                 </div>
                 <button onClick={() => setContractsFilter({ startDate: '', endDate: '', status: '' })} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Reset</button>
               </div>
-              <div className="bg-white rounded-xl shadow overflow-hidden">
+              <div className="bg-white rounded-xl shadow overflow-hidden overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
@@ -2994,7 +2994,7 @@ export default function App() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="p-4 border-b bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-2xl">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-bold">📋 Detalles reserva</h2>
                   <p className="text-blue-100 text-sm">{selectedBookingDetail.reference}</p>

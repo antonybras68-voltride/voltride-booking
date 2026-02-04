@@ -410,7 +410,7 @@ app.put('/api/customers/:id', async (req, res) => {
 // ============== BOOKINGS ==============
 app.get('/api/bookings', async (req, res) => {
   try {
-    const bookings = await prisma.booking.findMany({ include: { agency: true, customer: true, items: { include: { vehicle: true } }, options: { include: { option: true } } }, orderBy: { createdAt: 'desc' } })
+    const bookings = await prisma.booking.findMany({ include: { agency: true, customer: true, items: { include: { vehicle: true } }, options: { include: { option: true } }, fleetVehicle: { include: { vehicle: true } } }, orderBy: { createdAt: 'desc' } })
     res.json(bookings)
   } catch (error) { res.status(500).json({ error: 'Failed to fetch bookings' }) }
 })

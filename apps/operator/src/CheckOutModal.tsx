@@ -405,10 +405,13 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
       await api.updateBooking(booking.id, { status: 'COMPLETED' })
 
       // Update fleet vehicle
-      await api.updateFleetVehicle(booking.fleetVehicle.id, { 
-        status: 'AVAILABLE',
-        currentMileage: endMileage
-      })
+      const fvId = booking.fleetVehicleId || booking.fleetVehicle?.id
+      if (fvId) {
+        await api.updateFleetVehicle(fvId, { 
+          status: 'AVAILABLE',
+          currentMileage: endMileage
+        })
+      }
 
       // TODO: Generate PDF report and invoice
       // TODO: Send email to customer

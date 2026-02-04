@@ -400,9 +400,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
           })
         }
       }
-
-      // Update booking status
-      await api.updateBooking(booking.id, { status: 'COMPLETED' })
+      await api.updateBooking(booking.id, { status: "COMPLETED", checkedOut: true, checkedOutAt: new Date().toISOString() })
 
       // Update fleet vehicle
       const fvId = booking.fleetVehicleId || booking.fleetVehicle?.id

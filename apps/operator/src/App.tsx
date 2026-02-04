@@ -548,10 +548,10 @@ export default function App() {
     if (perm) return perm.allowed
     // Permissions par défaut si pas trouvé
     const defaults: Record<string, string[]> = {
-      MANAGER: ['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices'],
-      OPERATOR: ['dashboard', 'planning', 'bookings', 'checkout'],
+      MANAGER: ['planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices'],
+      OPERATOR: ['planning', 'bookings', 'checkout'],
       COLLABORATOR: ['planning', 'fleet', 'checkout', 'contracts'],
-      FRANCHISEE: ['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices']
+      FRANCHISEE: ['planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices']
     }
     return defaults[user.role]?.includes(permissionId) ?? false
   }
@@ -1161,7 +1161,6 @@ export default function App() {
         
         <nav className="flex-1 p-2">
           {[
-            { id: 'dashboard', label: t[lang].dashboard, icon: '📊' },
             { id: 'planning', label: t[lang].planning, icon: '📅' },
             { id: 'bookings', label: t[lang].bookings, icon: '📋' },
             { id: 'fleet', label: t[lang].fleet, icon: '🚲' },
@@ -1310,35 +1309,6 @@ export default function App() {
           {loading && <div className="text-center py-10">⏳ {t[lang].loading}</div>}
 
           {/* DASHBOARD */}
-          {!loading && tab === 'dashboard' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold">{t[lang].dashboard}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-lg">
-                  <div className="text-4xl font-bold text-blue-600">{todayDepartures.length}</div>
-                  <div className="text-gray-600 mb-4">{t[lang].todayDepartures}</div>
-                  {todayDepartures.slice(0, 5).map(b => (
-                    <div key={b.id} className="flex justify-between py-1 text-sm border-t">
-                      <span>{b.startTime} - {b.customer?.lastName}</span>
-                      <span className="text-gray-500">{getName(b.items?.[0]?.vehicle?.name)}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-lg">
-                  <div className="text-4xl font-bold text-green-600">{todayReturns.length}</div>
-                  <div className="text-gray-600 mb-4">{t[lang].todayReturns}</div>
-                  {todayReturns.slice(0, 5).map(b => (
-                    <div key={b.id} className="flex justify-between py-1 text-sm border-t">
-                      <span>{b.endTime} - {b.customer?.lastName}</span>
-                      <span className="text-gray-500">{getName(b.items?.[0]?.vehicle?.name)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PLANNING */}
           {!loading && tab === 'planning' && (
             <div className="space-y-4">
               <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-wrap">

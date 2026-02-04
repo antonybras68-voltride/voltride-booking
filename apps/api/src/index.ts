@@ -2160,6 +2160,48 @@ app.get('/api/contracts/:id/pdf', async (req, res) => {
   }
 })
 
+// Send contract by email
+app.post("/api/contracts/:id/send", async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findUnique({
+      where: { id: req.params.id },
+      include: { customer: true, fleetVehicle: { include: { vehicle: { include: { category: true } } } }, agency: true }
+    })
+    if (!contract) return res.status(404).json({ error: "Contract not found" })
+    const email = req.body.email || contract.customer?.email
+    if (!email) return res.status(400).json({ error: "No email provided" })
+    const brand = contract.fleetVehicle?.vehicle?.category?.brand || "VOLTRIDE"
+    const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
+    const lang = req.body.lang || "es"
+    const pdfBuffer = await generateContractPDF(contract, brandSettings, lang)
+    const vehicleName = contract.fleetVehicle?.vehicle?.name || "Vehículo"
+    const parsed = typeof vehicleName === "string" ? (() => { try { return JSON.parse(vehicleName) } catch { return { es: vehicleName } } })() : vehicleName
+    const vName = (parsed as any)?.es || "Vehículo"
+    await resend.emails.send({
+      from: "Voltride <no-reply@voltride.es>",
+      to: email,
+      subject: `Contrato de alquiler - ${contract.contractNumber}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+        <div style="text-align:center;margin-bottom:20px"><img src="${brandSettings?.logoUrl || ""}" alt="Logo" style="height:50px"/></div>
+        <h2 style="color:#f59e0b">Contrato de Alquiler</h2>
+        <p>Estimado/a ${contract.customer?.firstName || ""} ${contract.customer?.lastName || ""},</p>
+        <p>Adjunto encontrará su contrato de alquiler para el vehículo <strong>${vName}</strong>.</p>
+        <p><strong>Número de contrato:</strong> ${contract.contractNumber}</p>
+        <p><strong>Fecha inicio:</strong> ${new Date(contract.currentStartDate).toLocaleDateString("es-ES")}</p>
+        <p><strong>Fecha fin:</strong> ${new Date(contract.currentEndDate).toLocaleDateString("es-ES")}</p>
+        <p>Gracias por confiar en nosotros.</p>
+        <p style="margin-top:30px;color:#666;font-size:12px">Voltride - Alquiler de vehículos eléctricos</p>
+      </div>`,
+      attachments: [{ filename: `contrato-${contract.contractNumber}.pdf`, content: pdfBuffer.toString("base64") }]
+    })
+    res.json({ success: true, message: "Contract sent to " + email })
+  } catch (e: any) {
+    console.error("Send contract error:", e)
+    res.status(500).json({ error: "Failed to send contract", details: e.message })
+  }
+})
+
+
 // Générer le PDF de la facture
 app.get('/api/contracts/:id/invoice-pdf', async (req, res) => {
   try {

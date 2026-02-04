@@ -259,6 +259,38 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
         })
       }
       
+      // Créer le contrat de location
+      try {
+        const contractRes = await fetch(API_URL + '/api/bookings/' + booking.id + '/check-out', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fleetVehicleId: fleetVehicle.id,
+            startMileage,
+            startFuelLevel: fuelLevel,
+            depositMethod,
+            depositStatus: depositPaid ? 'CAPTURED' : 'PENDING',
+            paymentStatus: locationPaid ? 'PAID' : 'PENDING',
+            customerIdCardUrl: idCardUrl,
+            customerLicenseUrl: licenseUrl,
+            customerSignature: signature,
+            photoFront: photos.front,
+            photoLeft: photos.left,
+            photoRight: photos.right,
+            photoRear: photos.rear,
+            photoCounter: photos.counter
+          })
+        })
+        if (contractRes.ok) {
+          const contract = await contractRes.json()
+          // Envoyer le contrat par email
+          await fetch(API_URL + '/api/contracts/' + contract.id + '/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: booking.customer?.email, lang: 'es' })
+          })
+        }
+      } catch (e) { console.error('Contract error:', e) }
       onComplete()
     } catch (e) {
       console.error('Check-in error:', e)

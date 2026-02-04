@@ -411,8 +411,15 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
         })
       }
 
-      // TODO: Generate PDF report and invoice
-      // TODO: Send email to customer
+      // Generate invoice and send to customer
+      try {
+        const invRes = await fetch(API_URL + "/api/invoices/generate-from-checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId: booking.id }) })
+        if (invRes.ok) {
+          const invoice = await invRes.json()
+          await fetch(API_URL + "/api/invoices/" + invoice.id + "/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: booking.customer?.email }) })
+        }
+      } catch (e) { console.error("Invoice error:", e) }
+      
 
       setStep(5) // Success step
       setTimeout(() => onComplete(), 2000)

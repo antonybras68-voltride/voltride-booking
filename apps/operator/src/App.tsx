@@ -994,6 +994,30 @@ export default function App() {
   }
 
   // Cancel booking
+  const handleSendInvoice = async (booking: any) => {
+    const confirm = window.confirm(
+      lang === 'fr' 
+        ? `Envoyer la facture de ${booking.reference} à ${booking.customer?.email} ?`
+        : `¿Enviar la factura de ${booking.reference} a ${booking.customer?.email}?`
+    )
+    if (!confirm) return
+    try {
+      const res = await fetch(API_URL + '/api/bookings/' + booking.id + '/send-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: booking.language || lang })
+      })
+      if (res.ok) {
+        alert(lang === 'fr' ? '✅ Facture envoyée !' : '✅ ¡Factura enviada!')
+      } else {
+        const err = await res.json()
+        alert((lang === 'fr' ? 'Erreur: ' : 'Error: ') + (err.error || 'Échec'))
+      }
+    } catch (e) {
+      alert(lang === 'fr' ? 'Erreur réseau' : 'Error de red')
+    }
+  }
+
   const handleCancelBooking = async () => {
     if (!cancelBooking || !cancelReason.trim()) return
     try {
@@ -2334,8 +2358,8 @@ export default function App() {
                               )}
                             </div>
                             {selectedCustomer.idDocumentUrl && (
-                              <a href={selectedCustomer.idDocumentUrl} target="_blank" className="text-blue-600 text-sm hover:underline">
-                                {lang === 'fr' ? 'Voir le document' : 'Ver documento'}
+                              <a href={selectedCustomer.idDocumentUrl} target="_blank" className="block">
+                                <img src={selectedCustomer.idDocumentUrl} className="w-full h-32 object-contain rounded-lg border hover:shadow-lg transition cursor-pointer" />
                               </a>
                             )}
                           </div>
@@ -2348,10 +2372,14 @@ export default function App() {
                                 <span className="text-orange-600 text-sm">⚠ {lang === 'fr' ? 'Manquant' : 'Faltante'}</span>
                               )}
                             </div>
-                            {selectedCustomer.licenseDocumentUrl && (
-                              <a href={selectedCustomer.licenseDocumentUrl} target="_blank" className="text-blue-600 text-sm hover:underline">
-                                {lang === 'fr' ? 'Voir le document' : 'Ver documento'}
+                            {selectedCustomer.licenseDocumentUrl ? (
+                              <a href={selectedCustomer.licenseDocumentUrl} target="_blank" className="block">
+                                <img src={selectedCustomer.licenseDocumentUrl} className="w-full h-32 object-contain rounded-lg border hover:shadow-lg transition cursor-pointer" />
                               </a>
+                            ) : (
+                              <div className="w-full h-20 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 text-sm">
+                                {lang === 'fr' ? 'Pas de document' : 'Sin documento'}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -2372,11 +2400,23 @@ export default function App() {
                                     {new Date(b.startDate).toLocaleDateString('fr-FR')} → {new Date(b.endDate).toLocaleDateString('fr-FR')}
                                   </span>
                                 </div>
-                                <span className={'px-2 py-1 rounded text-xs ' + 
-                                  (b.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 
-                                   b.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700')}>
-                                  {b.status}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  {(b.status === 'COMPLETED' || b.status === 'CHECKED_IN' || b.status === 'CONFIRMED') && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleSendInvoice(b) }}
+                                      className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition"
+                                      title={lang === 'fr' ? 'Envoyer facture' : 'Enviar factura'}
+                                    >
+                                      {lang === 'fr' ? '📧 Facture' : '📧 Factura'}
+                                    </button>
+                                  )}
+                                  <span className={'px-2 py-1 rounded text-xs ' + 
+                                    (b.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 
+                                     b.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-700' :
+                                     b.status === 'CHECKED_IN' ? 'bg-purple-100 text-purple-700' : 'bg-yellow-100 text-yellow-700')}>
+                                    {b.status}
+                                  </span>
+                                </div>
                               </div>
                             ))
                           )}

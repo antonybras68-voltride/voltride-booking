@@ -526,6 +526,105 @@ app.put("/api/bookings/:id/cancel", async (req, res) => {
 
 })
 
+// Send invoice by email
+app.post('/api/bookings/:id/send-invoice', async (req, res) => {
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.id },
+      include: { agency: true, customer: true, items: { include: { vehicle: true } }, options: { include: { option: true } } }
+    })
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    
+    const language = req.body.language || booking.language || 'es'
+    const brand = booking.agency?.brand || 'VOLTRIDE'
+    const brandName = brand === 'MOTOR-RENT' ? 'Motor-Rent' : 'Voltride'
+    const fromEmail = brand === 'VOLTRIDE' ? 'reservations@voltride.es' : 'reservations@motor-rent.es'
+    
+    const t = {
+      fr: { subject: 'Votre facture', title: 'Facture', ref: 'Référence', date: 'Date', agency: 'Agence', vehicle: 'Véhicule', qty: 'Qté', period: 'Période', unitPrice: 'Prix unit.', total: 'Total', option: 'Option', subtotal: 'Sous-total', tax: 'TVA (21%)', totalTTC: 'Total TTC', deposit: 'Acompte payé', remaining: 'Reste à payer', paid: 'Payé', thanks: 'Merci pour votre confiance !', from: 'du', to: 'au', securityDeposit: 'Caution' },
+      es: { subject: 'Su factura', title: 'Factura', ref: 'Referencia', date: 'Fecha', agency: 'Agencia', vehicle: 'Vehículo', qty: 'Cant.', period: 'Período', unitPrice: 'Precio unit.', total: 'Total', option: 'Opción', subtotal: 'Subtotal', tax: 'IVA (21%)', totalTTC: 'Total con IVA', deposit: 'Anticipo pagado', remaining: 'Pendiente de pago', paid: 'Pagado', thanks: '¡Gracias por su confianza!', from: 'del', to: 'al', securityDeposit: 'Fianza' },
+      en: { subject: 'Your invoice', title: 'Invoice', ref: 'Reference', date: 'Date', agency: 'Agency', vehicle: 'Vehicle', qty: 'Qty', period: 'Period', unitPrice: 'Unit price', total: 'Total', option: 'Option', subtotal: 'Subtotal', tax: 'VAT (21%)', totalTTC: 'Total incl. VAT', deposit: 'Deposit paid', remaining: 'Remaining', paid: 'Paid', thanks: 'Thank you for your trust!', from: 'from', to: 'to', securityDeposit: 'Security deposit' }
+    }[language] || { subject: 'Su factura', title: 'Factura', ref: 'Referencia', date: 'Fecha', agency: 'Agencia', vehicle: 'Vehículo', qty: 'Cant.', period: 'Período', unitPrice: 'Precio unit.', total: 'Total', option: 'Opción', subtotal: 'Subtotal', tax: 'IVA (21%)', totalTTC: 'Total con IVA', deposit: 'Anticipo pagado', remaining: 'Pendiente de pago', paid: 'Pagado', thanks: '¡Gracias por su confianza!', from: 'del', to: 'al', securityDeposit: 'Fianza' }
+    
+    const formatDate = (d: string | Date) => new Date(d).toLocaleDateString(language === 'en' ? 'en-GB' : language === 'es' ? 'es-ES' : 'fr-FR')
+    const subtotal = booking.totalPrice
+    const taxAmount = Math.round(subtotal * 0.21 * 100) / 100
+    const totalTTC = Math.round((subtotal + taxAmount) * 100) / 100
+    const paidAmount = booking.paidAmount || 0
+    const remaining = Math.max(0, totalTTC - paidAmount)
+    
+    const itemsHtml = booking.items.map(item => {
+      const name = typeof item.vehicle?.name === 'object' ? (item.vehicle.name as any)[language] || (item.vehicle.name as any).es || '' : item.vehicle?.name || ''
+      return \`<tr>
+        <td style="padding:8px;border-bottom:1px solid #eee">\${name}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;text-align:center">\${item.quantity}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">\${item.unitPrice.toFixed(2)}€</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">\${item.totalPrice.toFixed(2)}€</td>
+      </tr>\`
+    }).join('')
+    
+    const optionsHtml = booking.options.map(opt => {
+      const name = typeof opt.option?.name === 'object' ? (opt.option.name as any)[language] || (opt.option.name as any).es || '' : opt.option?.name || ''
+      return \`<tr>
+        <td style="padding:8px;border-bottom:1px solid #eee">\${name}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;text-align:center">\${opt.quantity}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">\${opt.unitPrice.toFixed(2)}€</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">\${opt.totalPrice.toFixed(2)}€</td>
+      </tr>\`
+    }).join('')
+
+    const primaryColor = brand === 'VOLTRIDE' ? '#ffaf10' : '#e53e3e'
+
+    const html = \`<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+    <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;padding:20px">
+      <div style="background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+        <div style="background:\${primaryColor};color:white;padding:20px;text-align:center">
+          <h1 style="margin:0;font-size:24px">\${brandName}</h1>
+          <p style="margin:5px 0 0;opacity:0.9">\${t.title} - \${booking.reference}</p>
+        </div>
+        <div style="padding:20px">
+          <table style="width:100%;margin-bottom:20px;font-size:14px">
+            <tr><td style="color:#666">\${t.ref}</td><td style="font-weight:bold">\${booking.reference}</td></tr>
+            <tr><td style="color:#666">\${t.date}</td><td>\${formatDate(booking.createdAt)}</td></tr>
+            <tr><td style="color:#666">\${t.agency}</td><td>\${typeof booking.agency?.name === 'object' ? (booking.agency.name as any)[language] || (booking.agency.name as any).es : booking.agency?.name || ''}</td></tr>
+            <tr><td style="color:#666">\${t.period}</td><td>\${formatDate(booking.startDate)} \${booking.startTime} → \${formatDate(booking.endDate)} \${booking.endTime}</td></tr>
+          </table>
+          <table style="width:100%;border-collapse:collapse;font-size:14px">
+            <thead><tr style="background:#f5f5f5">
+              <th style="padding:8px;text-align:left">\${t.vehicle}</th>
+              <th style="padding:8px;text-align:center">\${t.qty}</th>
+              <th style="padding:8px;text-align:right">\${t.unitPrice}</th>
+              <th style="padding:8px;text-align:right">\${t.total}</th>
+            </tr></thead>
+            <tbody>\${itemsHtml}\${optionsHtml}</tbody>
+          </table>
+          <div style="margin-top:20px;padding:15px;background:#f9f9f9;border-radius:8px;font-size:14px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>\${t.subtotal}</span><span>\${subtotal.toFixed(2)}€</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>\${t.tax}</span><span>\${taxAmount.toFixed(2)}€</span></div>
+            <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:16px;border-top:2px solid #ddd;padding-top:10px;margin-top:10px"><span>\${t.totalTTC}</span><span>\${totalTTC.toFixed(2)}€</span></div>
+            \${paidAmount > 0 ? \`<div style="display:flex;justify-content:space-between;margin-top:10px;color:green"><span>\${t.deposit}</span><span>-\${paidAmount.toFixed(2)}€</span></div>\` : ''}
+            \${remaining > 0 ? \`<div style="display:flex;justify-content:space-between;font-weight:bold;color:#e53e3e"><span>\${t.remaining}</span><span>\${remaining.toFixed(2)}€</span></div>\` : \`<div style="text-align:center;color:green;font-weight:bold;margin-top:5px">✓ \${t.paid}</div>\`}
+          </div>
+          <p style="text-align:center;color:#666;margin-top:20px">\${t.thanks}</p>
+        </div>
+        <div style="text-align:center;padding:15px;color:#999;font-size:12px">© \${new Date().getFullYear()} \${brandName}</div>
+      </div>
+    </body></html>\`
+
+    const result = await resend.emails.send({
+      from: brandName + ' <' + fromEmail + '>',
+      to: booking.customer.email,
+      subject: t.subject + ' - ' + booking.reference,
+      html
+    })
+    console.log('[INVOICE] Sent to', booking.customer.email, 'for', booking.reference)
+    res.json({ success: true, resendResponse: result })
+  } catch (error: any) {
+    console.error('[INVOICE] Error:', error)
+    res.status(500).json({ error: 'Failed to send invoice', details: error?.message })
+  }
+})
+
 // Delete booking
 app.delete('/api/bookings/:id', async (req, res) => {
   try {

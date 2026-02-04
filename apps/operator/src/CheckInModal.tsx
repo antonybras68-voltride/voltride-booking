@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { api } from './api'
+const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 import { getName } from './types'
 
 const FUEL_LEVELS = [
@@ -245,6 +246,18 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
         currentMileage: startMileage,
         status: 'RENTED'
       })
+
+      // Mettre à jour le client avec les documents (CNI, permis)
+      const customerUpdate: any = {}
+      if (idCardUrl) customerUpdate.idDocumentUrl = idCardUrl
+      if (licenseUrl) customerUpdate.licenseDocumentUrl = licenseUrl
+      if (idCardUrl || licenseUrl) {
+        await fetch(API_URL + '/api/customers/' + booking.customerId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(customerUpdate)
+        })
+      }
       
       onComplete()
     } catch (e) {

@@ -761,8 +761,7 @@ export default function App() {
 
   // Get bookings for a vehicle, sorted by start date
   const getVehicleBookings = (fleetId) => {
-    return bookings
-      .filter(b => b.fleetVehicleId === fleetId && b.status !== 'CANCELLED')
+    return bookings.filter(b => b.fleetVehicleId === fleetId && b.status !== "CANCELLED" && b.status !== "COMPLETED")
       .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
   }
 

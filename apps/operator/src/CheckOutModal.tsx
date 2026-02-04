@@ -102,6 +102,25 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
         setMissingDocs(missing)
       }
 
+      // If no contract, load photos from booking directly
+      if (!contract) {
+        const photos: string[] = []
+        if (booking.photoFront) photos.push(booking.photoFront)
+        if (booking.photoLeft) photos.push(booking.photoLeft)
+        if (booking.photoRight) photos.push(booking.photoRight)
+        if (booking.photoRear) photos.push(booking.photoRear)
+        if (booking.photoCounter) photos.push(booking.photoCounter)
+        if (photos.length > 0) {
+          setCheckInPhotos(photos)
+          setPhotoValidations(photos.map(url => ({
+            originalUrl: url,
+            validated: null,
+            damagedParts: []
+          })))
+        }
+        setEndMileage(booking.startMileage || booking.fleetVehicle?.currentMileage || 0)
+      }
+
       // Load spare parts
       if (booking.fleetVehicle?.id) {
         const partsRes = await fetch(`${API_URL}/api/fleet/${booking.fleetVehicle.id}/spare-parts`)

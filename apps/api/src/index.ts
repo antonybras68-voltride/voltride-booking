@@ -110,14 +110,14 @@ app.get('/api/categories', async (req, res) => {
 
 app.post('/api/categories', async (req, res) => {
   try {
-    const category = await prisma.category.create({ data: { code: req.body.code, name: req.body.name, brand: req.body.brand || 'VOLTRIDE', bookingFee: req.body.bookingFee || 0 } })
+    const category = await prisma.category.create({ data: { code: req.body.code, name: req.body.name, brand: req.body.brand || 'VOLTRIDE', bookingFee: req.body.bookingFee || 0, bookingFeePercentLow: req.body.bookingFeePercentLow || 50, bookingFeePercentHigh: req.body.bookingFeePercentHigh || 20 } })
     res.json(category)
   } catch (error) { res.status(500).json({ error: 'Failed to create category' }) }
 })
 
 app.put('/api/categories/:id', async (req, res) => {
   try {
-    const category = await prisma.category.update({ where: { id: req.params.id }, data: { code: req.body.code, name: req.body.name, brand: req.body.brand, bookingFee: req.body.bookingFee } })
+    const category = await prisma.category.update({ where: { id: req.params.id }, data: { code: req.body.code, name: req.body.name, brand: req.body.brand, bookingFee: req.body.bookingFee, bookingFeePercentLow: req.body.bookingFeePercentLow, bookingFeePercentHigh: req.body.bookingFeePercentHigh } })
     res.json(category)
   } catch (error) { res.status(500).json({ error: 'Failed to update category' }) }
 })

@@ -437,6 +437,9 @@ app.post('/api/bookings', async (req, res) => {
     const agency = await prisma.agency.findUnique({ where: { id: req.body.agencyId } })
     const reference = await generateBookingReference(agency?.brand || 'VOLTRIDE')
     let customer = await prisma.customer.findFirst({ where: { email: req.body.customer.email } })
+    if (customer) {
+      customer = await prisma.customer.update({ where: { id: customer.id }, data: { firstName: req.body.customer.firstName, lastName: req.body.customer.lastName, phone: req.body.customer.phone, address: req.body.customer.address, postalCode: req.body.customer.postalCode, city: req.body.customer.city, country: req.body.customer.country || customer.country } })
+    }
     if (!customer) {
       customer = await prisma.customer.create({ data: { firstName: req.body.customer.firstName, lastName: req.body.customer.lastName, email: req.body.customer.email, phone: req.body.customer.phone, address: req.body.customer.address, postalCode: req.body.customer.postalCode, city: req.body.customer.city, country: req.body.customer.country || 'ES', language: req.body.customer.language || 'es' } })
     }
@@ -2994,6 +2997,9 @@ app.post('/api/contracts', async (req, res) => {
     
     // Find or create customer
     let customer = await prisma.customer.findFirst({ where: { email: req.body.customer.email } })
+    if (customer) {
+      customer = await prisma.customer.update({ where: { id: customer.id }, data: { firstName: req.body.customer.firstName, lastName: req.body.customer.lastName, phone: req.body.customer.phone, address: req.body.customer.address, postalCode: req.body.customer.postalCode, city: req.body.customer.city, country: req.body.customer.country || customer.country } })
+    }
     if (!customer) {
       customer = await prisma.customer.create({
         data: {

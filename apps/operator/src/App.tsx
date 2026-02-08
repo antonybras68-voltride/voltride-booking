@@ -295,13 +295,12 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   
   // Planning state
-  const [weekStart, setWeekStart] = useState(() => {
-    const d = new Date()
-    d.setDate(d.getDate() - d.getDay() + 1)
-    return d
-  })
-  
-  // Drag & drop state
+  const [weekStart, setWeekStart] = useState(() => new Date())
+
+
+
+
+
   const [draggedBooking, setDraggedBooking] = useState(null)
   const [dragType, setDragType] = useState(null) // 'move' | 'resize-start' | 'resize-end'
   const [dropTarget, setDropTarget] = useState(null)
@@ -1362,7 +1361,7 @@ export default function App() {
                 <div className="flex-1" />
                 <button onClick={() => setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n })} 
                   className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">← {t[lang].previous}</button>
-                <button onClick={() => setWeekStart(() => { const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1); return d })} 
+                <button onClick={() => setWeekStart(() => new Date())} 
                   className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">{t[lang].today}</button>
                 <button onClick={() => setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n })} 
                   className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">{t[lang].next} →</button>

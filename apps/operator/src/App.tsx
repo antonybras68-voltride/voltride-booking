@@ -725,28 +725,21 @@ export default function App() {
         api.getBookings(selectedAgency ? { agencyId: selectedAgency } : {})
       ])
       
-      console.log('DEBUG loadData - brand:', brand)
-      console.log('DEBUG loadData - user role:', user?.role, 'agencyIds:', user?.agencyIds)
-      console.log('DEBUG loadData - fleetData total:', fleetData?.length)
       
       // Filtrer selon le role utilisateur
       let filteredAgencies = agenciesData.filter(a => a.brand === brand)
       let filteredFleet = Array.isArray(fleetData) ? fleetData.filter(f => f.agency?.brand === brand || !brand) : []
       let filteredBookings = Array.isArray(bookingsData) ? bookingsData.filter(b => b.agency?.brand === brand) : []
       
-      console.log('DEBUG after brand filter - fleet:', filteredFleet.length)
       
       // COLLABORATOR et FRANCHISEE: ne voir que leur agence
       if (user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE')) {
         const userAgencyIds = user.agencyIds || []
-        console.log('DEBUG COLLABORATOR filter - userAgencyIds:', userAgencyIds)
-        filteredFleet.forEach(f => console.log('DEBUG fleet item:', f.vehicleNumber, 'agency:', f.agency?.id, 'match:', userAgencyIds.includes(f.agency?.id)))
         filteredAgencies = filteredAgencies.filter(a => userAgencyIds.includes(a.id))
         filteredFleet = filteredFleet.filter(f => userAgencyIds.includes(f.agency?.id))
         filteredBookings = filteredBookings.filter(b => userAgencyIds.includes(b.agencyId))
       }
       
-      console.log('DEBUG final - fleet:', filteredFleet.length)
       
       setAgencies(filteredAgencies)
       setAllAgencies(agenciesData)

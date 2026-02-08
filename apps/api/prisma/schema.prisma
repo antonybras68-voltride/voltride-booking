@@ -46,6 +46,8 @@ model Category {
   name              Json
   brand             String           @default("VOLTRIDE")
   bookingFee        Float            @default(0)
+  bookingFeePercentLow  Float  @default(50)
+  bookingFeePercentHigh Float  @default(20)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   closingTimeSummer String           @default("19:00")

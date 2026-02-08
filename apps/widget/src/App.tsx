@@ -6,7 +6,7 @@ const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'VOLTRIDE'
 
 interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; closedOnSunday?: boolean; isActive?: boolean; showStockUrgency?: boolean }
-interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { id: string; name: { fr: string; es: string; en: string }; brand: string }; pricing: any[]; inventory: any[] }
+interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { id: string; name: { fr: string; es: string; en: string }; brand: string; bookingFee?: number; bookingFeePercentLow?: number; bookingFeePercentHigh?: number }; pricing: any[]; inventory: any[] }
 interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; description?: { fr: string; es: string; en: string }; maxQuantity: number; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; includedByDefault?: boolean; categories?: any[] }
 interface WidgetSettings { stripeEnabled: boolean; stripeMode: string; stripePublishableKey: string }
 
@@ -555,7 +555,14 @@ function App() {
   
   const calculateDeposit = (): number => {
     const total = calculateTotal()
-    return total > 100 ? Math.ceil(total * 0.2) : Math.ceil(total * 0.5)
+    // Récupérer les pourcentages de la première catégorie sélectionnée
+    const selectedVehicle = vehicles.find(v => selectedVehicles[v.id] > 0)
+    const cat = selectedVehicle?.category
+    const fixedFee = cat?.bookingFee || 0
+    if (fixedFee > 0) return fixedFee
+    const percentLow = (cat?.bookingFeePercentLow || 50) / 100
+    const percentHigh = (cat?.bookingFeePercentHigh || 20) / 100
+    return total > 100 ? Math.ceil(total * percentHigh) : Math.ceil(total * percentLow)
   }
   
   const calculateSecurityDeposit = (): number => {

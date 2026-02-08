@@ -262,6 +262,11 @@ export default function App() {
   }, [])
 
   const handleLogin = (userData: any, userToken: string) => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlAgencyIds = urlParams.get('agencyIds')
+    if (urlAgencyIds) {
+      userData.agencyIds = urlAgencyIds.split(',')
+    }
     setUser(userData)
     setToken(userToken)
     if (userData.language) {

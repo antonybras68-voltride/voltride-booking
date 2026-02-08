@@ -217,15 +217,48 @@ export default function App() {
     }
   }
 
-  // Check for existing session on mount
+  // Check for existing session on mount + read agencyIds from URL (sent by Launcher)
   useEffect(() => {
     const savedToken = localStorage.getItem('token')
     const savedUser = localStorage.getItem('user')
+    
+    // Lire les agencyIds depuis l'URL (envoyées par le Launcher)
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlAgencyIds = urlParams.get('agencyIds')
+    
     if (savedToken && savedUser) {
+      const parsedUser = JSON.parse(savedUser)
+      
+      // Si des agencyIds viennent de l'URL, les appliquer à l'utilisateur
+      if (urlAgencyIds) {
+        parsedUser.agencyIds = urlAgencyIds.split(',')
+        localStorage.setItem('user', JSON.stringify(parsedUser))
+      }
+      
       setToken(savedToken)
-      setUser(JSON.parse(savedUser))
+      setUser(parsedUser)
+      
+      // Re-vérifier avec l'API pour avoir les données à jour
+      fetch(API_URL + '/api/auth/me', { headers: { 'Authorization': `Bearer ${savedToken}` } })
+        .then(res => res.ok ? res.json() : null)
+        .then(freshUser => {
+          if (freshUser) {
+            // Garder les agencyIds de l'URL si présentes, sinon utiliser celles de l'API
+            if (urlAgencyIds) {
+              freshUser.agencyIds = urlAgencyIds.split(',')
+            }
+            setUser(freshUser)
+            localStorage.setItem('user', JSON.stringify(freshUser))
+          }
+        })
+        .catch(() => {})
     }
     setAuthLoading(false)
+    
+    // Nettoyer l'URL (enlever les paramètres)
+    if (urlAgencyIds) {
+      window.history.replaceState({}, '', window.location.pathname)
+    }
   }, [])
 
   const handleLogin = (userData: any, userToken: string) => {
@@ -359,6 +392,13 @@ export default function App() {
   })
 
   useEffect(() => { loadData() }, [selectedAgency, brand])
+  
+  // Auto-sélectionner l'agence pour COLLABORATOR/FRANCHISEE
+  useEffect(() => {
+    if (user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE') && user.agencyIds?.length > 0 && !selectedAgency) {
+      setSelectedAgency(user.agencyIds[0])
+    }
+  }, [user, agencies])
   useEffect(() => { if (tab === "contracts") loadContracts() }, [tab, brand])
   // Charger les permissions
   const loadPermissions = async () => {
@@ -1227,7 +1267,10 @@ export default function App() {
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
           <select value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)} className="border rounded-lg px-3 py-2">
-            <option value="">{t[lang].allAgencies}</option>
+            {/* COLLABORATOR/FRANCHISEE ne voient pas "Toutes les agences" */}
+            {!(user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE')) && (
+              <option value="">{t[lang].allAgencies}</option>
+            )}
             {allAgencies
               .filter((a: any) => a.brand === brand)
               .filter((a: any) => {

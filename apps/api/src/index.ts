@@ -1,3511 +1,4968 @@
-import { useState, useEffect, useRef } from 'react'
-import { api } from './api'
-import { Login } from './Login'
-import { CheckInModal } from './CheckInModal'
-import { NewBookingModal } from './NewBookingModal'
-import { FleetEditModal } from './FleetEditModal'
-import { NewFleetModal } from './NewFleetModal'
-import { CheckOutModal } from './CheckOutModal'
-import { getName } from './types'
+import webpush from 'web-push';
+import express from 'express'
+import cors from 'cors'
+import { PrismaClient } from '@prisma/client'
+import Stripe from 'stripe'
+import { Resend } from 'resend'
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 
-const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
+const JWT_SECRET = process.env.JWT_SECRET || 'voltride-secret-key-2024'
+import { generateContractPDF, generateInvoicePDF } from './pdfGenerator'
 
-export default function App() {
-  // Authentication state
-  const [user, setUser] = useState<any>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
-  const [lang, setLang] = useState<'fr' | 'es'>(() => (localStorage.getItem('lang') as 'fr' | 'es') || 'es')
-  
-  // Notifications bell
-  const [notifications, setNotifications] = useState<any[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [showNotifPanel, setShowNotifPanel] = useState(false)
-  
-  // Messaging
-  const [messages, setMessages] = useState<any[]>([])
-  const [unreadMessages, setUnreadMessages] = useState(0)
-  const [showComposeModal, setShowComposeModal] = useState(false)
-  const [showMessagePanel, setShowMessagePanel] = useState(false)
-  const [selectedMessage, setSelectedMessage] = useState<any>(null)
-  const [messageTab, setMessageTab] = useState<'inbox' | 'sent'>('inbox')
-  const [newMessage, setNewMessage] = useState({ toUserId: '', toRole: '', subject: '', body: '' })
-  
-  // Traductions
-  const t: Record<string, Record<string, string>> = {
-    fr: {
-      dashboard: 'Dashboard',
-      planning: 'Planning',
-      bookings: 'Réservations',
-      fleet: 'Flotte',
-      checkout: 'Check-out',
-      customers: 'Clientes',
-      contracts: 'Contrats',
-      invoices: 'Factures',
-      settings: 'Paramètres',
-      logout: 'Déconnexion',
-      allAgencies: 'Todas las agencias',
-      loading: 'Chargement...',
-      todayDepartures: 'Départs du jour',
-      todayReturns: 'Retours du jour',
-      newBooking: 'Nouvelle réservation',
-      newUser: 'Nouvel utilisateur',
-      save: 'Sauvegarder',
-      cancel: 'Annuler',
-      delete: 'Supprimer',
-      edit: 'Modifier',
-      create: 'Créer',
-      permissions: 'Permissions par rôle',
-      users: 'Utilisateurs',
-      legalDocs: 'Documents légaux',
-      usersRoles: 'Utilisateurs & Rôles',
-      firstName: 'Prénom',
-      lastName: 'Nom',
-      email: 'Email',
-      password: 'Mot de passe',
-      role: 'Rôle',
-      brands: 'Marques',
-      status: 'Statut',
-      actions: 'Actions',
-      active: 'Actif',
-      inactive: 'Inactif',
-      vehicle: 'Vehículo',
-      today: "Hoy",
-      previous: 'Anterior',
-      next: 'Siguiente',
-      confirmed: 'Confirmado',
-      confirmedAlt: 'Confirmado (alt)',
-      checkedIn: 'Check-in hecho',
-      dragTip: 'Glissez-déposez pour déplacer • Tirez les bords pour étendre • Double-clic pour check-in • Clic droit pour options',
-      openBackoffice: 'Ouvrir le Backoffice',
-      cgvResume: 'CGV Résumé',
-      cgvComplete: 'CGV Complètes',
-      rgpd: 'RGPD',
-      legalMentions: 'Mentions Légales',
-      french: 'Francés',
-      spanish: 'Español',
-      english: 'English',
-      enterText: 'Entrez le texte en',
-      saveSettings: 'Sauvegarder les paramètres',
-      reload: 'Recharger',
-      editUser: 'Modifier utilisateur',
-      newPassword: 'Nouveau mot de passe (laisser vide pour ne pas changer)',
-      authorizedBrands: 'Marques autorisées',
-      activeUser: 'Utilisateur actif',
-      confirmDelete: 'Supprimer cet utilisateur ?',
-      module: 'Module',
-      toDevelop: 'À développer',
-      walkin: 'Walk-in',
-      checkin: 'Check-in',
-      language: 'Idioma',
-      contractNumber: "N° Contrat",
-      client: "Cliente",
-      vehicleContract: "Vehículo",
-      period: "Période",
-      amount: "Montant",
-      contractStatus: "Statut",
-      filterByPeriod: "Filtrer par période",
-      from: "Du",
-      to: "Au",
-      allStatuses: "Tous les statuts",
-      draft: "Brouillon",
-      completed: "Terminé",
-      cancelled: "Annulé",
-      viewContract: "Voir contrat",
-      downloadPdf: "Télécharger PDF",
-      downloadInvoice: "Télécharger facture",
-      noContracts: "Aucun contrat trouvé",
-      noInvoices: "Aucune facture trouvée",
-      totalHT: "Total HT",
-      tva: "TVA",
-      totalTTC: "Total TTC",
-      deposit: "Fianza",
-      invoiceNumber: "N° Facture",
-      invoiceDate: "Date facture",
-      dueDate: "Échéance",
-    },
-    es: {
-      dashboard: 'Panel',
-      planning: 'Planificación',
-      bookings: 'Reservas',
-      fleet: 'Flota',
-      checkout: 'Devolución',
-      customers: 'Clientees',
-      contracts: 'Contratos',
-      invoices: 'Facturas',
-      settings: 'Ajustes',
-      logout: 'Cerrar sesión',
-      allAgencies: 'Todas las agencias',
-      loading: 'Cargando...',
-      todayDepartures: 'Salidas del día',
-      todayReturns: 'Devoluciones del día',
-      newBooking: 'Nueva reserva',
-      newUser: 'Nuevo usuario',
-      save: 'Guardar',
-      cancel: 'Cancelar',
-      delete: 'Eliminar',
-      edit: 'Editar',
-      create: 'Crear',
-      permissions: 'Permisos por rol',
-      users: 'Usuarios',
-      legalDocs: 'Documentos legales',
-      usersRoles: 'Usuarios y Roles',
-      firstName: 'Nombre',
-      lastName: 'Apellido',
-      email: 'Email',
-      password: 'Contraseña',
-      role: 'Rol',
-      brands: 'Marcas',
-      status: 'Estado',
-      actions: 'Acciones',
-      active: 'Activo',
-      inactive: 'Inactivo',
-      vehicle: 'Vehículo',
-      today: 'Hoy',
-      previous: 'Anterior',
-      next: 'Siguiente',
-      confirmed: 'Confirmado',
-      confirmedAlt: 'Confirmado (alt)',
-      checkedIn: 'Check-in hecho',
-      dragTip: 'Arrastre para mover • Tire los bordes para extender • Doble clic para check-in • Clic derecho para opciones',
-      openBackoffice: 'Abrir Backoffice',
-      cgvResume: 'CGV Resumen',
-      cgvComplete: 'CGV Completas',
-      rgpd: 'RGPD',
-      legalMentions: 'Menciones Legales',
-      french: 'Francés',
-      spanish: 'Español',
-      english: 'English',
-      enterText: 'Ingrese el texto en',
-      saveSettings: 'Guardar ajustes',
-      reload: 'Recargar',
-      editUser: 'Editar usuario',
-      newPassword: 'Nueva contraseña (dejar vacío para no cambiar)',
-      authorizedBrands: 'Marcas autorizadas',
-      activeUser: 'Usuario activo',
-      confirmDelete: '¿Eliminar este usuario?',
-      module: 'Módulo',
-      toDevelop: 'Por desarrollar',
-      walkin: 'Walk-in',
-      checkin: 'Check-in',
-      language: 'Idioma',
-      contractNumber: "N° Contrato",
-      client: "Clientee",
-      vehicleContract: "Vehículo",
-      period: "Período",
-      amount: "Importe",
-      contractStatus: "Estado",
-      filterByPeriod: "Filtrar por período",
-      from: "Desde",
-      to: "Hasta",
-      allStatuses: "Todos los estados",
-      draft: "Borrador",
-      completed: "Completado",
-      cancelled: "Cancelado",
-      viewContract: "Ver contrato",
-      downloadPdf: "Descargar PDF",
-      downloadInvoice: "Descargar factura",
-      noContracts: "Ningún contrato encontrado",
-      noInvoices: "Ninguna factura encontrada",
-      totalHT: "Total sin IVA",
-      tva: "IVA",
-      totalTTC: "Total con IVA",
-      deposit: "Depósito",
-      invoiceNumber: "N° Factura",
-      invoiceDate: "Fecha factura",
-      dueDate: "Vencimiento",
-    }
+const stripeVoltride = process.env.STRIPE_SECRET_KEY_VOLTRIDE ? new Stripe(process.env.STRIPE_SECRET_KEY_VOLTRIDE, { apiVersion: '2024-12-18.acacia' as any }) : null
+const stripeMotorrent = process.env.STRIPE_SECRET_KEY_MOTORRENT ? new Stripe(process.env.STRIPE_SECRET_KEY_MOTORRENT, { apiVersion: '2024-12-18.acacia' as any }) : null
+
+
+const getStripeInstance = (brand: string) => {
+  const stripe = brand === 'MOTOR-RENT' ? stripeMotorrent : stripeVoltride; if (!stripe) throw new Error('Stripe not configured'); return stripe
+}
+
+
+
+
+const app = express()
+const prisma = new PrismaClient()
+const resend = new Resend(process.env.RESEND_API_KEY)
+app.use(cors({ origin: true, credentials: true }))
+app.use(express.json())
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
+// ============== AGENCIES ==============
+app.get('/api/agencies', async (req, res) => {
+  try {
+    const agencies = await prisma.agency.findMany({ where: { isActive: true }, orderBy: { code: 'asc' } })
+    res.json(agencies)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch agencies' }) }
+})
+
+app.post('/api/agencies', async (req, res) => {
+  try {
+    const agency = await prisma.agency.create({
+      data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country || 'ES', phone: req.body.phone, email: req.body.email, brand: req.body.brand || 'VOLTRIDE', isActive: req.body.isActive ?? true, closedOnSunday: req.body.closedOnSunday ?? false, agencyType: req.body.agencyType || 'OWN', commissionRate: req.body.commissionRate || null, commissionEmail: req.body.commissionEmail || null, showStockUrgency: req.body.showStockUrgency || false }
+    })
+    res.json(agency)
+  } catch (error) { res.status(500).json({ error: 'Failed to create agency' }) }
+})
+
+app.put('/api/agencies/:id', async (req, res) => {
+  try {
+    const agency = await prisma.agency.update({ where: { id: req.params.id }, data: { code: req.body.code, name: req.body.name, address: req.body.address, city: req.body.city, postalCode: req.body.postalCode, country: req.body.country, phone: req.body.phone, email: req.body.email, brand: req.body.brand, isActive: req.body.isActive, closedOnSunday: req.body.closedOnSunday, agencyType: req.body.agencyType, commissionRate: req.body.commissionRate, commissionEmail: req.body.commissionEmail, showStockUrgency: req.body.showStockUrgency } })
+    res.json(agency)
+  } catch (error) { res.status(500).json({ error: 'Failed to update agency' }) }
+})
+
+app.delete('/api/agencies/:id', async (req, res) => {
+  try { await prisma.agency.delete({ where: { id: req.params.id } }); res.json({ success: true }) }
+  catch (error) { res.status(500).json({ error: 'Failed to delete agency' }) }
+})
+
+// ============== CATEGORIES ==============
+// ===== ENDPOINTS FILTRES PAR BRAND =====
+
+// Get agencies by brand (VOLTRIDE or MOTOR-RENT)
+app.get('/api/agencies/brand/:brand', async (req, res) => {
+  try {
+    const { brand } = req.params
+    const agencies = await prisma.agency.findMany({
+      where: { 
+        isActive: true,
+        brand: brand.toUpperCase()
+      },
+      orderBy: { code: 'asc' }
+    })
+    res.json(agencies)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch agencies by brand' })
   }
+})
 
-  // Check for existing session on mount + read agencyIds from URL (sent by Launcher)
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
-    
-    // Lire les agencyIds depuis l'URL (envoyées par le Launcher)
-    const urlParams = new URLSearchParams(window.location.search)
-    const urlAgencyIds = urlParams.get('agencyIds')
-    
-    if (savedToken && savedUser) {
-      const parsedUser = JSON.parse(savedUser)
-      
-      // Si des agencyIds viennent de l'URL, les appliquer à l'utilisateur
-      if (urlAgencyIds) {
-        parsedUser.agencyIds = urlAgencyIds.split(',')
-        localStorage.setItem('user', JSON.stringify(parsedUser))
+// Get categories by brand (VOLTRIDE or MOTOR-RENT)
+app.get('/api/categories/brand/:brand', async (req, res) => {
+  try {
+    const { brand } = req.params
+    const categories = await prisma.category.findMany({
+      where: {
+        brand: brand.toUpperCase()
+      },
+      orderBy: { code: 'asc' },
+      include: {
+        _count: { select: { vehicles: true } },
+        options: { include: { option: true } }
       }
-      
-      setToken(savedToken)
-      setUser(parsedUser)
-      
-      // Re-vérifier avec l'API pour avoir les données à jour
-      fetch(API_URL + '/api/auth/me', { headers: { 'Authorization': `Bearer ${savedToken}` } })
-        .then(res => res.ok ? res.json() : null)
-        .then(freshUser => {
-          if (freshUser) {
-            // Garder les agencyIds de l'URL si présentes, sinon utiliser celles de l'API
-            if (urlAgencyIds) {
-              freshUser.agencyIds = urlAgencyIds.split(',')
-            }
-            setUser(freshUser)
-            localStorage.setItem('user', JSON.stringify(freshUser))
-          }
-        })
-        .catch(() => {})
-    }
-    setAuthLoading(false)
+    })
+    res.json(categories)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch categories by brand' })
+  }
+})
+
+// ===== FIN ENDPOINTS FILTRES PAR BRAND =====
+app.get('/api/categories', async (req, res) => {
+  try {
+    const categories = await prisma.category.findMany({ orderBy: { code: 'asc' }, include: { _count: { select: { vehicles: true } }, options: { include: { option: true } } } })
+    res.json(categories)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch categories' }) }
+})
+
+app.post('/api/categories', async (req, res) => {
+  try {
+    const category = await prisma.category.create({ data: { code: req.body.code, name: req.body.name, brand: req.body.brand || 'VOLTRIDE', bookingFee: req.body.bookingFee || 0 } })
+    res.json(category)
+  } catch (error) { res.status(500).json({ error: 'Failed to create category' }) }
+})
+
+app.put('/api/categories/:id', async (req, res) => {
+  try {
+    const category = await prisma.category.update({ where: { id: req.params.id }, data: { code: req.body.code, name: req.body.name, brand: req.body.brand, bookingFee: req.body.bookingFee } })
+    res.json(category)
+  } catch (error) { res.status(500).json({ error: 'Failed to update category' }) }
+})
+
+app.delete('/api/categories/:id', async (req, res) => {
+  try { await prisma.category.delete({ where: { id: req.params.id } }); res.json({ success: true }) }
+  catch (error) { res.status(500).json({ error: 'Failed to delete category' }) }
+})
+
+// ============== VEHICLES ==============
+app.get('/api/vehicles', async (req, res) => {
+  try {
+    const vehicles = await prisma.vehicle.findMany({ where: { isActive: true }, include: { category: true, pricing: true, inventory: true }, orderBy: { sku: 'asc' } })
+    res.json(vehicles)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch vehicles' }) }
+})
+
+app.post('/api/vehicles', async (req, res) => {
+  try {
+    const vehicle = await prisma.vehicle.create({
+      data: { sku: req.body.sku, name: req.body.name, description: req.body.description || {}, deposit: req.body.deposit, hasPlate: req.body.hasPlate || false, licenseType: req.body.licenseType || '', kmIncluded: req.body.kmIncluded || '', helmetIncluded: req.body.helmetIncluded ?? true, kmIncludedPerDay: req.body.kmIncludedPerDay || 100, extraKmPrice: req.body.extraKmPrice || 0.15, imageUrl: req.body.imageUrl, categoryId: req.body.categoryId, isActive: req.body.isActive ?? true, pricing: { create: req.body.pricing || {} } },
+      include: { category: true, pricing: true }
+    })
+    res.json(vehicle)
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create vehicle' }) }
+})
+
+app.put('/api/vehicles/:id', async (req, res) => {
+  try {
+    const vehicle = await prisma.vehicle.update({ where: { id: req.params.id }, data: { sku: req.body.sku, name: req.body.name, description: req.body.description, deposit: req.body.deposit, hasPlate: req.body.hasPlate, licenseType: req.body.licenseType, kmIncluded: req.body.kmIncluded, helmetIncluded: req.body.helmetIncluded, kmIncludedPerDay: req.body.kmIncludedPerDay, extraKmPrice: req.body.extraKmPrice, imageUrl: req.body.imageUrl, categoryId: req.body.categoryId, isActive: req.body.isActive }, include: { category: true, pricing: true } })
+    if (req.body.pricing) { await prisma.pricing.updateMany({ where: { vehicleId: req.params.id }, data: req.body.pricing }) }
+    res.json(vehicle)
+  } catch (error) { res.status(500).json({ error: 'Failed to update vehicle' }) }
+})
+
+app.delete('/api/vehicles/:id', async (req, res) => {
+  try { await prisma.vehicle.delete({ where: { id: req.params.id } }); res.json({ success: true }) }
+  catch (error) { res.status(500).json({ error: 'Failed to delete vehicle' }) }
+})
+
+// ============== FLEET AVAILABILITY FOR WIDGET ==============
+// Retourne le nombre de véhicules Fleet disponibles par type de véhicule pour une agence et des dates
+app.get('/api/fleet-availability', async (req, res) => {
+  try {
+    const { agencyId, startDate, endDate } = req.query
     
-    // Nettoyer l'URL (enlever les paramètres)
-    if (urlAgencyIds) {
-      window.history.replaceState({}, '', window.location.pathname)
+    if (!agencyId) {
+      return res.status(400).json({ error: 'agencyId required' })
     }
-  }, [])
 
-  const handleLogin = (userData: any, userToken: string) => {
-    setUser(userData)
-    setToken(userToken)
-    if (userData.language) {
-      setLang(userData.language as 'fr' | 'es')
-      localStorage.setItem('lang', userData.language)
-    }
+    // Récupérer tous les véhicules Fleet de cette agence qui sont AVAILABLE
+    const fleetVehicles = await prisma.fleet.findMany({
+      where: {
+        agencyId: agencyId as string,
+        status: { in: ['AVAILABLE', 'RESERVED'] } // RESERVED peut être dispo pour d'autres dates
+      },
+      include: {
+        vehicle: true,
+        bookings: {
+          where: {
+            status: { in: ['CONFIRMED', 'PENDING', 'ACTIVE'] }
+          }
+        }
+      }
+    })
+
+    // Si des dates sont fournies, filtrer par disponibilité
+    const start = startDate ? new Date(startDate as string) : null
+    const end = endDate ? new Date(endDate as string) : null
+
+    // Compter les véhicules disponibles par type (vehicleId)
+    const availabilityMap: Record<string, number> = {}
+
+    fleetVehicles.forEach(fleet => {
+      const vehicleId = fleet.vehicleId
+      
+      // Vérifier si ce véhicule Fleet est disponible pour les dates demandées
+      let isAvailable = true
+      
+      if (start && end) {
+        isAvailable = !fleet.bookings.some(booking => {
+          const bookingStart = new Date(booking.startDate)
+          const bookingEnd = new Date(booking.endDate)
+          // Conflit si les périodes se chevauchent
+          return !(end <= bookingStart || start >= bookingEnd)
+        })
+      }
+
+      if (isAvailable) {
+        availabilityMap[vehicleId] = (availabilityMap[vehicleId] || 0) + 1
+      }
+    })
+
+    res.json(availabilityMap)
+  } catch (error) {
+    console.error('Fleet availability error:', error)
+    res.status(500).json({ error: 'Failed to get fleet availability' })
   }
+})
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setUser(null)
-    setToken(null)
-    window.location.reload()
-  }
 
-  const [tab, setTab] = useState('planning')
-  const [sidebarExpanded, setSidebarExpanded] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const brand = 'VOLTRIDE' // Marque fixe
-  const [agencies, setAgencies] = useState([])
-  const [allAgencies, setAllAgencies] = useState([])
-  const [selectedAgency, setSelectedAgency] = useState('')
-  const [fleet, setFleet] = useState([])
-  const [bookings, setBookings] = useState([])
-  const [loading, setLoading] = useState(true)
-  
-  // Planning state
-  const [weekStart, setWeekStart] = useState(() => {
-    const d = new Date()
-    d.setDate(d.getDate() - d.getDay() + 1)
-    return d
-  })
-  
-  // Drag & drop state
-  const [draggedBooking, setDraggedBooking] = useState(null)
-  const [dragType, setDragType] = useState(null) // 'move' | 'resize-start' | 'resize-end'
-  const [dropTarget, setDropTarget] = useState(null)
-  const [tooltip, setTooltip] = useState(null)
-  
-  // Modals
-  const [showNewBooking, setShowNewBooking] = useState(false)
-  const [showFleetEdit, setShowFleetEdit] = useState(false)
-  const [selectedFleetForEdit, setSelectedFleetForEdit] = useState(null)
-  const [fleetModalMode, setFleetModalMode] = useState<'view' | 'edit'>('view')
-  const [showNewFleet, setShowNewFleet] = useState(false)
-  const [assigningBooking, setAssigningBooking] = useState<any>(null)
-  const [availableFleetForAssign, setAvailableFleetForAssign] = useState<any[]>([])
-  const [customers, setCustomers] = useState<any[]>([])
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
-  const [showCustomerModal, setShowCustomerModal] = useState(false)
-  const [editingCustomer, setEditingCustomer] = useState<any>(null)
-  const [customerSearch, setCustomerSearch] = useState('')
-  const [bookingSearch, setBookingSearch] = useState('')
-  const [bookingStatusFilter, setBookingStatusFilter] = useState('ALL')
-  const [bookingAssignFilter, setBookingAssignFilter] = useState('ALL')
-  const [bookingSourceFilter, setBookingSourceFilter] = useState('ALL')
-  const [fleetStatusFilter, setFleetStatusFilter] = useState('ALL')
-  const [fleetSearch, setFleetSearch] = useState('')
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false)
-  const [selectedCheckoutBooking, setSelectedCheckoutBooking] = useState(null)
-  const [newBookingData, setNewBookingData] = useState(null)
-  const [showCheckIn, setShowCheckIn] = useState(false)
-  const [checkInBooking, setCheckInBooking] = useState(null)
-  const [showCancelModal, setShowCancelModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [editingBooking, setEditingBooking] = useState<any>(null)
-  const [editForm, setEditForm] = useState<any>({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00', fleetVehicleId: '', options: null })
-  const [availableOptions, setAvailableOptions] = useState<any[]>([])
-  const [showBookingDetail, setShowBookingDetail] = useState(false)
-  const [selectedBookingDetail, setSelectedBookingDetail] = useState(null)
-  const [cancelBooking, setCancelBooking] = useState(null)
-  const [cancelReason, setCancelReason] = useState('')
-  const [contextMenu, setContextMenu] = useState(null)
-  const [showWalkinModal, setShowWalkinModal] = useState(false)
-  const [walkinSessionId, setWalkinSessionId] = useState(null)
-  const [walkinStatus, setWalkinStatus] = useState(null) // null | 'waiting' | 'completed'
-  const [walkinData, setWalkinData] = useState(null)
-  const [walkinForm, setWalkinForm] = useState({
-    firstName: '', lastName: '', email: '', phone: '',
-    phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES'
-  })
-  const [walkinMode, setWalkinMode] = useState('tablet') // 'tablet' | 'manual'
-  const [settings, setSettings] = useState<any>({
-    voltride: {
-      cgvResume: { fr: '', es: '', en: '' },
-      cgvComplete: { fr: '', es: '', en: '' },
-      rgpd: { fr: '', es: '', en: '' },
-      mentionsLegales: { fr: '', es: '', en: '' }
-    },
-    motorrent: {
-      cgvResume: { fr: '', es: '', en: '' },
-      cgvComplete: { fr: '', es: '', en: '' },
-      rgpd: { fr: '', es: '', en: '' },
-      mentionsLegales: { fr: '', es: '', en: '' }
+
+// ============== OPTIONS ==============
+app.get('/api/options', async (req, res) => {
+  try {
+    const options = await prisma.option.findMany({ where: { isActive: true }, include: { categories: { include: { category: true } } }, orderBy: [{ includedByDefault: 'asc' }, { sortOrder: 'asc' }, { code: 'asc' }] })
+    res.json(options)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch options' }) }
+})
+
+app.post('/api/options', async (req, res) => {
+  try {
+    const option = await prisma.option.create({
+      data: {
+        code: req.body.code, name: req.body.name, description: req.body.description, maxQuantity: req.body.maxQuantity || 10, includedByDefault: req.body.includedByDefault || false, imageUrl: req.body.imageUrl || null,
+        day1: req.body.day1 || 0, day2: req.body.day2 || 0, day3: req.body.day3 || 0, day4: req.body.day4 || 0, day5: req.body.day5 || 0, day6: req.body.day6 || 0, day7: req.body.day7 || 0,
+        day8: req.body.day8 || 0, day9: req.body.day9 || 0, day10: req.body.day10 || 0, day11: req.body.day11 || 0, day12: req.body.day12 || 0, day13: req.body.day13 || 0, day14: req.body.day14 || 0,
+        isActive: req.body.isActive ?? true
+      }
+    })
+    if (req.body.categoryIds && req.body.categoryIds.length > 0) {
+      await prisma.optionCategory.createMany({ data: req.body.categoryIds.map((catId: string) => ({ optionId: option.id, categoryId: catId })) })
     }
-  })
-  const [settingsTab, setSettingsTab] = useState<'voltride' | 'motorrent'>('voltride')
-  const [settingsSection, setSettingsSection] = useState<string>('cgvResume')
-  const [settingsMainTab, setSettingsMainTab] = useState<'documents' | 'users' | 'notifications'>('documents')
-  const [notificationSettings, setNotificationSettings] = useState<Record<string, {roleAdmin: boolean, roleManager: boolean, roleOperator: boolean}>>({
-    new_booking: { roleAdmin: true, roleManager: true, roleOperator: true },
-    booking_cancelled: { roleAdmin: true, roleManager: true, roleOperator: false },
-    checkin_imminent: { roleAdmin: true, roleManager: true, roleOperator: true },
-    checkout_imminent: { roleAdmin: true, roleManager: true, roleOperator: true },
-    late_return: { roleAdmin: true, roleManager: true, roleOperator: true },
-    payment_received: { roleAdmin: true, roleManager: true, roleOperator: false },
-    payment_failed: { roleAdmin: true, roleManager: true, roleOperator: false },
-    maintenance_due: { roleAdmin: true, roleManager: true, roleOperator: false },
-    document_expiring: { roleAdmin: true, roleManager: true, roleOperator: false },
-    extension_request: { roleAdmin: true, roleManager: true, roleOperator: false },
-    walkin_waiting: { roleAdmin: true, roleManager: true, roleOperator: true },
-  })
-  const [permissions, setPermissions] = useState<any[]>([])
-  const [usersList, setUsersList] = useState<any[]>([])
-  const [contracts, setContracts] = useState<any[]>([])
-  const [contractsFilter, setContractsFilter] = useState({ startDate: "", endDate: "", status: "" })
-  const [contractSearch, setContractSearch] = useState("")
-  const [showExtensionModal, setShowExtensionModal] = useState(false)
-  const [extensionContract, setExtensionContract] = useState<any>(null)
-  const [showNewUserModal, setShowNewUserModal] = useState(false)
-  const [editingUser, setEditingUser] = useState<any>(null)
+    res.json(option)
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create option' }) }
+})
 
-  const days = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date(weekStart)
-    d.setDate(d.getDate() + i)
-    return d
-  })
-
-  useEffect(() => { loadData() }, [selectedAgency, brand])
-  
-  // Auto-sélectionner l'agence pour COLLABORATOR/FRANCHISEE
-  useEffect(() => {
-    if (user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE') && user.agencyIds?.length > 0 && !selectedAgency) {
-      setSelectedAgency(user.agencyIds[0])
-    }
-  }, [user, agencies])
-  useEffect(() => { if (tab === "contracts") loadContracts() }, [tab, brand])
-  // Charger les permissions
-  const loadPermissions = async () => {
-    try {
-      const data = await api.getPermissions()
-      setPermissions(Array.isArray(data) ? data : [])
-    } catch (e) { console.error('Erreur chargement permissions:', e) }
+// Reorder options
+app.put("/api/options/reorder", async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    const updates = orderedIds.map((id: string, index: number) =>
+      prisma.option.update({ where: { id }, data: { sortOrder: index } })
+    );
+    await Promise.all(updates);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Reorder options error:", error);
+    res.status(500).json({ error: "Failed to reorder options" });
   }
+});
+app.put('/api/options/:id', async (req, res) => {
+  try {
+    const option = await prisma.option.update({
+      where: { id: req.params.id },
+      data: {
+        code: req.body.code, name: req.body.name, description: req.body.description, maxQuantity: req.body.maxQuantity, includedByDefault: req.body.includedByDefault, imageUrl: req.body.imageUrl,
+        day1: req.body.day1, day2: req.body.day2, day3: req.body.day3, day4: req.body.day4, day5: req.body.day5, day6: req.body.day6, day7: req.body.day7,
+        day8: req.body.day8, day9: req.body.day9, day10: req.body.day10, day11: req.body.day11, day12: req.body.day12, day13: req.body.day13, day14: req.body.day14,
+        isActive: req.body.isActive
+      }
+    })
+    if (req.body.categoryIds) {
+      await prisma.optionCategory.deleteMany({ where: { optionId: req.params.id } })
+      if (req.body.categoryIds.length > 0) {
+        await prisma.optionCategory.createMany({ data: req.body.categoryIds.map((catId: string) => ({ optionId: option.id, categoryId: catId })) })
+      }
+    }
+    res.json(option)
+  } catch (error) { res.status(500).json({ error: 'Failed to update option' }) }
+})
 
-  // Ouvrir le modal d'assignation
-  const openAssignModal = async (booking: any) => {
-    setAssigningBooking(booking)
-    // Charger les véhicules Fleet disponibles pour ce type de véhicule et ces dates
-    try {
-      const vehicleTypeId = booking.items?.[0]?.vehicleId
-      const res = await fetch(API_URL + '/api/fleet?agencyId=' + booking.agencyId)
-      const allFleet = await res.json()
-      // Filtrer par type de véhicule et disponibilité
-      const available = allFleet.filter((f: any) => 
-        f.vehicleId === vehicleTypeId && 
-        (f.status === 'AVAILABLE' || f.status === 'RESERVED')
+app.delete('/api/options/:id', async (req, res) => {
+  try { await prisma.option.delete({ where: { id: req.params.id } }); res.json({ success: true }) }
+  catch (error) { res.status(500).json({ error: 'Failed to delete option' }) }
+})
+
+// ============== INVENTORY ==============
+app.get('/api/inventory', async (req, res) => {
+  try {
+    const inventory = await prisma.inventory.findMany({ include: { vehicle: { include: { category: true, pricing: true } }, agency: true } })
+    res.json(inventory)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch inventory' }) }
+})
+
+
+// ============== CUSTOMERS ==============
+app.get('/api/customers', async (req, res) => {
+  try { const customers = await prisma.customer.findMany({ orderBy: { createdAt: 'desc' } }); res.json(customers) }
+  catch (error) { res.status(500).json({ error: 'Failed to fetch customers' }) }
+})
+
+// Supprimer un client
+app.delete("/api/customers/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.booking.deleteMany({ where: { customerId: id } });
+    await prisma.rentalContract.deleteMany({ where: { customerId: id } });
+    await prisma.customer.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to delete customer" });
+  }
+});
+
+// Créer un client (avec vérification doublons)
+app.post('/api/customers', async (req, res) => {
+  try {
+    const { email, phone } = req.body
+    
+    // Vérifier si un client existe déjà avec cet email ou téléphone
+    const existingCustomer = await prisma.customer.findFirst({
+      where: {
+        OR: [
+          { email: email },
+          { phone: phone }
+        ]
+      }
+    })
+    
+    if (existingCustomer) {
+      return res.status(400).json({ 
+        error: 'duplicate',
+        message: existingCustomer.email === email ? 'Un client avec cet email existe déjà' : 'Un client avec ce téléphone existe déjà',
+        existingCustomer
+      })
+    }
+    
+    const customer = await prisma.customer.create({
+      data: {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        phone: req.body.phone,
+        address: req.body.address,
+        postalCode: req.body.postalCode,
+        city: req.body.city,
+        country: req.body.country || 'ES',
+        language: req.body.language || 'es'
+      }
+    })
+    res.json(customer)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to create customer' })
+  }
+})
+
+// Modifier un client
+app.put('/api/customers/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { email, phone } = req.body
+    
+    // Vérifier si un autre client existe avec cet email ou téléphone (seulement si email/phone fournis)
+    if (email || phone) {
+      const orConditions = []
+      if (email) orConditions.push({ email })
+      if (phone) orConditions.push({ phone })
+      const existingCustomer = await prisma.customer.findFirst({
+        where: { AND: [{ id: { not: id } }, { OR: orConditions }] }
+      })
+      if (existingCustomer) {
+        return res.status(400).json({ 
+          error: 'duplicate',
+          message: existingCustomer.email === email ? 'Un client avec cet email existe déjà' : 'Un client avec ce téléphone existe déjà',
+          existingCustomer
+        })
+      }
+    }
+    
+    const customer = await prisma.customer.update({
+      where: { id },
+      data: {
+        ...(req.body.firstName && { firstName: req.body.firstName }),
+        ...(req.body.lastName && { lastName: req.body.lastName }),
+        ...(req.body.email && { email: req.body.email }),
+        ...(req.body.phone && { phone: req.body.phone }),
+        ...(req.body.address !== undefined && { address: req.body.address }),
+        ...(req.body.postalCode !== undefined && { postalCode: req.body.postalCode }),
+        ...(req.body.city !== undefined && { city: req.body.city }),
+        ...(req.body.country && { country: req.body.country }),
+        ...(req.body.language && { language: req.body.language }),
+        ...(req.body.idDocumentUrl && { idDocumentUrl: req.body.idDocumentUrl }),
+        ...(req.body.licenseDocumentUrl && { licenseDocumentUrl: req.body.licenseDocumentUrl }),
+        ...(req.body.idDocumentExpiry && { idDocumentExpiry: new Date(req.body.idDocumentExpiry) }),
+        ...(req.body.licenseDocumentExpiry && { licenseDocumentExpiry: new Date(req.body.licenseDocumentExpiry) }),
+      }
+    })
+    res.json(customer)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to update customer' })
+  }
+})
+
+// ============== BOOKINGS ==============
+app.get('/api/bookings', async (req, res) => {
+  try {
+    const bookings = await prisma.booking.findMany({ include: { agency: true, customer: true, items: { include: { vehicle: true } }, options: { include: { option: true } }, fleetVehicle: { include: { vehicle: true } } }, orderBy: { createdAt: 'desc' } })
+    res.json(bookings)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch bookings' }) }
+})
+
+// Generateur de numero de reservation sequentiel
+const generateBookingReference = async (brand: string) => {
+  const prefix = brand === 'MOTOR-RENT' ? 'MR-' : 'VR-'
+  
+  const lastBooking = await prisma.booking.findFirst({
+    where: { reference: { startsWith: prefix } },
+    orderBy: { reference: 'desc' }
+  })
+  
+  let nextNumber = 1
+  if (lastBooking) {
+    const lastNumber = parseInt(lastBooking.reference.replace(prefix, ''))
+    if (!isNaN(lastNumber)) nextNumber = lastNumber + 1
+  }
+  
+  return prefix + String(nextNumber).padStart(5, '0')
+}
+
+app.post('/api/bookings', async (req, res) => {
+  try {
+    // Recuperer l'agence pour connaitre la marque
+    const agency = await prisma.agency.findUnique({ where: { id: req.body.agencyId } })
+    const reference = await generateBookingReference(agency?.brand || 'VOLTRIDE')
+    let customer = await prisma.customer.findFirst({ where: { email: req.body.customer.email } })
+    if (!customer) {
+      customer = await prisma.customer.create({ data: { firstName: req.body.customer.firstName, lastName: req.body.customer.lastName, email: req.body.customer.email, phone: req.body.customer.phone, address: req.body.customer.address, postalCode: req.body.customer.postalCode, city: req.body.customer.city, country: req.body.customer.country || 'ES', language: req.body.customer.language || 'es' } })
+    }
+    // Récupérer la caution du véhicule
+    const vehicleId = req.body.items?.[0]?.vehicleId
+    const vehicle = vehicleId ? await prisma.vehicle.findUnique({ where: { id: vehicleId } }) : null
+    const vehicleDeposit = vehicle?.deposit || 100
+    
+    // paidAmount = acompte payé par le client (ce que le widget envoie comme depositAmount)
+    // depositAmount = vraie caution du véhicule
+    const paidAmount = req.body.depositAmount || 0
+    
+    // Créer la réservation d'abord
+    const booking = await prisma.booking.create({
+      data: {
+        reference,
+        agencyId: req.body.agencyId, customerId: customer.id, startDate: new Date(req.body.startDate), endDate: new Date(req.body.endDate), startTime: req.body.startTime, endTime: req.body.endTime, totalPrice: req.body.totalPrice, depositAmount: vehicleDeposit, paidAmount: paidAmount, language: req.body.language || 'es',
+        source: 'WIDGET',
+        items: { create: req.body.items.map((item: any) => ({ vehicleId: item.vehicleId, quantity: item.quantity, unitPrice: item.unitPrice, totalPrice: item.totalPrice })) },
+        options: { create: (req.body.options || []).map((opt: any) => ({ optionId: opt.optionId, quantity: opt.quantity, unitPrice: opt.unitPrice, totalPrice: opt.totalPrice })) }
+      },
+      include: { agency: true, customer: true, items: { include: { vehicle: true } }, options: { include: { option: true } } }
+    })
+
+    // Auto-assignation pour les réservations WIDGET
+    if (booking.items && booking.items.length > 0) {
+      const vehicleTypeId = booking.items[0].vehicleId
+      const { fleetId, reason } = await autoAssignVehicle(
+        booking.id,
+        vehicleTypeId,
+        booking.agencyId,
+        new Date(req.body.startDate),
+        new Date(req.body.endDate)
       )
-      setAvailableFleetForAssign(available)
-    } catch (e) { console.error(e) }
-  }
-
-  // Assigner un véhicule à une réservation
-  const assignVehicle = async (fleetId: string) => {
-    if (!assigningBooking) return
-    try {
-      await fetch(API_URL + '/api/bookings/' + assigningBooking.id + '/assign', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fleetVehicleId: fleetId })
-      })
-      setAssigningBooking(null)
-      loadData()
-    } catch (e) { console.error(e) }
-  }
-
-  // Charger les clients
-  const loadCustomers = async () => {
-    try {
-      const res = await fetch(API_URL + '/api/customers')
-      const data = await res.json()
-      setCustomers(Array.isArray(data) ? data : [])
-    } catch (e) { console.error('Erreur chargement clients:', e) }
-  }
-
-  // Supprimer un client
-  const deleteCustomer = async (customerId: string) => {
-    if (!confirm(lang === 'fr' ? 'Supprimer ce client et toutes ses données ?' : '¿Eliminar este cliente y todos sus datos?')) return
-    try {
-      await fetch(API_URL + '/api/customers/' + customerId, { method: 'DELETE' })
-      loadCustomers()
-      setSelectedCustomer(null)
-    } catch (e) { console.error(e) }
-  }
-
-  // Sauvegarder un client
-  const saveCustomer = async (customerData: any) => {
-    try {
-      const method = editingCustomer ? 'PUT' : 'POST'
-      const url = editingCustomer ? API_URL + '/api/customers/' + editingCustomer.id : API_URL + '/api/customers'
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(customerData)
-      })
-      const data = await res.json()
-      if (data.error === 'duplicate') {
-        alert(data.message + '\n\nCliente existant: ' + data.existingCustomer.firstName + ' ' + data.existingCustomer.lastName)
-        return
-      }
-      loadCustomers()
-      setShowCustomerModal(false)
-      setEditingCustomer(null)
-    } catch (e) { console.error(e) }
-  }
-
-  // Supprimer une réservation
-  const deleteBooking = async (bookingId: string) => {
-    if (!confirm(lang === 'fr' ? 'Supprimer cette réservation ?' : '¿Eliminar esta reserva?')) return
-    try {
-      await fetch(API_URL + '/api/bookings/' + bookingId, { method: 'DELETE' })
-      loadData()
-    } catch (e) { console.error(e) }
-  }
-
-  // Supprimer un contrat
-  const deleteContract = async (contractId: string) => {
-    if (!confirm(lang === 'fr' ? 'Supprimer ce contrat ?' : '¿Eliminar este contrato?')) return
-    try {
-      await fetch(API_URL + '/api/contracts/' + contractId, { method: 'DELETE' })
-      loadContracts()
-    } catch (e) { console.error(e) }
-  }
-  // Charger les utilisateurs
-  const loadUsers = async () => {
-    try {
-      const data = await api.getUsers()
-      setUsersList(Array.isArray(data) ? data : [])
-    } catch (e) { console.error('Erreur chargement utilisateurs:', e) }
-  }
-  const loadContracts = async () => {
-    try {
-      const res = await fetch(API_URL + "/api/contracts")
-      const data = await res.json()
-      setContracts(Array.isArray(data) ? data.filter(c => c.agency?.brand === brand) : [])
-    } catch (e) { console.error("Erreur chargement contrats:", e) }
-  }
-
-  const loadNotificationSettings = async () => {
-    try {
-      const response = await fetch(API_URL + '/api/notification-settings')
-      const data = await response.json()
-      if (data && data.length > 0) {
-        const settingsMap: Record<string, any> = {}
-        data.forEach((s: any) => {
-          settingsMap[s.notificationType] = { roleAdmin: s.roleAdmin, roleManager: s.roleManager, roleOperator: s.roleOperator }
-        })
-        setNotificationSettings(prev => ({ ...prev, ...settingsMap }))
-      }
-    } catch (e) { console.error('Error loading notification settings:', e) }
-  }
-  const saveNotificationSettings = async () => {
-    try {
-      const settings = Object.entries(notificationSettings).map(([type, roles]) => ({
-        notificationType: type,
-        roleAdmin: roles.roleAdmin,
-        roleManager: roles.roleManager,
-        roleOperator: roles.roleOperator
-      }))
-      await fetch(API_URL + '/api/notification-settings/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings })
-      })
-      alert(lang === 'fr' ? '✅ Paramètres sauvegardés !' : '✅ Ajustes guardados!')
-    } catch (e) { console.error('Error saving notification settings:', e); alert('Erreur lors de la sauvegarde') }
-  }
-  useEffect(() => { loadNotificationSettings() }, [])
-  
-  // Charger les notifications
-  const loadNotifications = async () => {
-    try {
-      const [notifRes, countRes] = await Promise.all([
-        fetch(API_URL + '/api/notifications'),
-        fetch(API_URL + '/api/notifications/unread-count')
-      ])
-      const notifs = await notifRes.json()
-      const countData = await countRes.json()
-      setNotifications(Array.isArray(notifs) ? notifs : [])
-      setUnreadCount(countData.count || 0)
-    } catch (e) { console.error('Erreur chargement notifications:', e) }
-  }
-  
-  const markAsRead = async (id: string) => {
-    await fetch(API_URL + '/api/notifications/' + id + '/read', { method: 'PUT' })
-    loadNotifications()
-  }
-  
-  const deleteNotification = async (id: string) => {
-    await fetch(API_URL + '/api/notifications/' + id, { method: 'DELETE' })
-    loadNotifications()
-  }
-  
-  const markAllAsRead = async () => {
-    await fetch(API_URL + '/api/notifications/read-all', { 
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
-    })
-    loadNotifications()
-  }
-  
-  useEffect(() => { loadNotifications(); const interval = setInterval(loadNotifications, 30000); return () => clearInterval(interval) }, [])
-  
-
-  // Vérifier si l'utilisateur a accès à une permission
-  const hasPermission = (permissionId: string): boolean => {
-    if (!user) return false
-    // Admin a toujours accès à tout
-    if (user.role === 'ADMIN') return true
-    // Chercher dans les permissions chargées
-    const perm = permissions.find(p => p.role === user.role && p.permission === permissionId)
-    if (perm) return perm.allowed
-    // Permissions par défaut si pas trouvé
-    const defaults: Record<string, string[]> = {
-      MANAGER: ['planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts'],
-      OPERATOR: ['planning', 'bookings', 'checkout'],
-      COLLABORATOR: ['planning', 'fleet', 'checkout', 'contracts'],
-      FRANCHISEE: ['planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts']
-    }
-    return defaults[user.role]?.includes(permissionId) ?? false
-  }
-
-  useEffect(() => { 
-    loadBrandSettings('VOLTRIDE')
-    loadBrandSettings('MOTOR-RENT')
-    loadPermissions()
-    loadUsers()
-    loadCustomers()
-  }, [])
-
-  useEffect(() => {
-    const handleClick = () => setContextMenu(null)
-    window.addEventListener('click', handleClick)
-  
-  // Send walkin form to tablet
-  const sendWalkinToTablet = async () => {
-    const sessionId = 'walkin_' + Date.now()
-    setWalkinSessionId(sessionId)
-    setWalkinStatus('waiting')
-    
-    const agencyId = selectedAgency || agencies[0]?.id
-    if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
-      return
-    }
-    
-    try {
-      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          agencyId,
-          language: 'fr',
-          brand
-        })
-      })
-      pollWalkinSession(sessionId)
-    } catch (e) {
-      alert('Erreur lors de l\'envoi')
-      setWalkinStatus(null)
-    }
-  }
-
-  const pollWalkinSession = (sessionId) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
-        const data = await res.json()
-        if (data && data.status === 'completed') {
-          setWalkinData(data)
-          setWalkinStatus('completed')
-          clearInterval(interval)
-        }
-      } catch (e) {}
-    }, 2000)
-    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
-  }
-
-  const createWalkinCustomer = async () => {
-    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
-    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Información client incomplètes')
-      return
-    }
-    
-    try {
-      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: customerData.firstName,
-          lastName: customerData.lastName,
-          email: customerData.email,
-          phone: (customerData.phonePrefix || '+34') + customerData.phone,
-          address: customerData.address,
-          city: customerData.city,
-          postalCode: customerData.postalCode,
-          country: customerData.country
-        })
-      })
-      const newCustomer = await res.json()
-      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
-      setShowWalkinModal(false)
-      setWalkinStatus(null)
-      setWalkinData(null)
-      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
-      loadData()
-    } catch (e) {
-      alert('Erreur lors de la création')
-    }
-  }
-
-  const cancelWalkin = () => {
-    setShowWalkinModal(false)
-    setWalkinStatus(null)
-    setWalkinData(null)
-    setWalkinSessionId(null)
-  }
-
-
-  const handleFleetClick = (fleet, mode = 'view') => {
-    setSelectedFleetForEdit(fleet)
-    setFleetModalMode(mode)
-    setShowFleetEdit(true)
-  }
-
-  const handleFleetDelete = () => {
-    setShowFleetEdit(false)
-    setSelectedFleetForEdit(null)
-    loadData()
-  }
-
-  return () => window.removeEventListener('click', handleClick)
-  }, [])
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [agenciesData, fleetData, bookingsData] = await Promise.all([
-        api.getAgencies(),
-        api.getFleet({}),
-        api.getBookings(selectedAgency ? { agencyId: selectedAgency } : {})
-      ])
       
-      // Filtrer selon le role utilisateur
-      let filteredAgencies = agenciesData.filter(a => a.brand === brand)
-      let filteredFleet = Array.isArray(fleetData) ? fleetData.filter(f => f.agency?.brand === brand || !brand) : []
-      let filteredBookings = Array.isArray(bookingsData) ? bookingsData.filter(b => b.agency?.brand === brand) : []
-      
-      // COLLABORATOR et FRANCHISEE: ne voir que leur agence
-      if (user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE')) {
-        const userAgencyIds = user.agencyIds || []
-        filteredAgencies = filteredAgencies.filter(a => userAgencyIds.includes(a.id))
-        filteredFleet = filteredFleet.filter(f => userAgencyIds.includes(f.agency?.id))
-        filteredBookings = filteredBookings.filter(b => userAgencyIds.includes(b.agencyId))
-      }
-      
-      setAgencies(filteredAgencies)
-      setAllAgencies(agenciesData)
-      setFleet(filteredFleet)
-      setBookings(filteredBookings)
-    } catch (e) { console.error(e) }
-    setLoading(false)
-  }
-
-  // Charger les paramètres d'une marque
-  const loadBrandSettings = async (brandName: string) => {
-    try {
-      const data = await api.getBrandSettings(brandName)
-      if (data) {
-        const tab = brandName === 'VOLTRIDE' ? 'voltride' : 'motorrent'
-        setSettings(prev => ({
-          ...prev,
-          [tab]: {
-            ...data,
-            cgvResume: data.cgvResume || { fr: '', es: '', en: '' },
-            cgvComplete: data.cgvComplete || { fr: '', es: '', en: '' },
-            rgpd: data.rgpd || { fr: '', es: '', en: '' },
-            mentionsLegales: data.mentionsLegales || { fr: '', es: '', en: '' }
+      if (fleetId) {
+        await prisma.booking.update({
+          where: { id: booking.id },
+          data: {
+            fleetVehicleId: fleetId,
+            assignmentType: 'AUTOMATIC',
+            assignedAt: new Date()
           }
-        }))
-      }
-    } catch (e) { console.error('Erreur chargement settings:', e) }
-  }
-
-  // Sauvegarder les paramètres
-  const handleSaveSettings = async () => {
-    try {
-      const brandName = settingsTab === 'voltride' ? 'VOLTRIDE' : 'MOTOR-RENT'
-      const data = settings[settingsTab]
-      await api.saveBrandSettings(brandName, {
-        name: data?.name || brandName,
-        cgvResume: data?.cgvResume,
-        cgvComplete: data?.cgvComplete,
-        rgpd: data?.rgpd,
-        mentionsLegales: data?.mentionsLegales
-      })
-      alert(lang === 'fr' ? '✅ Paramètres sauvegardés avec succès !' : '✅ Ajustes guardados con éxito!')
-    } catch (e) {
-      console.error('Erreur sauvegarde:', e)
-      alert('❌ Erreur lors de la sauvegarde')
-    }
-  }
-
-  const formatDate = (d) => d.toISOString().split('T')[0]
-  const today = formatDate(new Date())
-  const todayDepartures = bookings.filter(b => b.startDate?.split('T')[0] === today && !b.checkedIn)
-  const todayReturns = bookings.filter(b => b.endDate?.split('T')[0] === today && b.checkedIn && !b.checkedOut)
-  const selectedAgencyData = agencies.find(a => a.id === selectedAgency)
-  const filteredFleet = fleet.filter(f => {
-    if (!selectedAgency) return true
-    // Filtrer UNIQUEMENT par locationCode qui correspond au code de l'agence
-    if (selectedAgencyData && f.locationCode === selectedAgencyData.code) return true
-    // Si pas de locationCode défini, afficher le véhicule partout
-    if (!f.locationCode) return true
-    return false
-  })
-  
-  // Vehicles currently rented (for checkout)
-  const rentedBookings = bookings.filter(b => 
-    b.checkedIn && !b.checkedOut && 
-    (!selectedAgency || b.agencyId === selectedAgency)
-  )
-
-  // Get bookings for a vehicle, sorted by start date
-  const getVehicleBookings = (fleetId) => {
-    return bookings.filter(b => b.fleetVehicleId === fleetId && b.status !== "CANCELLED" && b.status !== "COMPLETED")
-      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
-  }
-
-  // Check if two bookings are consecutive (for alternating colors)
-  const getBookingColorIndex = (booking, vehicleBookings) => {
-    const idx = vehicleBookings.findIndex(b => b.id === booking.id)
-    return idx % 2
-  }
-
-  // Drag handlers
-  const handleDragStart = (e, booking, type = 'move') => {
-    if (booking.checkedIn && type === 'move') {
-      e.preventDefault()
-      return
-    }
-    setDraggedBooking(booking)
-    setDragType(type)
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  const handleDragOver = (e, fleetId, date) => {
-    e.preventDefault()
-    if (!draggedBooking) return
-    setDropTarget({ fleetId, date: formatDate(date) })
-  }
-
-  const handleDragLeave = () => {
-    setDropTarget(null)
-  }
-
-  const handleDrop = async (e, targetFleet, targetDate) => {
-    e.preventDefault()
-    if (!draggedBooking) return
-
-    const dateStr = formatDate(targetDate)
-    const originalStart = draggedBooking.startDate.split('T')[0]
-    const originalEnd = draggedBooking.endDate.split('T')[0]
-    const daysDiff = Math.round((targetDate - new Date(originalStart)) / (1000 * 60 * 60 * 24))
-
-    let newStart, newEnd, newFleetId
-
-    if (dragType === 'move') {
-      newStart = dateStr
-      const duration = Math.round((new Date(originalEnd) - new Date(originalStart)) / (1000 * 60 * 60 * 24))
-      const endDate = new Date(targetDate)
-      endDate.setDate(endDate.getDate() + duration)
-      newEnd = formatDate(endDate)
-      newFleetId = targetFleet.id
-    } else if (dragType === 'resize-start') {
-      newStart = dateStr
-      newEnd = originalEnd
-      newFleetId = draggedBooking.fleetVehicleId
-    } else if (dragType === 'resize-end') {
-      newStart = originalStart
-      newEnd = dateStr
-      newFleetId = draggedBooking.fleetVehicleId
-    }
-
-    // Check for conflicts
-    const hasConflict = bookings.some(b => {
-      if (b.id === draggedBooking.id || b.fleetVehicleId !== newFleetId || b.status === 'CANCELLED') return false
-      const bStart = b.startDate.split('T')[0]
-      const bEnd = b.endDate.split('T')[0]
-      return newStart <= bEnd && newEnd >= bStart
-    })
-
-    if (hasConflict) {
-      alert('❌ Conflit : une réservation existe déjà sur cette période')
-      setDraggedBooking(null)
-      setDragType(null)
-      setDropTarget(null)
-      return
-    }
-
-    // Update booking
-    try {
-      await api.updateBooking(draggedBooking.id, {
-        startDate: newStart,
-        endDate: newEnd,
-        fleetVehicleId: newFleetId
-      })
-      loadData()
-    } catch (e) {
-      alert('Erreur lors de la modification')
-    }
-
-    setDraggedBooking(null)
-    setDragType(null)
-    setDropTarget(null)
-  }
-
-  const handleDragEnd = () => {
-    setDraggedBooking(null)
-    setDragType(null)
-    setDropTarget(null)
-  }
-
-  // Double click = quick check-in (uniquement si la location commence aujourd'hui)
-  const handleDoubleClick = (booking) => {
-    if (!booking.checkedIn) {
-      const today = new Date().toISOString().split('T')[0]
-      const startDate = booking.startDate?.split('T')[0]
-      
-      if (startDate !== today) {
-        alert(lang === 'fr' 
-          ? 'Le check-in n\'est possible que le jour du début de la location' 
-          : 'El check-in solo es posible el día de inicio del alquiler')
-        return
-      }
-      
-      setCheckInBooking(booking)
-      setShowCheckIn(true)
-    }
-  }
-
-  // Créer un contrat depuis une réservation
-  const createContractFromBooking = async (booking) => {
-    if (!booking.fleetVehicleId) {
-      alert(lang === 'fr' ? 'Veuillez d\'abord assigner un véhicule' : 'Por favor asigne un vehículo primero')
-      return
-    }
-    
-    const assignedVehicle = fleet.find(f => f.id === booking.fleetVehicleId)
-    if (!assignedVehicle) {
-      alert(lang === 'fr' ? 'Vehículo non trouvé' : 'Vehículo no encontrado')
-      return
-    }
-    
-    // Calculer le nombre de jours
-    const start = new Date(booking.startDate)
-    const end = new Date(booking.endDate)
-    const totalDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)))
-    
-    // Calculer les montants
-    const subtotal = booking.totalPrice || 0
-    const optionsTotal = booking.options?.reduce((sum, opt) => sum + (opt.totalPrice || 0), 0) || 0
-    const taxRate = 21
-    const taxAmount = Math.round((subtotal + optionsTotal) * taxRate) / 100
-    const totalAmount = subtotal + optionsTotal + taxAmount
-    const depositAmount = booking.depositAmount || assignedVehicle.vehicle?.deposit || 100
-    const dailyRate = totalDays > 0 ? Math.round(subtotal / totalDays * 100) / 100 : subtotal
-    
-    try {
-      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/contracts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bookingId: booking.id,
-          fleetVehicleId: booking.fleetVehicleId,
-          agencyId: booking.agencyId,
-          customer: {
-            firstName: booking.customer?.firstName,
-            lastName: booking.customer?.lastName,
-            email: booking.customer?.email,
-            phone: booking.customer?.phone,
-            address: booking.customer?.address,
-            postalCode: booking.customer?.postalCode,
-            city: booking.customer?.city,
-            country: booking.customer?.country || 'ES',
-            language: booking.language || 'es'
-          },
-          startDate: booking.startDate,
-          endDate: booking.endDate,
-          source: booking.source || 'WIDGET',
-          dailyRate,
-          totalDays,
-          subtotal,
-          optionsTotal,
-          taxRate,
-          taxAmount,
-          totalAmount,
-          depositAmount
         })
-      })
-      
-      const contract = await res.json()
-      
-      if (contract.error) {
-        throw new Error(contract.error)
-      }
-      
-      alert(lang === 'fr' 
-        ? `✅ Contrat ${contract.contractNumber} créé avec succès!` 
-        : `✅ Contrato ${contract.contractNumber} creado con éxito!`)
-      
-      setShowBookingDetail(false)
-      loadData()
-      
-    } catch (error) {
-      console.error('Erreur création contrat:', error)
-      alert(lang === 'fr' ? '❌ Erreur lors de la création du contrat' : '❌ Error al crear el contrato')
-    }
-  }
-
-  // Right click context menu
-  const handleContextMenu = (e, booking) => {
-    e.preventDefault()
-    setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
-      booking
-    })
-  }
-
-  // Long press for tablet (opens context menu)
-  const longPressTimer = useRef(null)
-  const handleTouchStart = (e, booking) => {
-    const touch = e.touches[0]
-    longPressTimer.current = setTimeout(() => {
-      setContextMenu({
-        x: touch.clientX,
-        y: touch.clientY,
-        booking
-      })
-    }, 500)
-  }
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-  }
-
-  // Click empty cell = new booking
-  const handleCellClick = (fleetVehicle, date) => {
-    if (draggedBooking) return
-    setNewBookingData({ fleetVehicle, date: formatDate(date) })
-    setShowNewBooking(true)
-  }
-
-  // Cancel booking
-  const handleSendInvoice = async (booking: any) => {
-    const confirm = window.confirm(
-      lang === 'fr' 
-        ? `Envoyer la facture de ${booking.reference} à ${booking.customer?.email} ?`
-        : `¿Enviar la factura de ${booking.reference} a ${booking.customer?.email}?`
-    )
-    if (!confirm) return
-    try {
-      const res = await fetch(API_URL + '/api/bookings/' + booking.id + '/send-invoice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language: booking.language || lang })
-      })
-      if (res.ok) {
-        alert(lang === 'fr' ? '✅ Facture envoyée !' : '✅ ¡Factura enviada!')
+        console.log(`Booking ${booking.reference} auto-assigned to fleet ${fleetId}: ${reason}`)
       } else {
-        const err = await res.json()
-        alert((lang === 'fr' ? 'Erreur: ' : 'Error: ') + (err.error || 'Échec'))
+        console.log(`Booking ${booking.reference} not auto-assigned: ${reason}`)
       }
-    } catch (e) {
-      alert(lang === 'fr' ? 'Erreur réseau' : 'Error de red')
     }
-  }
 
-  const handleCancelBooking = async () => {
-    if (!cancelBooking || !cancelReason.trim()) return
-    try {
-      await api.cancelBooking(cancelBooking.id, cancelReason)
-      loadData()
-      setShowCancelModal(false)
-      setCancelBooking(null)
-      setCancelReason('')
-    } catch (e) {
-      alert('Erreur lors de l\'annulation')
-    }
-  }
-
-
-  // Send walkin form to tablet
-  const sendWalkinToTablet = async () => {
-    const sessionId = 'walkin_' + Date.now()
-    setWalkinSessionId(sessionId)
-    setWalkinStatus('waiting')
+    // Recharger le booking avec les infos d'assignation
+    const finalBooking = await prisma.booking.findUnique({
+      where: { id: booking.id },
+      include: { agency: true, customer: true, items: { include: { vehicle: true } }, options: { include: { option: true } }, fleetVehicle: true }
+    })
     
-    const agencyId = selectedAgency || agencies[0]?.id
-    if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
-      return
-    }
-    
-    try {
-      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          agencyId,
-          language: 'fr',
-          brand
-        })
-      })
-      pollWalkinSession(sessionId)
-    } catch (e) {
-      alert('Erreur lors de l\'envoi')
-      setWalkinStatus(null)
-    }
-  }
-
-  const pollWalkinSession = (sessionId) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
-        const data = await res.json()
-        if (data && data.status === 'completed') {
-          setWalkinData(data)
-          setWalkinStatus('completed')
-          clearInterval(interval)
-        }
-      } catch (e) {}
-    }, 2000)
-    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
-  }
-
-  const createWalkinCustomer = async () => {
-    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
-    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Información client incomplètes')
-      return
-    }
-    
-    try {
-      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: customerData.firstName,
-          lastName: customerData.lastName,
-          email: customerData.email,
-          phone: (customerData.phonePrefix || '+34') + customerData.phone,
-          address: customerData.address,
-          city: customerData.city,
-          postalCode: customerData.postalCode,
-          country: customerData.country
-        })
-      })
-      const newCustomer = await res.json()
-      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
-      setShowWalkinModal(false)
-      setWalkinStatus(null)
-      setWalkinData(null)
-      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
-      loadData()
-    } catch (e) {
-      alert('Erreur lors de la création')
-    }
-  }
-
-  const cancelWalkin = () => {
-    setShowWalkinModal(false)
-    setWalkinStatus(null)
-    setWalkinData(null)
-    setWalkinSessionId(null)
-  }
-
-
-  const handleFleetClick = (fleet, mode = 'view') => {
-    setSelectedFleetForEdit(fleet)
-    setFleetModalMode(mode)
-    setShowFleetEdit(true)
-  }
-
-  const handleFleetDelete = () => {
-    setShowFleetEdit(false)
-    setSelectedFleetForEdit(null)
-    loadData()
-  }
-
-  // Show loading while checking auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #abdee6 0%, #ffaf10 100%)' }}>
-        <div className="animate-spin w-12 h-12 border-4 border-white border-t-transparent rounded-full"></div>
-      </div>
+    // Envoyer notification nouvelle réservation
+    sendNotificationByType(
+      'new_booking',
+      '🆕 Nouvelle réservation',
+      `${customer.firstName} ${customer.lastName} - ${new Date(req.body.startDate).toLocaleDateString('fr-FR')}`,
+      { bookingId: booking.id, reference: booking.reference }
     )
+    
+    res.json(finalBooking)
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create booking' }) }
+})
+
+app.put('/api/bookings/:id/status', async (req, res) => {
+  try { const booking = await prisma.booking.update({ where: { id: req.params.id }, data: { status: req.body.status } }); res.json(booking) }
+  catch (error) { res.status(500).json({ error: 'Failed to update booking status' }) }
+})
+// Cancel booking
+app.put("/api/bookings/:id/cancel", async (req, res) => {
+  try {
+    const booking = await prisma.booking.update({
+      where: { id: req.params.id },
+      data: { status: "CANCELLED" }
+    });
+    if (booking.fleetVehicleId) {
+      await prisma.fleet.update({ where: { id: booking.fleetVehicleId }, data: { status: "AVAILABLE" } });
+    }
+    res.json(booking);
+  } catch (error) {
+    console.error("Cancel booking error:", error);
+    res.status(500).json({ error: "Failed to cancel booking" });
   }
 
-  // Show login if not authenticated  
-  if (!user) {
-    return <Login onLogin={handleLogin} />
+})
+
+// Send invoice by email
+app.post('/api/bookings/:id/send-invoice', async (req, res) => {
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.id },
+      include: { agency: true, customer: true, items: { include: { vehicle: true } }, options: { include: { option: true } } }
+    })
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    const language = req.body.language || booking.language || 'es'
+    const brand = booking.agency?.brand || 'VOLTRIDE'
+    const brandName = brand === 'MOTOR-RENT' ? 'Motor-Rent' : 'Voltride'
+    const fromEmail = brand === 'VOLTRIDE' ? 'reservations@voltride.es' : 'reservations@motor-rent.es'
+    const translations: Record<string, any> = {
+      fr: { subject: 'Votre facture', title: 'Facture', ref: 'Référence', date: 'Date', agency: 'Agence', vehicle: 'Véhicule', qty: 'Qté', period: 'Période', unitPrice: 'Prix unit.', total: 'Total', subtotal: 'Sous-total', tax: 'TVA (21%)', totalTTC: 'Total TTC', deposit: 'Acompte payé', remaining: 'Reste à payer', paid: 'Payé', thanks: 'Merci pour votre confiance !' },
+      es: { subject: 'Su factura', title: 'Factura', ref: 'Referencia', date: 'Fecha', agency: 'Agencia', vehicle: 'Vehículo', qty: 'Cant.', period: 'Período', unitPrice: 'Precio unit.', total: 'Total', subtotal: 'Subtotal', tax: 'IVA (21%)', totalTTC: 'Total con IVA', deposit: 'Anticipo pagado', remaining: 'Pendiente de pago', paid: 'Pagado', thanks: '¡Gracias por su confianza!' },
+      en: { subject: 'Your invoice', title: 'Invoice', ref: 'Reference', date: 'Date', agency: 'Agency', vehicle: 'Vehicle', qty: 'Qty', period: 'Period', unitPrice: 'Unit price', total: 'Total', subtotal: 'Subtotal', tax: 'VAT (21%)', totalTTC: 'Total incl. VAT', deposit: 'Deposit paid', remaining: 'Remaining', paid: 'Paid', thanks: 'Thank you for your trust!' }
+    }
+    const t = translations[language] || translations.es
+    const formatD = (d: string | Date) => new Date(d).toLocaleDateString(language === 'en' ? 'en-GB' : language === 'es' ? 'es-ES' : 'fr-FR')
+    const totalTTC = booking.totalPrice
+    const taxRate = 21
+    const subtotal = Math.round(totalTTC / 1.21 * 100) / 100
+    const taxAmount = Math.round((totalTTC - subtotal) * 100) / 100
+    const paidAmount = booking.paidAmount || 0
+    const remainingAmt = Math.max(0, totalTTC - paidAmount)
+
+
+
+
+
+    const gn = (obj: any) => typeof obj === 'object' ? (obj[language] || obj.es || '') : (obj || '')
+    let itemRows = ''
+    for (const item of booking.items) {
+      itemRows += '<tr><td style="padding:8px;border-bottom:1px solid #eee">' + gn(item.vehicle?.name) + '</td>'
+        + '<td style="padding:8px;border-bottom:1px solid #eee;text-align:center">' + item.quantity + '</td>'
+        + '<td style="padding:8px;border-bottom:1px solid #eee;text-align:right">' + item.unitPrice.toFixed(2) + '&#8364;</td>'
+        + '<td style="padding:8px;border-bottom:1px solid #eee;text-align:right">' + item.totalPrice.toFixed(2) + '&#8364;</td></tr>'
+    }
+    for (const opt of booking.options) {
+      itemRows += '<tr><td style="padding:8px;border-bottom:1px solid #eee">' + gn(opt.option?.name) + '</td>'
+        + '<td style="padding:8px;border-bottom:1px solid #eee;text-align:center">' + opt.quantity + '</td>'
+        + '<td style="padding:8px;border-bottom:1px solid #eee;text-align:right">' + opt.unitPrice.toFixed(2) + '&#8364;</td>'
+        + '<td style="padding:8px;border-bottom:1px solid #eee;text-align:right">' + opt.totalPrice.toFixed(2) + '&#8364;</td></tr>'
+    }
+    const pc = brand === 'VOLTRIDE' ? '#ffaf10' : '#e53e3e'
+    let totals = '<div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>' + t.subtotal + '</span><span>' + subtotal.toFixed(2) + '&#8364;</span></div>'
+      + '<div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>' + t.tax + '</span><span>' + taxAmount.toFixed(2) + '&#8364;</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-weight:bold;font-size:16px;border-top:2px solid #ddd;padding-top:10px;margin-top:10px"><span>' + t.totalTTC + '</span><span>' + totalTTC.toFixed(2) + '&#8364;</span></div>'
+    if (paidAmount > 0) totals += '<div style="display:flex;justify-content:space-between;margin-top:10px;color:green"><span>' + t.deposit + '</span><span>-' + paidAmount.toFixed(2) + '&#8364;</span></div>'
+    if (remainingAmt > 0) totals += '<div style="display:flex;justify-content:space-between;font-weight:bold;color:#e53e3e"><span>' + t.remaining + '</span><span>' + remainingAmt.toFixed(2) + '&#8364;</span></div>'
+    else totals += '<div style="text-align:center;color:green;font-weight:bold;margin-top:5px">&#10003; ' + t.paid + '</div>'
+    const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head>'
+      + '<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;padding:20px">'
+      + '<div style="background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">'
+      + '<div style="background:' + pc + ';color:white;padding:20px;text-align:center">'
+      + '<h1 style="margin:0;font-size:24px">' + brandName + '</h1>'
+      + '<p style="margin:5px 0 0;opacity:0.9">' + t.title + ' - ' + booking.reference + '</p></div>'
+      + '<div style="padding:20px">'
+      + '<table style="width:100%;margin-bottom:20px;font-size:14px">'
+      + '<tr><td style="color:#666">' + t.ref + '</td><td style="font-weight:bold">' + booking.reference + '</td></tr>'
+      + '<tr><td style="color:#666">' + t.date + '</td><td>' + formatD(booking.createdAt) + '</td></tr>'
+      + '<tr><td style="color:#666">' + t.agency + '</td><td>' + gn(booking.agency?.name) + '</td></tr>'
+      + '<tr><td style="color:#666">' + t.period + '</td><td>' + formatD(booking.startDate) + ' ' + booking.startTime + ' - ' + formatD(booking.endDate) + ' ' + booking.endTime + '</td></tr></table>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:#f5f5f5">'
+      + '<th style="padding:8px;text-align:left">' + t.vehicle + '</th><th style="padding:8px;text-align:center">' + t.qty + '</th>'
+      + '<th style="padding:8px;text-align:right">' + t.unitPrice + '</th><th style="padding:8px;text-align:right">' + t.total + '</th></tr></thead>'
+      + '<tbody>' + itemRows + '</tbody></table>'
+      + '<div style="margin-top:20px;padding:15px;background:#f9f9f9;border-radius:8px;font-size:14px">' + totals + '</div>'
+      + '<p style="text-align:center;color:#666;margin-top:20px">' + t.thanks + '</p></div>'
+      + '<div style="text-align:center;padding:15px;color:#999;font-size:12px">' + brandName + '</div>'
+      + '</div></body></html>'
+    const result = await resend.emails.send({ from: brandName + ' <' + fromEmail + '>', to: booking.customer.email, subject: t.subject + ' - ' + booking.reference, html })
+    console.log('[INVOICE] Sent to', booking.customer.email, 'for', booking.reference)
+    res.json({ success: true, resendResponse: result })
+  } catch (error: any) {
+    console.error('[INVOICE] Error:', error)
+    res.status(500).json({ error: 'Failed to send invoice', details: error?.message })
   }
+})
 
-  return (
-    <div className="flex h-screen bg-gray-100 relative overflow-hidden">
-      {/* Sidebar */}
-      <div 
-  className={(mobileMenuOpen ? "translate-x-0" : "-translate-x-full") + ` md:translate-x-0 fixed md:relative z-40 ${sidebarExpanded ? 'w-56' : 'w-16'} flex flex-col shadow-xl relative transition-all duration-300`} 
-  style={{ background: 'linear-gradient(180deg, #abdee6 0%, #ffaf10 100%)' }}
-  onMouseEnter={() => setSidebarExpanded(true)}
-  onMouseLeave={() => setSidebarExpanded(false)}
->
-        <div className="p-4 border-b border-white/20">
-          <div className="flex justify-center mb-3">
-            <img src="https://res.cloudinary.com/dis5pcnfr/image/upload/v1766928342/d5uv1qrfwr86rd1abtd1.png" className={sidebarExpanded ? "h-12" : "h-8"} alt="Voltride" />
-          </div>
-        </div>
-        
-        <nav className="flex-1 p-2">
-          {[
-            { id: 'planning', label: t[lang].planning, icon: '📅' },
-            { id: 'bookings', label: t[lang].bookings, icon: '📋' },
-            { id: 'fleet', label: t[lang].fleet, icon: '🚲' },
-            { id: 'checkout', label: t[lang].checkout, icon: '✅' },
-            { id: 'customers', label: t[lang].customers, icon: '👥' },
-            { id: 'contracts', label: t[lang].contracts, icon: '📄' },
-            
-          ].filter(item => hasPermission(item.id)).map(item => (
-            <button key={item.id} onClick={() => { setTab(item.id); setMobileMenuOpen(false) }}
-              className={'w-full text-left px-3 py-2.5 rounded-xl mb-1 transition-all flex items-center gap-3 ' +
-                (tab === item.id ? 'bg-white/90 text-gray-800 font-semibold shadow-md' : 'text-white/90 hover:bg-white/20')}
-              title={item.label}>
-              <span className="text-lg">{item.icon}</span>
-              {sidebarExpanded && <span>{item.label}</span>}
-            </button>
-          ))}
-        </nav>
-        
-        {/* User info & Logout */}
-        <div className="p-2 border-t border-white/20">
-          <div className="bg-white/20 rounded-xl p-2">
-            {sidebarExpanded ? (
-              <>
-                <div className="text-white font-medium text-sm">{user?.firstName} {user?.lastName}</div>
-                <div className="text-white/70 text-xs">{user?.role}</div>
-                <div className="flex gap-1 mt-2">
-                  <button onClick={() => { setLang('fr'); localStorage.setItem('lang', 'fr') }}
-                    className={'flex-1 py-1 text-xs rounded transition ' + (lang === 'fr' ? 'bg-white text-gray-800 font-bold' : 'bg-white/30 text-white')}>
-                    🇫🇷 FR
-                  </button>
-                  <button onClick={() => { setLang('es'); localStorage.setItem('lang', 'es') }}
-                    className={'flex-1 py-1 text-xs rounded transition ' + (lang === 'es' ? 'bg-white text-gray-800 font-bold' : 'bg-white/30 text-white')}>
-                    🇪🇸 ES
-                  </button>
-                </div>
-                <button 
-                  type="button"
-                  onClick={() => { handleLogout(); }}
-                  className="mt-2 w-full py-2 bg-red-500/80 hover:bg-red-600 text-white text-sm rounded-lg transition font-medium"
-                >
-                  {t[lang].logout}
-                </button>
-              </>
-            ) : (
-              <button 
-                type="button"
-                onClick={() => { handleLogout(); }}
-                className="w-full py-2 bg-red-500/80 hover:bg-red-600 text-white text-lg rounded-lg transition"
-                title={t[lang].logout}
-              >
-                🚪
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+// Delete booking
+app.delete('/api/bookings/:id', async (req, res) => {
+  try {
+    // Supprimer d'abord les items et options liés
+    await prisma.bookingItem.deleteMany({ where: { bookingId: req.params.id } })
+    await prisma.bookingOption.deleteMany({ where: { bookingId: req.params.id } })
+    // Supprimer la réservation
+    await prisma.booking.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error) {
+    console.error('Delete booking error:', error)
+    res.status(500).json({ error: 'Failed to delete booking' })
+  }
+})
 
-      {/* Mobile overlay */}
-      {mobileMenuOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setMobileMenuOpen(false)} />}
-      {/* Main content */}
-      <div className="flex-1 overflow-auto bg-gradient-to-br from-gray-50 to-gray-100 w-full relative z-10">
-        <div className="bg-white/95 backdrop-blur shadow-sm px-4 md:px-6 py-4 flex items-center gap-4 border-b border-gray-100">
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 rounded-lg hover:bg-gray-100">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-          </button>
-          <select value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)} className="border rounded-lg px-3 py-2">
-            {/* COLLABORATOR/FRANCHISEE ne voient pas "Toutes les agences" */}
-            {!(user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE')) && (
-              <option value="">{t[lang].allAgencies}</option>
-            )}
-            {allAgencies
-              .filter((a: any) => a.brand === brand)
-              .filter((a: any) => {
-                if (user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE')) {
-                  return user.agencyIds?.includes(a.id)
-                }
-                return true
-              })
-              .map((a: any) => <option key={a.id} value={a.id}>{getName(a.name, lang)}{a.agencyType && a.agencyType !== 'OWN' ? (a.agencyType === 'PARTNER' ? ' (P)' : ' (F)') : ''}</option>)}
-          </select>
-          <div className="flex-1" />
+// ============== STRIPE CHECKOUT ==============
+app.post('/api/create-checkout-session', async (req, res) => {
+  try {
+    const { brand, bookingId, amount, customerEmail, successUrl, cancelUrl, locale } = req.body
+    const stripe = getStripeInstance(brand)
+    
+    // Mapper la langue pour Stripe (fr, es, en)
+    const stripeLocale = locale === 'es' ? 'es' : locale === 'en' ? 'en' : 'fr'
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer_email: customerEmail,
+      locale: stripeLocale,
+      line_items: [{
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: brand === 'MOTOR-RENT' 
+              ? (stripeLocale === 'es' ? 'Reserva Motor-Rent' : stripeLocale === 'en' ? 'Motor-Rent Booking' : 'Réservation Motor-Rent')
+              : (stripeLocale === 'es' ? 'Reserva Voltride' : stripeLocale === 'en' ? 'Voltride Booking' : 'Réservation Voltride'),
+            description: stripeLocale === 'es' ? `Anticipo reserva #${bookingId}` : stripeLocale === 'en' ? `Booking deposit #${bookingId}` : `Acompte réservation #${bookingId}`,
+          },
+          unit_amount: Math.round(amount * 100),
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
+        bookingId: bookingId,
+        brand: brand
+      }
+    })
+    
+    res.json({ sessionId: session.id, url: session.url })
+  } catch (error) {
+    console.error('Stripe error:', error)
+    res.status(500).json({ error: 'Failed to create checkout session' })
+  }
+})
+
+// ============== STRIPE WEBHOOK ==============
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const event = req.body
+    
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object
+      const bookingId = session.metadata?.bookingId
+      
+      if (bookingId) {
+        // 1. Mettre à jour le statut de la réservation
+        await prisma.booking.update({
+          where: { id: bookingId },
+          data: { status: 'CONFIRMED' }
+        })
+
+        // 2. Charger toutes les données du booking pour l'email
+        const booking = await prisma.booking.findUnique({
+          where: { id: bookingId },
+          include: {
+            customer: true,
+            agency: true,
+            items: { include: { vehicle: true } },
+            fleetVehicle: true
+          }
+        })
+
+        // 3. Envoyer l'email de confirmation
+        if (booking && booking.customer?.email) {
+          const vehicleItem = booking.items?.[0]
+          const brand = booking.agency?.brand || 'VOLTRIDE'
+          const language = (booking.language || 'es') as 'fr' | 'es' | 'en'
+          const rawVehicleName = vehicleItem?.vehicle?.name
+          const vehicleName = typeof rawVehicleName === 'object' && rawVehicleName !== null
+            ? ((rawVehicleName as any)[language] || (rawVehicleName as any).es || (rawVehicleName as any).fr || (rawVehicleName as any).en || 'Véhicule')
+            : (rawVehicleName || 'Véhicule')
+          const vehicleNumber = booking.fleetVehicle?.licensePlate || booking.fleetVehicle?.vehicleNumber || (typeof rawVehicleName === 'string' ? rawVehicleName : '') || ''
+          const isRegisteredVehicle = vehicleItem?.vehicle?.hasPlate ?? false
+          const t = emailTemplates[language] || emailTemplates.fr
+          const brandName = brand === 'VOLTRIDE' ? 'Voltride' : brand === 'MOTOR-RENT' ? 'Motor-Rent' : 'Trivium Buggy'
+          const brandColor = brand === 'VOLTRIDE' ? '#0e7490' : brand === 'MOTOR-RENT' ? '#ffaf10' : '#16a34a'
+          const logoUrl = brand === 'VOLTRIDE' 
+            ? 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1766883143/IMG-20251228-WA0001-removebg-preview_n0fsq5.png'
+            : brand === 'MOTOR-RENT'
+            ? 'https://res.cloudinary.com/dof8xnabp/image/upload/v1737372450/MOTOR_RENT_LOGO_copy_kxwqjk.png'
+            : 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1766883143/IMG-20251228-WA0001-removebg-preview_n0fsq5.png'
           
-          {/* Notification Bell */}
-          <div className="relative mr-4">
-            <button 
-              onClick={() => { setShowNotifPanel(!showNotifPanel); setShowMessagePanel(false) }}
-              className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
-            
-            {/* Notification Panel */}
-            {showNotifPanel && (
-              <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-2xl border z-50 max-h-96 overflow-hidden">
-                <div className="p-3 border-b flex justify-between items-center bg-gray-50">
-                  <span className="font-bold">🔔 Notifications</span>
-                  {unreadCount > 0 && (
-                    <button onClick={markAllAsRead} className="text-xs text-blue-600 hover:underline">
-                      Tout marquer lu
-                    </button>
-                  )}
-                </div>
-                <div className="max-h-72 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-6 text-center text-gray-400">
-                      Aucune notification
-                    </div>
-                  ) : (
-                    notifications.map(notif => (
-                      <div 
-                        key={notif.id} 
-                        className={`p-3 border-b hover:bg-gray-50 flex items-start gap-3 ${!notif.isRead ? 'bg-blue-50' : ''}`}
-                      >
-                        <div className="flex-1" onClick={() => !notif.isRead && markAsRead(notif.id)}>
-                          <p className={`text-sm ${!notif.isRead ? 'font-semibold' : ''}`}>{notif.title}</p>
-                          <p className="text-xs text-gray-500">{notif.body}</p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {new Date(notif.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                        <button 
-                          onClick={() => deleteNotification(notif.id)}
-                          className="text-gray-400 hover:text-red-500 p-1"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <span className="text-sm text-gray-500">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
-        </div>
+          const documents = isRegisteredVehicle ? t.documentsRegistered : t.documentsNonRegistered
+          const remainingAmount = booking.totalPrice - booking.paidAmount
 
-        <div className="p-6">
-          {loading && <div className="text-center py-10">⏳ {t[lang].loading}</div>}
+          const formatDate = (date: Date) => {
+            return date.toLocaleDateString(language === 'en' ? 'en-GB' : language === 'es' ? 'es-ES' : 'fr-FR')
+          }
 
-          {/* DASHBOARD */}
-          {!loading && tab === 'planning' && (
-            <div className="space-y-4">
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-wrap">
-                <h2 className="text-xl md:text-2xl font-bold">Planning</h2>
-                <div className="flex items-center gap-2 text-xs md:text-sm flex-wrap">
-                  <span className="w-4 h-4 rounded bg-blue-500"></span> {t[lang].confirmed}
-                  <span className="w-4 h-4 rounded bg-violet-500 ml-2"></span> {t[lang].confirmedAlt}
-                  <span className="w-4 h-4 rounded bg-green-600 ml-2"></span> {t[lang].checkedIn}
-                </div>
-                <div className="flex-1" />
-                <button onClick={() => setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n })} 
-                  className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">← {t[lang].previous}</button>
-                <button onClick={() => setWeekStart(() => { const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1); return d })} 
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">{t[lang].today}</button>
-                <button onClick={() => setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n })} 
-                  className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">{t[lang].next} →</button>
-              </div>
+          // Adresse de l'agence formatée
+          const rawAgencyName = booking.agency?.name
+          const agencyName = typeof rawAgencyName === 'object' && rawAgencyName !== null
+            ? ((rawAgencyName as any)[language] || (rawAgencyName as any).es || (rawAgencyName as any).fr || (rawAgencyName as any).en || '')
+            : (rawAgencyName || '')
+          const agencyAddress = booking.agency 
+            ? `${agencyName} - ${booking.agency.address}, ${booking.agency.postalCode} ${booking.agency.city}`
+            : ''
 
-              <div className="bg-white rounded-xl shadow overflow-hidden overflow-x-auto">
-                <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
-                  <table className="w-full border-collapse" >
-                    <thead className="sticky top-0 z-30 bg-gray-50">
-                      <tr className="bg-gray-50">
-                        <th className="sticky left-0 bg-gray-50 px-3 py-3 text-left font-medium w-44 z-20 border-r">{t[lang].vehicle}</th>
-                        {days.map((day, i) => {
-                          const dateStr = formatDate(day)
-                          const isToday = dateStr === today
-                          const isWeekend = day.getDay() === 0 || day.getDay() === 6
-                        
-  // Send walkin form to tablet
-  const sendWalkinToTablet = async () => {
-    const sessionId = 'walkin_' + Date.now()
-    setWalkinSessionId(sessionId)
-    setWalkinStatus('waiting')
-    
-    const agencyId = selectedAgency || agencies[0]?.id
-    if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
-      return
-    }
-    
-    try {
-      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          agencyId,
-          language: 'fr',
-          brand
-        })
-      })
-      pollWalkinSession(sessionId)
-    } catch (e) {
-      alert('Erreur lors de l\'envoi')
-      setWalkinStatus(null)
-    }
-  }
+          const agencyAddressLabel = language === 'es' ? 'Dirección de recogida' : language === 'en' ? 'Pick-up location' : 'Adresse de retrait'
 
-  const pollWalkinSession = (sessionId) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
-        const data = await res.json()
-        if (data && data.status === 'completed') {
-          setWalkinData(data)
-          setWalkinStatus('completed')
-          clearInterval(interval)
-        }
-      } catch (e) {}
-    }, 2000)
-    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
-  }
-
-  const createWalkinCustomer = async () => {
-    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
-    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Información client incomplètes')
-      return
-    }
-    
-    try {
-      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: customerData.firstName,
-          lastName: customerData.lastName,
-          email: customerData.email,
-          phone: (customerData.phonePrefix || '+34') + customerData.phone,
-          address: customerData.address,
-          city: customerData.city,
-          postalCode: customerData.postalCode,
-          country: customerData.country
-        })
-      })
-      const newCustomer = await res.json()
-      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
-      setShowWalkinModal(false)
-      setWalkinStatus(null)
-      setWalkinData(null)
-      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
-      loadData()
-    } catch (e) {
-      alert('Erreur lors de la création')
-    }
-  }
-
-  const cancelWalkin = () => {
-    setShowWalkinModal(false)
-    setWalkinStatus(null)
-    setWalkinData(null)
-    setWalkinSessionId(null)
-  }
-
-
-  const handleFleetClick = (fleet, mode = 'view') => {
-    setSelectedFleetForEdit(fleet)
-    setFleetModalMode(mode)
-    setShowFleetEdit(true)
-  }
-
-  const handleFleetDelete = () => {
-    setShowFleetEdit(false)
-    setSelectedFleetForEdit(null)
-    loadData()
-  }
-
-  return (
-                            <th key={i} className={'px-1 py-2 text-center w-24 ' + (isToday ? 'bg-yellow-100' : isWeekend ? 'bg-gray-100' : '')}>
-                              <div className="text-xs text-gray-500 uppercase">{day.toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
-                              <div className={'text-lg ' + (isToday ? 'font-bold text-yellow-600' : '')}>{day.getDate()}</div>
-<div className="text-xs text-gray-400">{day.toLocaleDateString('fr-FR', { month: 'short' })}</div>
-                              {isToday && <div className="text-xs text-yellow-600">{t[lang].today}</div>}
-                            </th>
-                          )
-                        })}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredFleet.map(f => {
-                        const vehicleBookings = getVehicleBookings(f.id)
-                      
-  // Send walkin form to tablet
-  const sendWalkinToTablet = async () => {
-    const sessionId = 'walkin_' + Date.now()
-    setWalkinSessionId(sessionId)
-    setWalkinStatus('waiting')
-    
-    const agencyId = selectedAgency || agencies[0]?.id
-    if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
-      return
-    }
-    
-    try {
-      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          agencyId,
-          language: 'fr',
-          brand
-        })
-      })
-      pollWalkinSession(sessionId)
-    } catch (e) {
-      alert('Erreur lors de l\'envoi')
-      setWalkinStatus(null)
-    }
-  }
-
-  const pollWalkinSession = (sessionId) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
-        const data = await res.json()
-        if (data && data.status === 'completed') {
-          setWalkinData(data)
-          setWalkinStatus('completed')
-          clearInterval(interval)
-        }
-      } catch (e) {}
-    }, 2000)
-    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
-  }
-
-  const createWalkinCustomer = async () => {
-    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
-    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Información client incomplètes')
-      return
-    }
-    
-    try {
-      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: customerData.firstName,
-          lastName: customerData.lastName,
-          email: customerData.email,
-          phone: (customerData.phonePrefix || '+34') + customerData.phone,
-          address: customerData.address,
-          city: customerData.city,
-          postalCode: customerData.postalCode,
-          country: customerData.country
-        })
-      })
-      const newCustomer = await res.json()
-      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
-      setShowWalkinModal(false)
-      setWalkinStatus(null)
-      setWalkinData(null)
-      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
-      loadData()
-    } catch (e) {
-      alert('Erreur lors de la création')
-    }
-  }
-
-  const cancelWalkin = () => {
-    setShowWalkinModal(false)
-    setWalkinStatus(null)
-    setWalkinData(null)
-    setWalkinSessionId(null)
-  }
-
-
-  const handleFleetClick = (fleet, mode = 'view') => {
-    setSelectedFleetForEdit(fleet)
-    setFleetModalMode(mode)
-    setShowFleetEdit(true)
-  }
-
-  const handleFleetDelete = () => {
-    setShowFleetEdit(false)
-    setSelectedFleetForEdit(null)
-    loadData()
-  }
-
-  return (
-                          <tr key={f.id} className="border-t hover:bg-gray-50/50">
-                            <td className="sticky left-0 bg-white px-3 py-2 z-10 border-r">
-                              <div className="flex items-center gap-2">
-                                <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                                  {f.vehicle?.imageUrl ? <img src={f.vehicle.imageUrl} className="w-full h-full object-cover" /> : '🚲'}
-                                </div>
-                                <div>
-                                  <div className="font-bold text-sm">{f.vehicleNumber}</div>
-                                  <div className="text-xs text-gray-500 truncate max-w-[100px]">{getName(f.vehicle?.name)}</div>
-                                </div>
-                              </div>
-                            </td>
-                            {days.map((day, dayIndex) => {
-                              const dateStr = formatDate(day)
-                              const isToday = dateStr === today
-                              const isWeekend = day.getDay() === 0 || day.getDay() === 6
-                              const isDropTarget = dropTarget?.fleetId === f.id && dropTarget?.date === dateStr
-
-                              // Find booking for this cell
-                              const cellBooking = vehicleBookings.find(b => {
-                                const start = b.startDate?.split('T')[0]
-                                const end = b.endDate?.split('T')[0]
-                                return dateStr >= start && dateStr <= end
-                              })
-
-                              if (cellBooking) {
-                                const start = cellBooking.startDate?.split('T')[0]
-                                const end = cellBooking.endDate?.split('T')[0]
-                                const isStart = dateStr === start
-                                const isEnd = dateStr === end
-                                const colorIdx = getBookingColorIndex(cellBooking, vehicleBookings)
-                                const bgColor = cellBooking.checkedIn ? 'bg-green-600' : (colorIdx === 0 ? 'bg-blue-500' : 'bg-violet-500')
-                                const isDragging = draggedBooking?.id === cellBooking.id
-
-                              
-  // Send walkin form to tablet
-  const sendWalkinToTablet = async () => {
-    const sessionId = 'walkin_' + Date.now()
-    setWalkinSessionId(sessionId)
-    setWalkinStatus('waiting')
-    
-    const agencyId = selectedAgency || agencies[0]?.id
-    if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
-      return
-    }
-    
-    try {
-      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          agencyId,
-          language: 'fr',
-          brand
-        })
-      })
-      pollWalkinSession(sessionId)
-    } catch (e) {
-      alert('Erreur lors de l\'envoi')
-      setWalkinStatus(null)
-    }
-  }
-
-  const pollWalkinSession = (sessionId) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
-        const data = await res.json()
-        if (data && data.status === 'completed') {
-          setWalkinData(data)
-          setWalkinStatus('completed')
-          clearInterval(interval)
-        }
-      } catch (e) {}
-    }, 2000)
-    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
-  }
-
-  const createWalkinCustomer = async () => {
-    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
-    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Información client incomplètes')
-      return
-    }
-    
-    try {
-      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: customerData.firstName,
-          lastName: customerData.lastName,
-          email: customerData.email,
-          phone: (customerData.phonePrefix || '+34') + customerData.phone,
-          address: customerData.address,
-          city: customerData.city,
-          postalCode: customerData.postalCode,
-          country: customerData.country
-        })
-      })
-      const newCustomer = await res.json()
-      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
-      setShowWalkinModal(false)
-      setWalkinStatus(null)
-      setWalkinData(null)
-      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
-      loadData()
-    } catch (e) {
-      alert('Erreur lors de la création')
-    }
-  }
-
-  const cancelWalkin = () => {
-    setShowWalkinModal(false)
-    setWalkinStatus(null)
-    setWalkinData(null)
-    setWalkinSessionId(null)
-  }
-
-
-  const handleFleetClick = (fleet, mode = 'view') => {
-    setSelectedFleetForEdit(fleet)
-    setFleetModalMode(mode)
-    setShowFleetEdit(true)
-  }
-
-  const handleFleetDelete = () => {
-    setShowFleetEdit(false)
-    setSelectedFleetForEdit(null)
-    loadData()
-  }
-
-  return (
-                                  <td key={dayIndex} className={'relative h-14 ' + (isToday ? 'bg-yellow-50' : isWeekend ? 'bg-gray-50' : '')}
-                                    onDragOver={(e) => handleDragOver(e, f.id, day)}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={(e) => handleDrop(e, f, day)}>
-                                    <div
-                                      draggable={!cellBooking.checkedIn}
-                                      onDragStart={(e) => handleDragStart(e, cellBooking, 'move')}
-                                      onDragEnd={handleDragEnd}
-                                      onClick={() => { setSelectedBookingDetail(cellBooking); setShowBookingDetail(true) }}
-                                      
-                                      onContextMenu={(e) => handleContextMenu(e, cellBooking)}
-                                      onTouchStart={(e) => handleTouchStart(e, cellBooking)}
-                                      onTouchEnd={handleTouchEnd}
-                                      onMouseEnter={() => setTooltip({ booking: cellBooking, x: 0, y: 0 })}
-                                      onMouseLeave={() => setTooltip(null)}
-                                      className={'absolute inset-y-1 text-white text-xs flex items-center cursor-grab active:cursor-grabbing transition-all ' + bgColor + (isDragging ? ' opacity-50 scale-95' : '')}
-                                      style={{
-                                        left: isStart ? '4px' : '0',
-                                        right: isEnd ? '4px' : '0',
-                                        borderTopLeftRadius: isStart ? '8px' : '0',
-                                        borderBottomLeftRadius: isStart ? '8px' : '0',
-                                        borderTopRightRadius: isEnd ? '8px' : '0',
-                                        borderBottomRightRadius: isEnd ? '8px' : '0',
-                                        zIndex: 5
-                                      }}>
-                                      {/* Resize handle start */}
-                                      {isStart && !cellBooking.checkedIn && (
-                                        <div draggable onDragStart={(e) => { e.stopPropagation(); handleDragStart(e, cellBooking, 'resize-start') }}
-                                          className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/30" />
-                                      )}
-                                      
-                                      <div className="flex-1 px-2 truncate">
-                                        {isStart && <span>{cellBooking.startTime} {cellBooking.customer?.lastName}</span>}
-                                      </div>
-                                      
-                                      {isEnd && <span className="pr-2 text-xs opacity-75">{cellBooking.endTime}</span>}
-                                      
-                                      {/* Resize handle end */}
-                                      {isEnd && !cellBooking.checkedOut && (
-                                        <div draggable onDragStart={(e) => { e.stopPropagation(); handleDragStart(e, cellBooking, 'resize-end') }}
-                                          className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/30" />
-                                      )}
-                                    </div>
-                                  </td>
-                                )
-                              }
-
-                              // Empty cell
-                            
-  // Send walkin form to tablet
-  const sendWalkinToTablet = async () => {
-    const sessionId = 'walkin_' + Date.now()
-    setWalkinSessionId(sessionId)
-    setWalkinStatus('waiting')
-    
-    const agencyId = selectedAgency || agencies[0]?.id
-    if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
-      return
-    }
-    
-    try {
-      await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          agencyId,
-          language: 'fr',
-          brand
-        })
-      })
-      pollWalkinSession(sessionId)
-    } catch (e) {
-      alert('Erreur lors de l\'envoi')
-      setWalkinStatus(null)
-    }
-  }
-
-  const pollWalkinSession = (sessionId) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/walkin-sessions/' + sessionId)
-        const data = await res.json()
-        if (data && data.status === 'completed') {
-          setWalkinData(data)
-          setWalkinStatus('completed')
-          clearInterval(interval)
-        }
-      } catch (e) {}
-    }, 2000)
-    setTimeout(() => clearInterval(interval), 600000) // 10 min timeout
-  }
-
-  const createWalkinCustomer = async () => {
-    const customerData = walkinMode === 'tablet' ? walkinData : walkinForm
-    if (!customerData?.firstName || !customerData?.lastName || !customerData?.email) {
-      alert('Información client incomplètes')
-      return
-    }
-    
-    try {
-      const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: customerData.firstName,
-          lastName: customerData.lastName,
-          email: customerData.email,
-          phone: (customerData.phonePrefix || '+34') + customerData.phone,
-          address: customerData.address,
-          city: customerData.city,
-          postalCode: customerData.postalCode,
-          country: customerData.country
-        })
-      })
-      const newCustomer = await res.json()
-      alert('Cliente créé: ' + newCustomer.firstName + ' ' + newCustomer.lastName)
-      setShowWalkinModal(false)
-      setWalkinStatus(null)
-      setWalkinData(null)
-      setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
-      loadData()
-    } catch (e) {
-      alert('Erreur lors de la création')
-    }
-  }
-
-  const cancelWalkin = () => {
-    setShowWalkinModal(false)
-    setWalkinStatus(null)
-    setWalkinData(null)
-    setWalkinSessionId(null)
-  }
-
-
-  const handleFleetClick = (fleet, mode = 'view') => {
-    setSelectedFleetForEdit(fleet)
-    setFleetModalMode(mode)
-    setShowFleetEdit(true)
-  }
-
-  const handleFleetDelete = () => {
-    setShowFleetEdit(false)
-    setSelectedFleetForEdit(null)
-    loadData()
-  }
-
-  return (
-                                <td key={dayIndex} 
-                                  className={'relative h-14 cursor-pointer transition-colors ' + 
-                                    (isToday ? 'bg-yellow-50 hover:bg-yellow-100' : isWeekend ? 'bg-gray-50 hover:bg-gray-100' : 'hover:bg-blue-50') +
-                                    (isDropTarget ? ' ring-2 ring-blue-500 ring-inset' : '')}
-                                  onClick={() => handleCellClick(f, day)}
-                                  onDragOver={(e) => handleDragOver(e, f.id, day)}
-                                  onDragLeave={handleDragLeave}
-                                  onDrop={(e) => handleDrop(e, f, day)}>
-                                  <div className="absolute inset-0 flex items-center justify-center text-gray-300 opacity-0 hover:opacity-100">
-                                    <span className="text-2xl">+</span>
-                                  </div>
-                                </td>
-                              )
-                            })}
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+          const html = `
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="UTF-8"></head>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+            <div style="background: ${brandColor}; color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+              <img src="${logoUrl}" alt="${brandName}" style="max-width: 200px; max-height: 80px; margin-bottom: 10px;" />
+              <p style="margin: 10px 0 0 0; font-size: 18px;">${t.subject}</p>
+            </div>
+            <div style="padding: 25px; border: 1px solid #ddd; border-top: none; background: white;">
+              <p style="font-size: 16px;">${t.greeting} ${booking.customer.firstName},</p>
+              <p>${t.confirmationText}</p>
+              
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${brandColor};">
+                <h3 style="margin-top: 0; color: ${brandColor};">🚲 ${t.vehicleLabel}</h3>
+                <p style="margin: 0; font-size: 16px;"><strong>${vehicleNumber}</strong>${vehicleNumber !== vehicleName ? ' - ' + vehicleName : ''}</p>
               </div>
               
-              <p className="text-sm text-gray-500">
-                {t[lang].dragTip}
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${brandColor};">
+                <h3 style="margin-top: 0; color: ${brandColor};">📅 ${t.periodLabel}</h3>
+                <p style="margin: 0;">${t.from} <strong>${formatDate(booking.startDate)}</strong> ${t.at} <strong>${booking.startTime || ''}</strong></p>
+                <p style="margin: 5px 0 0 0;">${t.to} <strong>${formatDate(booking.endDate)}</strong> ${t.at} <strong>${booking.endTime || ''}</strong></p>
+              </div>
+
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${brandColor};">
+                <h3 style="margin-top: 0; color: ${brandColor};">📍 ${agencyAddressLabel}</h3>
+                <p style="margin: 0;">${agencyAddress}</p>
+              </div>
+              
+              <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #0e7490;">💰 ${t.paymentTitle}</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr><td style="padding: 8px 0;">${t.totalLabel}</td><td style="text-align: right; padding: 8px 0;"><strong>${booking.totalPrice}€</strong></td></tr>
+                  <tr><td style="padding: 8px 0;">${t.paidLabel} (${t.card})</td><td style="text-align: right; padding: 8px 0; color: green;"><strong>${booking.paidAmount}€</strong></td></tr>
+                  ${remainingAmount > 0 ? '<tr><td style="padding: 8px 0;">' + t.remainingLabel + '</td><td style="text-align: right; padding: 8px 0; color: orange;"><strong>' + remainingAmount.toFixed(2) + '€</strong></td></tr>' : ''}
+                  <tr style="border-top: 2px solid #ccc;"><td style="padding: 12px 0; font-weight: bold;">${t.depositLabel}</td><td style="text-align: right; padding: 12px 0;"><strong>${booking.depositAmount || 100}€</strong></td></tr>
+                </table>
+              </div>
+              
+              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffc107;">
+                <h3 style="margin-top: 0; color: #856404;">📋 ${t.documentsTitle}</h3>
+                <ul style="margin: 0; padding-left: 20px; color: #856404;">
+                  ${documents.map((doc: string) => '<li style="margin-bottom: 8px;">' + doc + '</li>').join('')}
+                </ul>
+              </div>
+              
+              <p style="text-align: center; color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                ${t.footer}<br/>
+                <strong>${t.team} ${brandName}</strong>
               </p>
             </div>
-          )}
+            <div style="text-align: center; padding: 15px; color: #999; font-size: 12px;">
+              © ${new Date().getFullYear()} ${brandName} - Todos los derechos reservados
+            </div>
+          </body>
+          </html>
+          `
 
-          {/* BOOKINGS */}
-{!loading && tab === 'bookings' && (
-  <div className="space-y-4">
-    {/* Header avec titre et recherche */}
-    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-      <h2 className="text-2xl font-bold">{lang === "fr" ? "Réservations" : "Reservas"}</h2>
-      <input
-        type="text"
-        placeholder={lang === 'fr' ? "Rechercher (nom, email, tel, ref...)" : "Buscar (nombre, email, tel, ref...)"}
-        value={bookingSearch}
-        onChange={(e) => setBookingSearch(e.target.value)}
-        className="px-4 py-2 border rounded-lg w-full md:w-80 text-sm"
-      />
-    </div>
-    
-    {/* Filtres */}
-    <div className="flex flex-wrap gap-4 bg-white p-4 rounded-xl shadow">
-      {/* Filtre par statut */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600 font-medium">{lang === 'fr' ? 'Statut:' : 'Estado:'}</span>
-        <div className="flex gap-1">
-          {[
-            { id: "ALL", label: lang === "fr" ? "Tous" : "Todos", color: "bg-gray-100 text-gray-700" },
-            { id: "CONFIRMED", label: lang === "fr" ? "Confirmé" : "Confirmado", color: "bg-blue-100 text-blue-700" },
-            { id: "CHECKED_IN", label: "Check-in", color: "bg-purple-100 text-purple-700" },
-            { id: "COMPLETED", label: lang === "fr" ? "Terminé" : "Completado", color: "bg-green-100 text-green-700" },
-            { id: "CANCELLED", label: lang === "fr" ? "Annulé" : "Cancelado", color: "bg-red-100 text-red-700" },
-          ].map(s => (
-            <button key={s.id} onClick={() => setBookingStatusFilter(s.id)}
-              className={'px-3 py-1 rounded-lg text-xs font-medium transition ' + 
-                (bookingStatusFilter === s.id ? s.color + ' ring-2 ring-offset-1 ring-gray-400' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      
-      
-      {/* Filtre par source */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600 font-medium">Source:</span>
-        <div className="flex gap-1">
-          {[
-            { id: 'ALL', label: lang === 'fr' ? 'Toutes' : 'Todas' },
-            { id: 'WIDGET', label: 'Widget' },
-            { id: 'WALK_IN', label: 'Walk-in' },
-          ].map(s => (
-            <button key={s.id} onClick={() => setBookingSourceFilter(s.id)}
-              className={'px-3 py-1 rounded-lg text-xs font-medium transition ' + 
-                (bookingSourceFilter === s.id ? 'bg-purple-100 text-purple-700 ring-2 ring-offset-1 ring-purple-400' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      
-      {/* Compteur */}
-      <div className="ml-auto text-sm text-gray-500">
-        {bookings.filter(b => {
-          if (bookingSearch) {
-            const search = bookingSearch.toLowerCase()
-            const matchesSearch = (
-              b.reference?.toLowerCase().includes(search) ||
-              b.customer?.firstName?.toLowerCase().includes(search) ||
-              b.customer?.lastName?.toLowerCase().includes(search) ||
-              b.customer?.email?.toLowerCase().includes(search) ||
-              b.customer?.phone?.toLowerCase().includes(search)
-            )
-            if (!matchesSearch) return false
-          }
-          if (bookingStatusFilter !== 'ALL' && b.status !== bookingStatusFilter) return false
-          if (bookingAssignFilter === 'ASSIGNED' && !b.fleetVehicleId) return false
-          if (bookingAssignFilter === 'UNASSIGNED' && b.fleetVehicleId) return false
-          if (bookingSourceFilter !== 'ALL' && b.source !== bookingSourceFilter) return false
-          return true
-        }).length} {lang === 'fr' ? 'réservation(s)' : 'reserva(s)'}
-      </div>
-    </div>
-    
-    {/* Tableau */}
-    <div className="bg-white rounded-xl shadow overflow-hidden overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-3 text-left text-sm font-medium">Référence</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">Cliente</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">Dates</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">{t[lang].vehicle}</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">{lang === 'fr' ? 'Vehículo assigné' : 'Vehículo asignado'}</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">{t[lang].status}</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">Source</th>
-            <th className="px-4 py-3 text-left text-sm font-medium">{t[lang].actions}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bookings.filter(b => {
-            if (bookingSearch) {
-              const search = bookingSearch.toLowerCase()
-              const matchesSearch = (
-                b.reference?.toLowerCase().includes(search) ||
-                b.customer?.firstName?.toLowerCase().includes(search) ||
-                b.customer?.lastName?.toLowerCase().includes(search) ||
-                b.customer?.email?.toLowerCase().includes(search) ||
-                b.customer?.phone?.toLowerCase().includes(search)
-              )
-              if (!matchesSearch) return false
-            }
-            if (bookingStatusFilter !== 'ALL' && b.status !== bookingStatusFilter) return false
-            if (bookingAssignFilter === 'ASSIGNED' && !b.fleetVehicleId) return false
-            if (bookingAssignFilter === 'UNASSIGNED' && b.fleetVehicleId) return false
-            if (bookingSourceFilter !== 'ALL' && b.source !== bookingSourceFilter) return false
-            return true
-          }).length === 0 ? (
-            <tr>
-              <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                {lang === 'fr' ? 'Aucune réservation trouvée' : 'No se encontraron reservas'}
-              </td>
-            </tr>
-          ) : (
-            bookings.filter(b => {
-              if (bookingSearch) {
-                const search = bookingSearch.toLowerCase()
-                const matchesSearch = (
-                  b.reference?.toLowerCase().includes(search) ||
-                  b.customer?.firstName?.toLowerCase().includes(search) ||
-                  b.customer?.lastName?.toLowerCase().includes(search) ||
-                  b.customer?.email?.toLowerCase().includes(search) ||
-                  b.customer?.phone?.toLowerCase().includes(search)
-                )
-                if (!matchesSearch) return false
-              }
-              if (bookingStatusFilter !== 'ALL' && b.status !== bookingStatusFilter) return false
-              if (bookingAssignFilter === 'ASSIGNED' && !b.fleetVehicleId) return false
-              if (bookingAssignFilter === 'UNASSIGNED' && b.fleetVehicleId) return false
-              if (bookingSourceFilter !== 'ALL' && b.source !== bookingSourceFilter) return false
-              return true
-            }).map(b => {
-              const assignedVehicle = fleet.find(f => f.id === b.fleetVehicleId)
-              return (
-                <tr key={b.id} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-sm font-medium">{b.reference}</td>
-                  <td className="px-4 py-3">
-                    <div>{b.customer?.firstName} {b.customer?.lastName}</div>
-                    <div className="text-xs text-gray-500">{b.customer?.phone}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <div>{new Date(b.startDate).toLocaleDateString('fr-FR')} {b.startTime}</div>
-                    <div className="text-gray-500">→ {new Date(b.endDate).toLocaleDateString('fr-FR')} {b.endTime}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm">{getName(b.items?.[0]?.vehicle?.name)}</td>
-                  <td className="px-4 py-3">
-                    {assignedVehicle ? (
-                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
-                        {assignedVehicle.vehicleNumber}
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs">
-                        {lang === 'fr' ? 'Non assigné' : 'Sin asignar'}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={'px-2 py-1 rounded text-xs font-medium ' + 
-                      (b.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 
-                       b.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 
-                       b.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700')}>
-                      {b.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={'px-2 py-1 rounded text-xs ' + 
-                      (b.source === 'WIDGET' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700')}>
-                      {b.source || 'WIDGET'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      {!b.fleetVehicleId && (
-                        <button onClick={(e) => { e.stopPropagation(); openAssignModal(b) }} 
-                          className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
-                          {lang === 'fr' ? 'Assigner' : 'Asignar'}
-                        </button>
-                      )}
-                      {b.fleetVehicleId && b.status === 'CONFIRMED' && !b.checkedIn && (
-                        <button onClick={() => { 
-                          const today = new Date().toISOString().split('T')[0];
-                          const startDate = new Date(b.startDate).toISOString().split('T')[0];
-                          if (startDate !== today) {
-                            alert('⚠️ Le check-in ne peut être effectué que le jour du départ de la location.');
-                            return;
-                          }
-                          setCheckInBooking(b); setShowCheckIn(true) 
-                        }} 
-                          className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600">
-                          Check-in
-                        </button>
-                      )}
-                      <button onClick={(e) => { e.stopPropagation(); deleteBooking(b.id) }} 
-                        className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">
-                        ✕
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )
+          const fromEmail = brand === 'VOLTRIDE' ? 'reservations@voltride.es' : brand === 'MOTOR-RENT' ? 'reservations@motor-rent.es' : 'reservations@voltride.es'
+
+          try {
+            const result = await resend.emails.send({
+              from: brandName + ' <' + fromEmail + '>',
+              to: booking.customer.email,
+              subject: t.subject + ' - ' + booking.reference,
+              html
             })
-          )}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
+            console.log('[WEBHOOK EMAIL] Confirmation sent to', booking.customer.email, 'for booking', booking.reference, 'Result:', JSON.stringify(result))
+          } catch (emailError) {
+            console.error('[WEBHOOK EMAIL] Failed to send confirmation:', emailError)
+            // On ne bloque pas le webhook si l'email échoue
+          }
+        }
+      }
+    }
+    
+    res.json({ received: true })
+  } catch (error) {
+    console.error('Webhook error:', error)
+    res.status(400).json({ error: 'Webhook error' })
+  }
+})
 
-          {/* FLEET */}
-          {!loading && tab === 'fleet' && (
-            <div className="space-y-4">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-4">
-                <h2 className="text-2xl font-bold">Flotte</h2>
-                <div className="w-full md:flex-1 md:mx-4 md:max-w-md">
-                  <input type="text" value={fleetSearch} onChange={(e) => setFleetSearch(e.target.value)} 
-                    placeholder={lang === 'fr' ? 'Rechercher (n°, modèle, plaque...)' : 'Buscar (n°, modelo, matrícula...)'} 
-                    className="w-full border rounded-lg px-3 py-2" />
-                </div>
-                {user?.role !== 'COLLABORATOR' && (
-                  <button onClick={() => setShowNewFleet(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                    + Nouveau véhicule
-                  </button>
-                )}
-              </div>
-              
-              <div className="flex flex-wrap gap-2 mb-4">
-                {[
-                  { id: 'ALL', label: 'Tous', color: 'bg-gray-100 text-gray-700' },
-                  { id: 'AVAILABLE', label: 'Disponibles', color: 'bg-green-100 text-green-700' },
-                  { id: 'RENTED', label: 'En location', color: 'bg-blue-100 text-blue-700' },
-                  { id: 'MAINTENANCE', label: 'Maintenance', color: 'bg-orange-100 text-orange-700' },
-                  { id: 'OUT_OF_SERVICE', label: 'Hors service', color: 'bg-red-100 text-red-700' }
-                ].map(s => (
-                  <button key={s.id} onClick={() => setFleetStatusFilter(s.id)}
-                    className={'px-3 py-1.5 rounded-lg text-sm font-medium transition ' + 
-                      (fleetStatusFilter === s.id ? s.color + ' ring-2 ring-offset-1 ring-gray-400' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')}>
-                    {s.label}
-                    <span className="ml-1 text-xs opacity-70">
-                      ({s.id === 'ALL' ? filteredFleet.length : filteredFleet.filter(f => f.status === s.id).length})
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredFleet.filter(f => {
-                  if (fleetStatusFilter !== 'ALL' && f.status !== fleetStatusFilter) return false;
-                  if (fleetSearch) {
-                    const search = fleetSearch.toLowerCase();
-                    const matchNumber = (f.vehicleNumber || '').toLowerCase().includes(search);
-                    const matchPlate = (f.licensePlate || '').toLowerCase().includes(search);
-                    const matchModel = (f.vehicle?.name?.fr || f.vehicle?.name?.es || '').toLowerCase().includes(search);
-                    const matchBrand = (f.brand || '').toLowerCase().includes(search);
-                    if (!matchNumber && !matchPlate && !matchModel && !matchBrand) return false;
-                  }
-                  return true;
-                }).map(f => (
-                  <div key={f.id} className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition cursor-pointer"
-                    onClick={() => handleFleetClick(f, 'view')}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                        {f.vehicle?.imageUrl ? <img src={f.vehicle.imageUrl} className="w-full h-full object-cover" /> : <span className="text-2xl">🚲</span>}
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-bold">{f.vehicleNumber}</div>
-                        <div className="text-sm text-gray-600">{getName(f.vehicle?.name)}</div>
-                        <div className="text-xs text-gray-500">{getName(f.vehicle?.category?.name)}</div>
-                        <div className={'text-xs px-2 py-0.5 rounded inline-block mt-1 ' + 
-                          (f.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' : 
-                           f.status === 'RENTED' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700')}>
-                          {f.status === 'AVAILABLE' ? 'Disponible' : f.status === 'RENTED' ? 'En location' : 'Maintenance'}
-                        </div>
-                      </div>
-                      <button onClick={(e) => { e.stopPropagation(); handleFleetClick(f, 'edit') }} 
-                        className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
-                        Éditer
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+const PORT = parseInt(process.env.PORT || '8080', 10)
 
+// ============== TABLET SESSIONS ==============
+
+// Get pending session for agency (tablet polls this)
+app.get('/api/tablet-sessions/agency/:agencyId', async (req, res) => {
+  try {
+    const session = await prisma.tabletSession.findFirst({
+      where: {
+        agencyId: req.params.agencyId,
+        status: 'pending'
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Get session by ID
+app.get('/api/tablet-sessions/:sessionId', async (req, res) => {
+  try {
+    const session = await prisma.tabletSession.findUnique({
+      where: { sessionId: req.params.sessionId }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Create new session (from operator app)
+app.post('/api/tablet-sessions', async (req, res) => {
+  try {
+    const session = await prisma.tabletSession.create({
+      data: {
+        sessionId: req.body.sessionId,
+        bookingId: req.body.bookingId,
+        agencyId: req.body.agencyId,
+        type: req.body.type || 'checkin',
+        language: req.body.language || 'fr',
+        customerName: req.body.customerName,
+        cgvText: req.body.cgvText,
+        rgpdText: req.body.rgpdText,
+        status: 'pending',
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000) // 30 min expiry
+      }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Update session (signature from tablet)
+app.put('/api/tablet-sessions/:sessionId', async (req, res) => {
+  try {
+    const session = await prisma.tabletSession.update({
+      where: { sessionId: req.params.sessionId },
+      data: {
+        signature: req.body.signature,
+        termsAccepted: req.body.termsAccepted,
+        rgpdAccepted: req.body.rgpdAccepted,
+        status: req.body.status || 'signed',
+        signedAt: req.body.status === 'signed' ? new Date() : undefined
+      }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Delete/cancel session
+app.delete('/api/tablet-sessions/:sessionId', async (req, res) => {
+  try {
+    await prisma.tabletSession.delete({
+      where: { sessionId: req.params.sessionId }
+    })
+    res.json({ success: true })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+
+
+// ============== WALKIN SESSIONS ==============
+
+// Get pending walkin for agency (tablet polls this)
+app.get('/api/walkin-sessions/agency/:agencyId', async (req, res) => {
+  try {
+    const session = await prisma.walkinSession.findFirst({
+      where: {
+        agencyId: req.params.agencyId,
+        status: 'pending'
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Get pending walkin for multiple agencies (tablet polls this)
+app.get('/api/walkin-sessions/agencies', async (req, res) => {
+  try {
+    const agencyIds = (req.query.ids as string)?.split(',') || []
+    const session = await prisma.walkinSession.findFirst({
+      where: {
+        agencyId: { in: agencyIds },
+        status: 'pending'
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Get walkin by sessionId
+app.get('/api/walkin-sessions/:sessionId', async (req, res) => {
+  try {
+    const session = await prisma.walkinSession.findUnique({
+      where: { sessionId: req.params.sessionId }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Create walkin session (from operator app)
+app.post('/api/walkin-sessions', async (req, res) => {
+  try {
+    const session = await prisma.walkinSession.create({
+      data: {
+        sessionId: req.body.sessionId,
+        agencyId: req.body.agencyId,
+        language: req.body.language || 'fr',
+        brand: req.body.brand,
+        status: 'pending',
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000)
+      }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Update walkin session (customer data from tablet)
+app.put('/api/walkin-sessions/:sessionId', async (req, res) => {
+  try {
+    const session = await prisma.walkinSession.update({
+      where: { sessionId: req.params.sessionId },
+      data: {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        phone: req.body.phone,
+        phonePrefix: req.body.phonePrefix,
+        address: req.body.address,
+        city: req.body.city,
+        postalCode: req.body.postalCode,
+        country: req.body.country,
+        status: req.body.status || 'completed',
+        completedAt: req.body.status === 'completed' ? new Date() : undefined
+      }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Delete walkin session
+app.delete('/api/walkin-sessions/:sessionId', async (req, res) => {
+  try {
+    await prisma.walkinSession.delete({
+      where: { sessionId: req.params.sessionId }
+    })
+    res.json({ success: true })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Update tablet-sessions to support multiple agencies
+app.get('/api/tablet-sessions/agencies', async (req, res) => {
+  try {
+    const agencyIds = (req.query.ids as string)?.split(',') || []
+    const session = await prisma.tabletSession.findFirst({
+      where: {
+        agencyId: { in: agencyIds },
+        status: 'pending'
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(session)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+
+
+// ============== FLEET EQUIPMENT ==============
+
+app.get('/api/fleet/:fleetId/equipment', async (req, res) => {
+  try {
+    const equipment = await prisma.fleetEquipment.findMany({
+      where: { fleetId: req.params.fleetId, isActive: true },
+      orderBy: { name: 'asc' }
+    })
+    res.json(equipment)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/fleet/:fleetId/equipment', async (req, res) => {
+  try {
+    const equipment = await prisma.fleetEquipment.create({
+      data: {
+        fleetId: req.params.fleetId,
+        name: req.body.name,
+        description: req.body.description,
+        quantity: req.body.quantity || 1,
+        price: req.body.price || 0,
+        condition: req.body.condition || 'GOOD',
+        isIncluded: req.body.isIncluded ?? true
+      }
+    })
+    res.json(equipment)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.put('/api/fleet/equipment/:id', async (req, res) => {
+  try {
+    const equipment = await prisma.fleetEquipment.update({
+      where: { id: req.params.id },
+      data: req.body
+    })
+    res.json(equipment)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.delete('/api/fleet/equipment/:id', async (req, res) => {
+  try {
+    await prisma.fleetEquipment.update({
+      where: { id: req.params.id },
+      data: { isActive: false }
+    })
+    res.json({ success: true })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// ============== FLEET CONTRACT FIELDS ==============
+
+app.get('/api/fleet/:fleetId/contract-fields', async (req, res) => {
+  try {
+    const fields = await prisma.fleetContractField.findMany({
+      where: { fleetId: req.params.fleetId },
+      orderBy: { displayOrder: 'asc' }
+    })
+    res.json(fields)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/fleet/:fleetId/contract-fields', async (req, res) => {
+  try {
+    const field = await prisma.fleetContractField.upsert({
+      where: { 
+        fleetId_fieldName: { 
+          fleetId: req.params.fleetId, 
+          fieldName: req.body.fieldName 
+        } 
+      },
+      update: {
+        displayOrder: req.body.displayOrder,
+        showInContract: req.body.showInContract
+      },
+      create: {
+        fleetId: req.params.fleetId,
+        fieldName: req.body.fieldName,
+        displayOrder: req.body.displayOrder || 0,
+        showInContract: req.body.showInContract ?? true
+      }
+    })
+    res.json(field)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.put('/api/fleet/:fleetId/contract-fields/batch', async (req, res) => {
+  try {
+    const fields = req.body.fields || []
+    for (const field of fields) {
+      await prisma.fleetContractField.upsert({
+        where: { 
+          fleetId_fieldName: { 
+            fleetId: req.params.fleetId, 
+            fieldName: field.fieldName 
+          } 
+        },
+        update: {
+          displayOrder: field.displayOrder,
+          showInContract: field.showInContract
+        },
+        create: {
+          fleetId: req.params.fleetId,
+          fieldName: field.fieldName,
+          displayOrder: field.displayOrder || 0,
+          showInContract: field.showInContract ?? true
+        }
+      })
+    }
+    res.json({ success: true })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// ============== FLEET DOCUMENTS ==============
+
+app.get('/api/fleet/:fleetId/documents', async (req, res) => {
+  try {
+    const documents = await prisma.fleetDocument.findMany({
+      where: { fleetId: req.params.fleetId },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(documents)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/fleet/:fleetId/documents', async (req, res) => {
+  try {
+    const document = await prisma.fleetDocument.create({
+      data: {
+        fleetId: req.params.fleetId,
+        type: req.body.type,
+        name: req.body.name,
+        fileUrl: req.body.fileUrl,
+        fileType: req.body.fileType || 'image',
+        issueDate: req.body.issueDate ? new Date(req.body.issueDate) : null,
+        expiryDate: req.body.expiryDate ? new Date(req.body.expiryDate) : null,
+        sendToCustomer: req.body.sendToCustomer || false,
+        description: req.body.description
+      }
+    })
+    res.json(document)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.put('/api/fleet/documents/:id', async (req, res) => {
+  try {
+    const document = await prisma.fleetDocument.update({
+      where: { id: req.params.id },
+      data: req.body
+    })
+    res.json(document)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.delete('/api/fleet/documents/:id', async (req, res) => {
+  try {
+    await prisma.fleetDocument.delete({
+      where: { id: req.params.id }
+    })
+    res.json({ success: true })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// ============== FLEET SPARE PARTS ==============
+
+app.get('/api/fleet/:fleetId/spare-parts', async (req, res) => {
+  try {
+    const parts = await prisma.fleetSparePart.findMany({
+      where: { fleetId: req.params.fleetId, isActive: true },
+      orderBy: { name: 'asc' }
+    })
+    res.json(parts)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/fleet/:fleetId/spare-parts', async (req, res) => {
+  try {
+    const part = await prisma.fleetSparePart.create({
+      data: {
+        fleetId: req.params.fleetId,
+        name: req.body.name,
+        partNumber: req.body.partNumber,
+        category: req.body.category || 'OTHER',
+        location: req.body.location || 'OTHER',
+        price: req.body.price || 0,
+        laborCost: req.body.laborCost || 0,
+        totalCost: (parseFloat(req.body.price) || 0) + (parseFloat(req.body.laborCost) || 0),
+        supplierName: req.body.supplierName,
+        supplierRef: req.body.supplierRef
+      }
+    })
+    res.json(part)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.put('/api/fleet/spare-parts/:id', async (req, res) => {
+  try {
+    const data = { ...req.body }
+    if (data.price !== undefined || data.laborCost !== undefined) {
+      const current = await prisma.fleetSparePart.findUnique({ where: { id: req.params.id } })
+      data.totalCost = (parseFloat(data.price?.toString() || '0') || parseFloat(current?.price?.toString() || '0') || 0) + 
+                       (parseFloat(data.laborCost?.toString() || '0') || parseFloat(current?.laborCost?.toString() || '0') || 0)
+    }
+    const part = await prisma.fleetSparePart.update({
+      where: { id: req.params.id },
+      data
+    })
+    res.json(part)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.delete('/api/fleet/spare-parts/:id', async (req, res) => {
+  try {
+    await prisma.fleetSparePart.update({
+      where: { id: req.params.id },
+      data: { isActive: false }
+    })
+    res.json({ success: true })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// ============== FLEET MAINTENANCE ==============
+
+app.get('/api/fleet/:fleetId/maintenance', async (req, res) => {
+  try {
+    const records = await prisma.maintenanceRecord.findMany({
+      where: { fleetId: req.params.fleetId },
+      orderBy: { scheduledDate: 'desc' }
+    })
+    res.json(records)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/fleet/:fleetId/maintenance', async (req, res) => {
+  try {
+    const record = await prisma.maintenanceRecord.create({
+      data: {
+        fleetId: req.params.fleetId,
+        type: req.body.type || 'OTHER',
+        status: req.body.status || 'COMPLETED',
+        scheduledDate: req.body.scheduledDate ? new Date(req.body.scheduledDate) : new Date(),
+        completedAt: req.body.completedDate ? new Date(req.body.completedDate) : null,
+        description: req.body.description,
+        mileage: req.body.mileageAtService || 0,
+        totalCost: req.body.cost || 0,
+        laborCost: req.body.laborCost || 0,
+        partsCost: req.body.partsCost || 0,
+        performedBy: req.body.providerName,
+        invoiceNumber: req.body.invoiceNumber,
+        notes: req.body.notes,
+      }
+    })
+    res.json(record)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.delete('/api/fleet/maintenance/:id', async (req, res) => {
+  try {
+    await prisma.maintenanceRecord.delete({
+      where: { id: req.params.id }
+    })
+    res.json({ success: true })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Update fleet with new fields
+app.put('/api/fleet/:id', async (req, res) => {
+  try {
+    // Trouver l'agence par son code pour mettre a jour agencyId
+    let agencyId = undefined
+    if (req.body.locationCode) {
+      const agency = await prisma.agency.findFirst({ where: { code: req.body.locationCode } })
+      if (agency) agencyId = agency.id
+    }
+    const fleet = await prisma.fleet.update({
+      where: { id: req.params.id },
+      data: {
+        vehicleNumber: req.body.vehicleNumber,
+        licensePlate: req.body.licensePlate,
+        locationCode: req.body.locationCode,
+        agencyId: agencyId,
+        chassisNumber: req.body.chassisNumber,
+        brand: req.body.brand,
+        model: req.body.model,
+        engineSize: req.body.engineSize,
+        year: req.body.year,
+        color: req.body.color,
+        status: req.body.status,
+        currentMileage: req.body.currentMileage,
+        itvDate: req.body.itvDate ? new Date(req.body.itvDate) : undefined,
+        itvExpiryDate: req.body.itvExpiryDate ? new Date(req.body.itvExpiryDate) : undefined,
+        insuranceExpiryDate: req.body.insuranceExpiryDate ? new Date(req.body.insuranceExpiryDate) : undefined,
+        insuranceCompany: req.body.insuranceCompany,
+        insurancePolicyNumber: req.body.insurancePolicyNumber,
+        maintenanceIntervalKm: req.body.maintenanceIntervalKm,
+        maintenanceIntervalDays: req.body.maintenanceIntervalDays,
+        notes: req.body.notes,
+        vehicleId: req.body.vehicleId,
+      },
+      include: {
+        vehicle: true,
+        agency: true,
+        documents: true,
+        equipment: { where: { isActive: true } },
+        spareParts: { where: { isActive: true } }
+      }
+    })
+    res.json(fleet)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+
+
+// Create new fleet vehicle
+app.post('/api/fleet', async (req, res) => {
+  try {
+    const fleet = await prisma.fleet.create({
+      data: {
+        vehicleNumber: req.body.vehicleNumber,
+        licensePlate: req.body.licensePlate || null,
+        locationCode: req.body.locationCode || null,
+        chassisNumber: req.body.chassisNumber,
+        brand: req.body.brand || null,
+        model: req.body.model || null,
+        engineSize: req.body.engineSize || null,
+        year: req.body.year || null,
+        color: req.body.color || null,
+        currentMileage: req.body.currentMileage || 0,
+        vehicleId: req.body.vehicleId,
+        agencyId: req.body.agencyId,
+        status: 'AVAILABLE'
+      },
+      include: {
+        vehicle: { include: { category: true } },
+        agency: true
+      }
+    })
+    res.json(fleet)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Delete fleet vehicle
+app.delete('/api/fleet/:id', async (req, res) => {
+  try {
+    await prisma.fleet.delete({
+      where: { id: req.params.id }
+    })
+    res.json({ success: true })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Get single fleet with all relations
+app.get('/api/fleet/:id', async (req, res) => {
+  try {
+    const fleet = await prisma.fleet.findUnique({
+      where: { id: req.params.id },
+      include: {
+        vehicle: { include: { category: true } },
+        agency: true,
+        documents: true,
+        equipment: { where: { isActive: true } },
+        spareParts: { where: { isActive: true } },
+        contractFields: { orderBy: { displayOrder: 'asc' } },
+        maintenanceRecords: { orderBy: { scheduledDate: 'desc' }, take: 10 }
+      }
+    })
+    res.json(fleet)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+
+
+// ============== BOOKING CHECK-OUT (Départ client) ==============
+app.post('/api/bookings/:id/check-out', async (req, res) => {
+  console.log('=== CHECK-OUT START ===')
+  console.log('Booking ID:', req.params.id)
+  console.log('Body keys:', Object.keys(req.body))
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.id },
+      include: { customer: true, agency: true, items: { include: { vehicle: true } } }
+    })
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    
+    const agency = booking.agency
+    const contractNumber = await generateContractNumber(agency.code)
+    
+    // Récupérer le véhicule de flotte
+    const fleetVehicle = await prisma.fleet.findUnique({
+      where: { id: req.body.fleetVehicleId },
+      include: { vehicle: true }
+    })
+    if (!fleetVehicle) return res.status(400).json({ error: 'Fleet vehicle not found' })
+    
+    // Calculer les jours
+    const startDate = new Date(booking.startDate)
+    const endDate = new Date(booking.endDate)
+    const totalDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+    
+    // Commission si agence partenaire/franchise
+    let commissionRate = null
+    let commissionAmount = null
+    let commissionType = null
+    if (agency.agencyType === 'PARTNER' || agency.agencyType === 'FRANCHISE') {
+      commissionRate = agency.commissionRate || 0
+      commissionAmount = Math.round(booking.totalPrice * commissionRate * 100) / 100
+      commissionType = agency.agencyType === 'PARTNER' ? 'REVERSAL' as const : 'DEDUCTION' as const
+    }
+    
+    // Vérifier si un contrat existe déjà pour cette réservation
+    const existingContract = await prisma.rentalContract.findFirst({
+      where: { bookingId: booking.id }
+    })
+    
+    console.log('Existing contract:', existingContract?.id || 'none')
+    console.log('Creating/updating contract with:', {
+      contractNumber,
+      bookingId: booking.id,
+      fleetVehicleId: req.body.fleetVehicleId,
+      totalDays,
+      depositAmount: fleetVehicle.vehicle?.deposit
+    })
+    
+    // Créer ou mettre à jour le contrat
+    const contract = existingContract 
+      ? await prisma.rentalContract.update({
+          where: { id: existingContract.id },
+          data: {
+        contractNumber,
+        bookingId: booking.id,
+        fleetVehicleId: req.body.fleetVehicleId,
+        agencyId: booking.agencyId,
+        customerId: booking.customerId,
+        originalStartDate: startDate,
+        originalEndDate: endDate,
+        currentStartDate: startDate,
+        currentEndDate: endDate,
+        actualStartDate: new Date(),
+        source: booking.source === 'WIDGET' ? 'ONLINE_WIDGET' : booking.source === 'WALK_IN' ? 'WALK_IN' : 'PHONE',
+        dailyRate: booking.totalPrice / totalDays,
+        totalDays,
+        subtotal: booking.totalPrice,
+        optionsTotal: 0,
+        discountAmount: req.body.discountAmount || 0,
+        discountReason: req.body.discountReason || null,
+        taxRate: 21,
+        taxAmount: Math.round(booking.totalPrice * 0.21 * 100) / 100,
+        totalAmount: booking.totalPrice,
+        depositAmount: fleetVehicle.vehicle?.deposit || 500,
+        depositMethod: req.body.depositMethod || 'CARD',
+        depositStatus: req.body.depositStatus || 'PENDING',
+        depositCapturedAt: req.body.depositStatus === 'CAPTURED' ? new Date() : null,
+        paymentMethod: req.body.paymentMethod || 'CARD',
+        paymentStatus: req.body.paymentStatus || 'PENDING',
+        paidAmount: 0,  // Le paiement est géré séparément
+        startMileage: req.body.startMileage,
+        startFuelLevel: req.body.startFuelLevel,
+        photoFront: req.body.photoFront,
+        photoLeft: req.body.photoLeft,
+        photoRight: req.body.photoRight,
+        photoRear: req.body.photoRear,
+        photoCounter: req.body.photoCounter,
+        damageSchema: req.body.damageSchema,
+        equipmentChecklist: req.body.equipmentChecklist,
+        customerIdCardUrl: req.body.customerIdCardUrl,
+        customerLicenseUrl: req.body.customerLicenseUrl,
+        customerSignature: req.body.customerSignature,
+        customerSignedAt: req.body.customerSignature ? new Date() : null,
+        termsAcceptedAt: req.body.termsAcceptedAt ? new Date(req.body.termsAcceptedAt) : null,
+        termsLanguage: req.body.termsLanguage,
+        status: 'ACTIVE',
+        commissionRate,
+        commissionAmount,
+        commissionType,
+        commissionStatus: commissionRate ? 'PENDING' as const : undefined
+      }
+    })
+      : await prisma.rentalContract.create({
+          data: {
+            contractNumber,
+            bookingId: booking.id,
+            fleetVehicleId: req.body.fleetVehicleId,
+            agencyId: booking.agencyId,
+            customerId: booking.customerId,
+            originalStartDate: startDate,
+            originalEndDate: endDate,
+            currentStartDate: startDate,
+            currentEndDate: endDate,
+            actualStartDate: new Date(),
+            source: booking.source === 'WIDGET' ? 'ONLINE_WIDGET' : booking.source === 'WALK_IN' ? 'WALK_IN' : 'PHONE',
+            dailyRate: booking.totalPrice / totalDays,
+            totalDays,
+            subtotal: booking.totalPrice,
+            optionsTotal: 0,
+            discountAmount: req.body.discountAmount || 0,
+            discountReason: req.body.discountReason || null,
+            taxRate: 21,
+            taxAmount: Math.round(booking.totalPrice * 0.21 * 100) / 100,
+            totalAmount: booking.totalPrice,
+            depositAmount: fleetVehicle.vehicle?.deposit || 500,
+            depositMethod: req.body.depositMethod || 'CARD',
+            depositStatus: req.body.depositStatus || 'PENDING',
+            depositCapturedAt: req.body.depositStatus === 'CAPTURED' ? new Date() : null,
+            paymentMethod: req.body.paymentMethod || 'CARD',
+            paymentStatus: req.body.paymentStatus || 'PENDING',
+            paidAmount: 0,
+            startMileage: req.body.startMileage,
+            startFuelLevel: req.body.startFuelLevel,
+            photoFront: req.body.photoFront,
+            photoLeft: req.body.photoLeft,
+            photoRight: req.body.photoRight,
+            photoRear: req.body.photoRear,
+            photoCounter: req.body.photoCounter,
+            damageSchema: req.body.damageSchema,
+            equipmentChecklist: req.body.equipmentChecklist,
+            customerIdCardUrl: req.body.customerIdCardUrl,
+            customerLicenseUrl: req.body.customerLicenseUrl,
+            customerSignature: req.body.customerSignature,
+            customerSignedAt: req.body.customerSignature ? new Date() : null,
+            termsAcceptedAt: req.body.termsAcceptedAt ? new Date(req.body.termsAcceptedAt) : null,
+            termsLanguage: req.body.termsLanguage,
+            status: 'ACTIVE',
+            commissionRate,
+            commissionAmount,
+            commissionType,
+            commissionStatus: commissionRate ? 'PENDING' as const : undefined
+          }
+        })
+    console.log('Contract created/updated:', contract.id)
+    
+    // Mettre à jour la réservation
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: 'CONFIRMED',
+        fleetVehicleId: req.body.fleetVehicleId,
+        assignmentType: 'MANUAL',
+        assignedAt: new Date()
+      }
+    })
+    console.log('Booking updated')
+    
+    // Mettre à jour le véhicule
+    await prisma.fleet.update({
+      where: { id: req.body.fleetVehicleId },
+      data: {
+        status: 'RENTED',
+        currentMileage: req.body.startMileage
+      }
+    })
+    console.log('Fleet updated')
+    
+    // Créer l'inspection de départ
+    await prisma.fleetInspection.create({
+      data: {
+        fleetId: req.body.fleetVehicleId,
+        contractId: contract.id,
+        type: 'CHECK_OUT',
+        mileage: req.body.startMileage,
+        fuelLevel: req.body.startFuelLevel,
+        condition: 'GOOD',
+        operatorId: req.body.operatorId || 'system',
+        customerSignature: req.body.customerSignature,
+        customerSignedAt: req.body.customerSignature ? new Date() : null
+      }
+    })
+    console.log('Inspection created')
+    console.log('=== CHECK-OUT SUCCESS ===')
+    
+    res.json(contract)
+  } catch (error: any) {
+    console.error('=== CHECK-OUT ERROR ===')
+    console.error('Error name:', error?.name)
+    console.error('Error message:', error?.message)
+    console.error('Error code:', error?.code)
+    console.error('Error meta:', error?.meta)
+    console.error('Full error:', JSON.stringify(error, null, 2))
+    res.status(500).json({ 
+      error: 'Failed to process check-out', 
+      details: error?.message,
+      code: error?.code,
+      meta: error?.meta
+    })
+  }
+})
+
+// ============== CONTRACT DEDUCTIONS ==============
+
+app.post('/api/contracts/:contractId/deductions', async (req, res) => {
+  try {
+    const deduction = await prisma.contractDeduction.create({
+      data: {
+        contractId: req.params.contractId,
+        type: req.body.type || 'OTHER',
+        description: req.body.description,
+        quantity: req.body.quantity || 1,
+        unitPrice: req.body.unitPrice || 0,
+        totalPrice: req.body.totalPrice || 0,
+        sparePartId: req.body.sparePartId || null,
+        equipmentId: req.body.equipmentId || null,
+        photoUrls: req.body.photoUrls || null
+      }
+    })
+    res.json(deduction)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/api/contracts/:contractId/deductions', async (req, res) => {
+  try {
+    const deductions = await prisma.contractDeduction.findMany({
+      where: { contractId: req.params.contractId },
+      include: { sparePart: true, equipment: true }
+    })
+    res.json(deductions)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Get contract by booking ID
+app.get('/api/contracts/booking/:bookingId', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findFirst({
+      where: { bookingId: req.params.bookingId },
+      include: { deductions: true }
+    })
+    if (!contract) {
+      return res.status(404).json({ error: 'Contract not found' })
+    }
+    res.json(contract)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Update contract
+app.put('/api/contracts/:id', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.update({
+      where: { id: req.params.id },
+      data: {
+        status: req.body.status,
+        actualEndDate: req.body.checkoutAt ? new Date(req.body.checkoutAt) : undefined,
+        endMileage: req.body.endMileage,
+        endFuelLevel: req.body.endFuelLevel,
+        finalDepositRefund: req.body.depositRefunded,
+        totalDeductions: req.body.totalDeductions
+      }
+    })
+    res.json(contract)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Supprimer un contrat
+app.delete('/api/contracts/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    await prisma.fleetInspection.deleteMany({ where: { contractId: id } })
+    await prisma.contractDeduction.deleteMany({ where: { contractId: id } })
+    await prisma.contractExtension.deleteMany({ where: { contractId: id } })
+    const contract = await prisma.rentalContract.findUnique({ where: { id } })
+    if (contract?.fleetVehicleId) {
+      await prisma.fleet.update({ where: { id: contract.fleetVehicleId }, data: { status: 'AVAILABLE' } })
+    }
+    await prisma.rentalContract.delete({ where: { id } })
+    res.json({ success: true })
+  } catch (e: any) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to delete contract' })
+  }
+})
+
+
+// Extension de contrat (avenant)
+app.post('/api/contracts/:id/extend', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { newEndDate, additionalAmount, reason } = req.body
+    
+    const contract = await prisma.rentalContract.findUnique({ where: { id } })
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+    
+    const oldEndDate = contract.currentEndDate
+    const newEnd = new Date(newEndDate)
+    const additionalDays = Math.ceil((newEnd.getTime() - new Date(oldEndDate).getTime()) / (1000 * 60 * 60 * 24))
+    
+    // Mettre à jour le contrat directement (sans créer d'extension complexe)
+    const updatedContract = await prisma.rentalContract.update({
+      where: { id },
+      data: {
+        currentEndDate: newEnd,
+        totalDays: contract.totalDays + additionalDays,
+        totalAmount: Number(contract.totalAmount || 0) + Number(additionalAmount || 0),
+        customerNotes: (contract.customerNotes || '') + '\n[Extension ' + new Date().toLocaleDateString('fr-FR') + '] ' + (reason || 'Extension') + ' - +' + additionalDays + ' jours, +' + (additionalAmount || 0) + '€'
+      }
+    })
+    
+    res.json(updatedContract)
+  } catch (e: any) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to extend contract' })
+  }
+})
+// ============== SETTINGS ==============
+
+// Get settings
+app.get('/api/settings', async (req, res) => {
+  try {
+    const settings = await prisma.appSettings.findFirst({
+      where: { key: 'legal_texts' }
+    })
+    if (settings) {
+      res.json(settings.value)
+    } else {
+      res.json(null)
+    }
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Save settings
+app.post('/api/settings', async (req, res) => {
+  try {
+    const settings = await prisma.appSettings.upsert({
+      where: { key: 'legal_texts' },
+      update: { value: req.body },
+      create: { key: 'legal_texts', value: req.body }
+    })
+    res.json(settings)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+
+
+
+
+// ============== AUTO-ASSIGNMENT FUNCTION ==============
+// Logique: Privilégier les véhicules qui ont déjà des réservations proches
+// pour garder des véhicules complètement libres pour les longues locations
+async function autoAssignVehicle(bookingId: string, vehicleTypeId: string, agencyId: string, startDate: Date, endDate: Date): Promise<{ fleetId: string | null, reason: string }> {
+  try {
+    // 1. Trouver tous les véhicules de la flotte du même type et agence, disponibles
+    const fleetVehicles = await prisma.fleet.findMany({
+      where: {
+        vehicleId: vehicleTypeId,
+        agencyId: agencyId,
+        status: 'AVAILABLE'
+      },
+      include: {
+        bookings: {
+          where: {
+            status: { in: ['CONFIRMED', 'PENDING'] },
+            id: { not: bookingId }
+          },
+          orderBy: { endDate: 'desc' }
+        }
+      }
+    })
+
+    if (fleetVehicles.length === 0) {
+      return { fleetId: null, reason: 'Aucun véhicule disponible dans la flotte' }
+    }
+
+    // 2. Filtrer les véhicules vraiment disponibles pour la période demandée
+    const availableVehicles = fleetVehicles.filter(fleet => {
+      const hasConflict = fleet.bookings.some(booking => {
+        const bookingStart = new Date(booking.startDate)
+        const bookingEnd = new Date(booking.endDate)
+        // Vérifier si les périodes se chevauchent
+        return !(endDate <= bookingStart || startDate >= bookingEnd)
+      })
+      return !hasConflict
+    })
+
+    if (availableVehicles.length === 0) {
+      return { fleetId: null, reason: 'Tous les véhicules sont occupés pour cette période' }
+    }
+
+    // 3. Calculer le score de chaque véhicule
+    // Score élevé = véhicule avec réservation proche (à privilégier)
+    // Score bas = véhicule complètement libre (à garder pour longues locations)
+    const scoredVehicles = availableVehicles.map(fleet => {
+      let score = 0
+      
+      if (fleet.bookings.length > 0) {
+        // Trouver la réservation la plus proche avant ou après
+        fleet.bookings.forEach(booking => {
+          const bookingEnd = new Date(booking.endDate)
+          const bookingStart = new Date(booking.startDate)
           
-
-          {/* CHECKOUT */}
-          {!loading && tab === 'checkout' && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Check-out</h2>
-              <p className="text-gray-600">{lang === "fr" ? "Vehículos actuellement en location" : "Vehículos actualmente en alquiler"}</p>
-              
-              {rentedBookings.length === 0 ? (
-                <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
-                  Aucun véhicule en location actuellement
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {rentedBookings.map(booking => (
-                    <div key={booking.id} className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition cursor-pointer"
-                      onClick={() => { setSelectedCheckoutBooking(booking); setShowCheckoutModal(true) }}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                          {booking.fleetVehicle?.vehicle?.imageUrl ? (
-                            <img src={booking.fleetVehicle.vehicle.imageUrl} className="w-full h-full object-cover" />
-                          ) : <span className="text-2xl">🚲</span>}
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-bold">{booking.fleetVehicle?.vehicleNumber}</div>
-                          <div className="text-sm text-gray-600">{getName(booking.fleetVehicle?.vehicle?.name)}</div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {booking.customer?.firstName} {booking.customer?.lastName}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500">Depuis</div>
-                          <div className="text-sm font-medium">{new Date(booking.startDate).toLocaleDateString('fr-FR')}</div>
-                          <div className="text-xs text-blue-600 mt-1">
-                            Retour prévu: {new Date(booking.endDate).toLocaleDateString('fr-FR')}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* SETTINGS */}
-          {!loading && tab === 'customers' && (
-            <div className="space-y-4">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-                <h2 className="text-2xl font-bold">{t[lang].customers}</h2>
-                <button onClick={() => { setEditingCustomer(null); setShowCustomerModal(true) }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                  + {lang === 'fr' ? 'Nouveau client' : 'Nuevo cliente'}
-                </button>
-              </div>
-              
-              {/* Barre de recherche */}
-              <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder={lang === 'fr' ? 'Rechercher un client...' : 'Buscar un cliente...'}
-                  value={customerSearch}
-                  onChange={e => setCustomerSearch(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg pl-10"
-                />
-                <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Liste des clients */}
-                <div className="lg:col-span-1 bg-white rounded-xl shadow overflow-hidden">
-                  <div className="max-h-[600px] overflow-auto">
-                    {customers
-                      .filter(c => 
-                        !customerSearch || 
-                        (c.firstName + ' ' + c.lastName + ' ' + c.email).toLowerCase().includes(customerSearch.toLowerCase())
-                      )
-                      .map(c => (
-                        <div 
-                          key={c.id} 
-                          onClick={() => setSelectedCustomer(c)}
-                          className={'p-4 border-b cursor-pointer hover:bg-gray-50 ' + (selectedCustomer?.id === c.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : '')}
-                        >
-                          <div className="font-medium">{c.firstName} {c.lastName}</div>
-                          <div className="text-sm text-gray-500">{c.email}</div>
-                          <div className="text-xs text-gray-400">{c.phone}</div>
-                        </div>
-                      ))
-                    }
-                    {customers.length === 0 && (
-                      <div className="p-8 text-center text-gray-500">{lang === 'fr' ? 'Aucun client' : 'Sin clientes'}</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Fiche client */}
-                <div className="lg:col-span-2">
-                  {selectedCustomer ? (
-                    <div className="bg-white rounded-xl shadow p-6">
-                      <div className="flex justify-between items-start mb-6">
-                        <div>
-                          <h3 className="text-2xl font-bold">{selectedCustomer.firstName} {selectedCustomer.lastName}</h3>
-                          <p className="text-gray-500">{selectedCustomer.email}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => { setEditingCustomer(selectedCustomer); setShowCustomerModal(true) }}
-                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-sm">
-                            {t[lang].edit}
-                          </button>
-                          <button onClick={() => deleteCustomer(selectedCustomer.id)}
-                            className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm">
-                            {t[lang].delete}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Coordonnées */}
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div>
-                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Teléfono' : 'Teléfono'}</label>
-                          <p className="font-medium">{selectedCustomer.phone || '-'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Idioma' : 'Idioma'}</label>
-                          <p className="font-medium">{selectedCustomer.language === 'fr' ? '🇫🇷 Francés' : selectedCustomer.language === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Adresse' : 'Dirección'}</label>
-                          <p className="font-medium">{selectedCustomer.address || '-'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Ville' : 'Ciudad'}</label>
-                          <p className="font-medium">{selectedCustomer.city || '-'} {selectedCustomer.postalCode}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Pays' : 'País'}</label>
-                          <p className="font-medium">{selectedCustomer.country || '-'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Créé le' : 'Creado el'}</label>
-                          <p className="font-medium">{selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString('fr-FR') : '-'}</p>
-                        </div>
-                      </div>
-
-                      {/* Documents */}
-                      <div className="border-t pt-4">
-                        <h4 className="font-bold mb-3">{lang === 'fr' ? 'Documents' : 'Documentos'}</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="p-4 border rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-medium">{lang === 'fr' ? "Pièce d'identité" : 'Documento de identidad'}</span>
-                              {selectedCustomer.idDocumentUrl ? (
-                                <span className="text-green-600 text-sm">✓ {lang === 'fr' ? 'Vérifié' : 'Verificado'}</span>
-                              ) : (
-                                <span className="text-orange-600 text-sm">⚠ {lang === 'fr' ? 'Manquant' : 'Faltante'}</span>
-                              )}
-                            </div>
-                            {selectedCustomer.idDocumentUrl && (
-                              <a href={selectedCustomer.idDocumentUrl} target="_blank" className="block">
-                                <img src={selectedCustomer.idDocumentUrl} className="w-full h-32 object-contain rounded-lg border hover:shadow-lg transition cursor-pointer" />
-                              </a>
-                            )}
-                          </div>
-                          <div className="p-4 border rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-medium">{lang === 'fr' ? 'Permis de conduire' : 'Permiso de conducir'}</span>
-                              {selectedCustomer.licenseDocumentUrl ? (
-                                <span className="text-green-600 text-sm">✓ {lang === 'fr' ? 'Vérifié' : 'Verificado'}</span>
-                              ) : (
-                                <span className="text-orange-600 text-sm">⚠ {lang === 'fr' ? 'Manquant' : 'Faltante'}</span>
-                              )}
-                            </div>
-                            {selectedCustomer.licenseDocumentUrl ? (
-                              <a href={selectedCustomer.licenseDocumentUrl} target="_blank" className="block">
-                                <img src={selectedCustomer.licenseDocumentUrl} className="w-full h-32 object-contain rounded-lg border hover:shadow-lg transition cursor-pointer" />
-                              </a>
-                            ) : (
-                              <div className="w-full h-20 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 text-sm">
-                                {lang === 'fr' ? 'Pas de document' : 'Sin documento'}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Historique des réservations */}
-                      <div className="border-t pt-4 mt-4">
-                        <h4 className="font-bold mb-3">{lang === 'fr' ? 'Historique des réservations' : 'Historial de reservas'}</h4>
-                        <div className="space-y-2">
-                          {bookings.filter(b => b.customerId === selectedCustomer.id).length === 0 ? (
-                            <p className="text-gray-500 text-sm">{lang === 'fr' ? 'Aucune réservation' : 'Sin reservas'}</p>
-                          ) : (
-                            bookings.filter(b => b.customerId === selectedCustomer.id).map(b => (
-                              <div key={b.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div>
-                                  <span className="font-mono text-sm">{b.reference}</span>
-                                  <span className="ml-2 text-sm text-gray-500">
-                                    {new Date(b.startDate).toLocaleDateString('fr-FR')} → {new Date(b.endDate).toLocaleDateString('fr-FR')}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  {(b.status === 'COMPLETED' || b.status === 'CHECKED_IN' || b.status === 'CONFIRMED') && (
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleSendInvoice(b) }}
-                                      className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition"
-                                      title={lang === 'fr' ? 'Envoyer facture' : 'Enviar factura'}
-                                    >
-                                      {lang === 'fr' ? '📧 Facture' : '📧 Factura'}
-                                    </button>
-                                  )}
-                                  <span className={'px-2 py-1 rounded text-xs ' + 
-                                    (b.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 
-                                     b.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-700' :
-                                     b.status === 'CHECKED_IN' ? 'bg-purple-100 text-purple-700' : 'bg-yellow-100 text-yellow-700')}>
-                                    {b.status}
-                                  </span>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
-                      {lang === 'fr' ? 'Sélectionnez un client pour voir sa fiche' : 'Seleccione un cliente para ver su ficha'}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CONTRACTS & INVOICES - À développer */}
-          {!loading && tab === 'contracts' && (
-            <div className="space-y-4">
-              <div className="bg-white rounded-xl shadow p-4 flex flex-wrap gap-4 items-end">
-                <div className="flex-1 min-w-[200px]">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'fr' ? 'Rechercher' : 'Buscar'}</label>
-                  <input type="text" value={contractSearch} onChange={(e) => setContractSearch(e.target.value)} placeholder={lang === 'fr' ? 'Cliente, véhicule, n° contrat...' : 'Clientee, vehículo, n° contrato...'} className="border rounded-lg px-3 py-2 w-full" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].from}</label>
-                  <input type="date" value={contractsFilter.startDate} onChange={(e) => setContractsFilter({...contractsFilter, startDate: e.target.value})} className="border rounded-lg px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].to}</label>
-                  <input type="date" value={contractsFilter.endDate} onChange={(e) => setContractsFilter({...contractsFilter, endDate: e.target.value})} className="border rounded-lg px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t[lang].contractStatus}</label>
-                  <select value={contractsFilter.status} onChange={(e) => setContractsFilter({...contractsFilter, status: e.target.value})} className="border rounded-lg px-3 py-2">
-                    <option value="">{t[lang].allStatuses}</option>
-                    <option value="DRAFT">{t[lang].draft}</option>
-                    <option value="ACTIVE">{t[lang].active}</option>
-                    <option value="COMPLETED">{t[lang].completed}</option>
-                    <option value="CANCELLED">{t[lang].cancelled}</option>
-                  </select>
-                </div>
-                <button onClick={() => setContractsFilter({ startDate: '', endDate: '', status: '' })} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Reset</button>
-              </div>
-              <div className="bg-white rounded-xl shadow overflow-hidden overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].contractNumber}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].client}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].vehicleContract}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].period}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].amount}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].contractStatus}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">{t[lang].actions}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {contracts.filter(c => {
-                      if (contractSearch) {
-                        const search = contractSearch.toLowerCase();
-                        const matchCliente = (c.customer?.firstName + ' ' + c.customer?.lastName).toLowerCase().includes(search);
-                        const matchVehicle = (c.fleetVehicle?.vehicleNumber || '').toLowerCase().includes(search);
-                        const matchNumber = (c.contractNumber || '').toLowerCase().includes(search);
-                        if (!matchCliente && !matchVehicle && !matchNumber) return false;
-                      }
-                      if (contractsFilter.status && c.status !== contractsFilter.status) return false;
-                      if (contractsFilter.startDate && new Date(c.currentStartDate) < new Date(contractsFilter.startDate)) return false;
-                      if (contractsFilter.endDate && new Date(c.currentEndDate) > new Date(contractsFilter.endDate)) return false;
-                      return true;
-                    }).map((contract: any) => (
-                      <tr key={contract.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium">{contract.contractNumber}</td>
-                        <td className="px-4 py-3">{contract.customer?.firstName} {contract.customer?.lastName}</td>
-                        <td className="px-4 py-3">{contract.fleetVehicle?.vehicleNumber || contract.fleetVehicle?.vehicle?.name?.fr || contract.fleetVehicle?.vehicle?.name || 'N/A'}</td>
-                        <td className="px-4 py-3 text-sm">{new Date(contract.currentStartDate).toLocaleDateString('fr-FR')} - {new Date(contract.currentEndDate).toLocaleDateString('fr-FR')}</td>
-                        <td className="px-4 py-3 font-semibold">{(Number(contract.totalAmount) || 0).toFixed(2)} EUR</td>
-                        <td className="px-4 py-3"><span className={"px-2 py-1 rounded-full text-xs font-medium " + (contract.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : contract.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' : contract.status === 'CANCELLED' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')}>{contract.status}</span></td>
-                        <td className="px-4 py-3 space-x-2">
-                          <a href={API_URL + '/api/contracts/' + contract.id + '/pdf'} target="_blank" className="text-blue-600 hover:underline text-sm">PDF</a>
-                          <a href={API_URL + '/api/contracts/' + contract.id + '/invoice-pdf'} target="_blank" className="text-green-600 hover:underline text-sm">{t[lang].invoices}</a>
-                          {contract.status === 'ACTIVE' && (
-                            <button onClick={() => { setExtensionContract(contract); setShowExtensionModal(true) }} className="text-orange-600 hover:underline text-sm">{lang === 'fr' ? 'Avenant' : 'Extensión'}</button>
-                          )}
-                          <button onClick={() => deleteContract(contract.id)} className="text-red-600 hover:underline text-sm">{lang === 'fr' ? 'Supprimer' : 'Eliminar'}</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {contracts.length === 0 && <div className="p-8 text-center text-gray-500">{t[lang].noContracts}</div>}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Modal Nouvel Utilisateur */}
-      {showNewUserModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-xl font-bold mb-4">{editingUser ? '✏️ ' + t[lang].editUser : '➕ ' + t[lang].newUser}</h3>
-            <form onSubmit={async (e) => {
-              e.preventDefault()
-              const form = e.target as HTMLFormElement
-              const formData = new FormData(form)
-              const data = {
-                firstName: formData.get('firstName'),
-                lastName: formData.get('lastName'),
-                email: formData.get('email'),
-                password: formData.get('password') || undefined,
-                role: formData.get('role'),
-                language: formData.get('language'),
-                brands: Array.from(form.querySelectorAll('input[name="brands"]:checked')).map((el: any) => el.value),
-                agencyIds: Array.from(form.querySelectorAll('input[name="agencyIds"]:checked')).map((el: any) => el.value),
-                isActive: (form.querySelector('input[name="isActive"]') as HTMLInputElement)?.checked ?? true
-              }
-              if (editingUser) {
-                if (!data.password) delete data.password
-                await api.updateUser(editingUser.id, data)
-              } else {
-                await api.createUser(data)
-              }
-              setShowNewUserModal(false)
-              setEditingUser(null)
-              loadUsers()
-            }} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t[lang].firstName}</label>
-                  <input name="firstName" defaultValue={editingUser?.firstName || ''} required className="w-full border rounded-lg px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t[lang].lastName}</label>
-                  <input name="lastName" defaultValue={editingUser?.lastName || ''} required className="w-full border rounded-lg px-3 py-2" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t[lang].email}</label>
-                <input name="email" type="email" defaultValue={editingUser?.email || ''} required className="w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{editingUser ? t[lang].newPassword : t[lang].password}</label>
-                <input name="password" type="password" required={!editingUser} className="w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t[lang].role}</label>
-                <select name="role" defaultValue={editingUser?.role || 'OPERATOR'} className="w-full border rounded-lg px-3 py-2">
-                  <option value="ADMIN">Admin</option>
-                  <option value="MANAGER">Manager</option>
-                  <option value="OPERATOR">{lang === "fr" ? "Opérateur" : "Operador"}</option>
-                  <option value="COLLABORATOR">{lang === "fr" ? "Collaborateur (Partenaire)" : "Colaborador (Socio)"}</option>
-                  <option value="FRANCHISEE">{lang === "fr" ? "Franchisé" : "Franquiciado"}</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t[lang].language}</label>
-                <select name="language" defaultValue={editingUser?.language || 'es'} className="w-full border rounded-lg px-3 py-2">
-                  <option value="es">🇪🇸 Español</option>
-                  <option value="fr">🇫🇷 Francés</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">{t[lang].authorizedBrands}</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" name="brands" value="VOLTRIDE" defaultChecked={editingUser?.brands?.includes('VOLTRIDE') ?? true} className="w-4 h-4" />
-                    <span>Voltride</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" name="brands" value="MOTOR-RENT" defaultChecked={editingUser?.brands?.includes('MOTOR-RENT') ?? true} className="w-4 h-4" />
-                    <span>Motor-Rent</span>
-                  </label>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">{lang === 'fr' ? 'Agencias autorisees' : 'Agencias autorizadas'}</label>
-                <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1">
-                  {allAgencies.map((a: any) => (
-                    <label key={a.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded">
-                      <input type="checkbox" name="agencyIds" value={a.id} defaultChecked={editingUser?.agencyIds?.includes(a.id) ?? false} className="w-4 h-4" />
-                      <span className="text-sm">{getName(a.name, lang)} ({a.code})</span>
-                      {a.agencyType && a.agencyType !== 'OWN' && (
-                        <span className={'text-xs px-1 rounded ' + (a.agencyType === 'PARTNER' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700')}>
-                          {a.agencyType === 'PARTNER' ? 'Partenaire' : 'Franchise'}
-                        </span>
-                      )}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" name="isActive" defaultChecked={editingUser?.isActive ?? true} className="w-4 h-4" />
-                  <span className="text-sm font-medium">Utilisateur actif</span>
-                </label>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  {editingUser ? t[lang].save : t[lang].create}
-                </button>
-                <button type="button" onClick={() => { setShowNewUserModal(false); setEditingUser(null) }} className="flex-1 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
-                  Annuler
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Context Menu */}
-      {contextMenu && (
-        <div className="fixed bg-white rounded-lg shadow-xl border py-2 z-50" style={{ left: contextMenu.x, top: contextMenu.y }}>
-          {!contextMenu.booking.checkedIn && (
-            <button onClick={() => { 
-              const today = new Date().toISOString().split('T')[0];
-              const startDate = new Date(contextMenu.booking.startDate).toISOString().split('T')[0];
-              if (startDate !== today) {
-                alert('⚠️ Le check-in ne peut être effectué que le jour du départ de la location.');
-                setContextMenu(null);
-                return;
-              }
-              setCheckInBooking(contextMenu.booking); setShowCheckIn(true); setContextMenu(null) 
-            }}
-              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2">
-              ✅ Check-in
-            </button>
-          )}
-          {contextMenu.booking.checkedIn && !contextMenu.booking.checkedOut && (
-            <button onClick={() => { alert('Check-out à implémenter'); setContextMenu(null) }}
-              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2">
-              🏁 Check-out
-            </button>
-          )}
-          <button onClick={async () => { 
-              setEditingBooking(contextMenu.booking)
-              setEditForm({
-                startDate: contextMenu.booking.startDate?.split('T')[0] || '',
-                endDate: contextMenu.booking.endDate?.split('T')[0] || '',
-                startTime: contextMenu.booking.startTime || '10:00',
-                endTime: contextMenu.booking.endTime || '10:00',
-                options: contextMenu.booking.options?.map((o: any) => ({optionId: o.optionId, quantity: o.quantity})) || []
-              })
-              // Charger les options disponibles
-              try {
-                const res = await fetch(API_URL + '/api/options')
-                const allOptions = await res.json()
-                setAvailableOptions(allOptions)
-              } catch (e) { console.error('Erreur chargement options:', e) }
-              setShowEditModal(true)
-              setContextMenu(null) 
-            }}
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2">
-            ✏️ Modifier
-          </button>
-          {!contextMenu.booking.checkedIn && (
-            <button onClick={() => { setCancelBooking(contextMenu.booking); setShowCancelModal(true); setContextMenu(null) }}
-              className="w-full px-4 py-2 text-left hover:bg-gray-100 text-red-600 flex items-center gap-2">
-              ❌ Annuler
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Tooltip */}
-      {tooltip && (
-        <div className="fixed bg-gray-900 text-white text-sm rounded-lg px-3 py-2 z-50 pointer-events-none shadow-lg"
-          style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
-          <div className="font-bold">{tooltip.booking.customer?.firstName} {tooltip.booking.customer?.lastName}</div>
-          {tooltip.booking.customer?.phone && <div className="text-yellow-300">📞 {tooltip.booking.customer.phone}</div>}
-          <div className="text-gray-300">{tooltip.booking.reference}</div>
-          <div className="text-gray-300">{new Date(tooltip.booking.startDate).toLocaleDateString('fr-FR')} → {new Date(tooltip.booking.endDate).toLocaleDateString('fr-FR')}</div>
-          <div className="text-gray-300">{tooltip.booking.startTime} - {tooltip.booking.endTime}</div>
-          {tooltip.booking.checkedIn && <div className="text-green-400">✓ {t[lang].checkedIn}</div>}
-        </div>
-      )}
-
-      {/* Cancel Modal */}
-      {/* Modal Edition Réservation */}
-      {showEditModal && editingBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 m-4">
-            <h2 className="text-xl font-bold mb-4">✏️ Modifier la réservation</h2>
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
-              {/* Info client */}
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium">{editingBooking.customer?.firstName} {editingBooking.customer?.lastName}</p>
-                <p className="text-sm text-gray-500">Réf: {editingBooking.reference}</p>
-              </div>
-              
-              {/* Dates et heures */}
-              <div className="border rounded-xl p-4">
-                <h3 className="font-medium mb-3">📅 Dates et heures</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Date début</label>
-                    <input type="date" value={editForm.startDate} onChange={e => setEditForm({...editForm, startDate: e.target.value})} className="w-full border-2 rounded-xl p-3" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Heure début</label>
-                    <input type="time" value={editForm.startTime} onChange={e => setEditForm({...editForm, startTime: e.target.value})} className="w-full border-2 rounded-xl p-3" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Date fin</label>
-                    <input type="date" value={editForm.endDate} onChange={e => setEditForm({...editForm, endDate: e.target.value})} className="w-full border-2 rounded-xl p-3" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Heure fin</label>
-                    <input type="time" value={editForm.endTime} onChange={e => setEditForm({...editForm, endTime: e.target.value})} className="w-full border-2 rounded-xl p-3" />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Vehículo */}
-              <div className="border rounded-xl p-4">
-                <h3 className="font-medium mb-3">🚲 Vehículo</h3>
-                <div className="p-3 bg-blue-50 rounded-lg mb-3">
-                  <p className="font-medium">Actuel: {editingBooking.fleetVehicle?.vehicleNumber} - {editingBooking.fleetVehicle?.vehicle?.name?.fr || editingBooking.fleetVehicle?.vehicle?.name?.es}</p>
-                </div>
-                <select 
-                  value={editForm.fleetVehicleId || editingBooking.fleetVehicleId} 
-                  onChange={e => setEditForm({...editForm, fleetVehicleId: e.target.value})}
-                  className="w-full border-2 rounded-xl p-3"
-                >
-                  <option value={editingBooking.fleetVehicleId}>Garder le véhicule actuel</option>
-                  {fleet.filter(f => f.status === 'AVAILABLE' && f.agencyId === editingBooking.agencyId).map(f => (
-                    <option key={f.id} value={f.id}>{f.vehicleNumber} - {f.vehicle?.name?.fr || f.vehicle?.name?.es}</option>
-                  ))}
-                </select>
-              </div>
-              
-              {/* Équipements */}
-              <div className="border rounded-xl p-4">
-                <h3 className="font-medium mb-3">🎒 Équipements / Options</h3>
-                <div className="space-y-2">
-                  {availableOptions.map((opt: any) => {
-                    const currentOpt = (editForm.options || []).find((o: any) => o.optionId === opt.id)
-                    const existingOpt = editingBooking.options?.find((o: any) => o.optionId === opt.id)
-                    const quantity = currentOpt?.quantity ?? existingOpt?.quantity ?? 0
-                    return (
-                      <div key={opt.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <span className="font-medium">{opt.name?.fr || opt.name?.es || 'Option'}</span>
-                          <span className="text-sm text-gray-500 ml-2">({opt.day1 || 0}€/jour)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => {
-                              const newOptions = [...(editForm.options || editingBooking.options?.map((o: any) => ({optionId: o.optionId, quantity: o.quantity})) || [])]
-                              const idx = newOptions.findIndex((o: any) => o.optionId === opt.id)
-                              if (idx >= 0 && newOptions[idx].quantity > 0) {
-                                newOptions[idx] = {...newOptions[idx], quantity: newOptions[idx].quantity - 1}
-                              }
-                              setEditForm({...editForm, options: newOptions})
-                            }}
-                            className="w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300 font-bold"
-                          >-</button>
-                          <span className="w-8 text-center font-medium">{quantity}</span>
-                          <button 
-                            onClick={() => {
-                              const newOptions = [...(editForm.options || editingBooking.options?.map((o: any) => ({optionId: o.optionId, quantity: o.quantity})) || [])]
-                              const idx = newOptions.findIndex((o: any) => o.optionId === opt.id)
-                              if (idx >= 0) {
-                                newOptions[idx] = {...newOptions[idx], quantity: newOptions[idx].quantity + 1}
-                              } else {
-                                newOptions.push({optionId: opt.id, quantity: 1})
-                              }
-                              setEditForm({...editForm, options: newOptions})
-                            }}
-                            className="w-8 h-8 bg-blue-500 text-white rounded-full hover:bg-blue-600 font-bold"
-                          >+</button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                  {availableOptions.length === 0 && (
-                    <p className="text-gray-500 text-sm">Chargement des options...</p>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => { setShowEditModal(false); setEditingBooking(null); setEditForm({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00' }) }} className="flex-1 py-3 bg-gray-200 rounded-xl hover:bg-gray-300">
-                Annuler
-              </button>
-              <button onClick={async () => {
-                try {
-                  const updateData: any = {
-                    startDate: editForm.startDate,
-                    endDate: editForm.endDate,
-                    startTime: editForm.startTime,
-                    endTime: editForm.endTime
-                  }
-                  if (editForm.fleetVehicleId && editForm.fleetVehicleId !== editingBooking.fleetVehicleId) {
-                    updateData.fleetVehicleId = editForm.fleetVehicleId
-                  }
-                  if (editForm.options) {
-                    updateData.options = editForm.options.filter((o: any) => o.quantity > 0).map((o: any) => ({ optionId: o.optionId, quantity: o.quantity }))
-                  }
-                  const response = await fetch(API_URL + '/api/bookings/' + editingBooking.id, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updateData)
-                  })
-                  if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}))
-                    console.error('API Error:', response.status, errorData)
-                    throw new Error(errorData.error || 'Erreur serveur ' + response.status)
-                  }
-                  setShowEditModal(false)
-                  setEditingBooking(null)
-                  setEditForm({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00', fleetVehicleId: '', options: null })
-                  loadData()
-                  alert('Réservation modifiée avec succès !')
-                } catch (e: any) { 
-                  console.error('Erreur modification:', e)
-                  alert('Erreur lors de la modification: ' + (e.message || 'Erreur inconnue'))
-                }
-              }} className="flex-1 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
-                Enregistrer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showCancelModal && cancelBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold mb-4">❌ {lang === "fr" ? "Annuler la réservation" : "Cancelar la reserva"}</h3>
-            <p className="text-gray-600 mb-4">{lang === "fr" ? "Réservation" : "Reserva"} {cancelBooking.reference} - {cancelBooking.customer?.lastName}</p>
-            <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)}
-              placeholder="Motif d'annulation (obligatoire)"
-              className="w-full border rounded-lg p-3 h-24 mb-4" />
-            <div className="flex gap-3">
-              <button onClick={() => setShowCancelModal(false)} className="flex-1 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Retour</button>
-              <button onClick={handleCancelBooking} disabled={!cancelReason.trim()}
-                className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50">Confirmer</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CheckOut Modal */}
-      {showCheckoutModal && selectedCheckoutBooking && (
-        <CheckOutModal
-          booking={selectedCheckoutBooking}
-          brand={brand}
-          onClose={() => { setShowCheckoutModal(false); setSelectedCheckoutBooking(null) }}
-          onComplete={() => { setShowCheckoutModal(false); setSelectedCheckoutBooking(null); loadData() }}
-        />
-      )}
-
-      {/* New Fleet Modal */}
-      {showNewFleet && (
-        <NewFleetModal
-          agencyId={selectedAgency || agencies[0]?.id}
-          onClose={() => setShowNewFleet(false)}
-          onSave={() => { setShowNewFleet(false); loadData() }}
-        />
-      )}
-
-      {/* Fleet Edit Modal */}
-      {showFleetEdit && selectedFleetForEdit && (
-        <FleetEditModal
-          fleet={selectedFleetForEdit}
-          mode={fleetModalMode}
-          userRole={user?.role}
-          onClose={() => { setShowFleetEdit(false); setSelectedFleetForEdit(null) }}
-          onSave={() => { setShowFleetEdit(false); setSelectedFleetForEdit(null); loadData() }}
-          onDelete={handleFleetDelete}
-        />
-      )}
-
-      {/* New Booking Modal */}
-      {showNewBooking && (
-        <NewBookingModal
-          fleetVehicle={newBookingData?.fleetVehicle}
-          startDate={newBookingData?.date}
-          agencyId={selectedAgency || agencies[0]?.id}
-          brand={brand}
-          onClose={() => { setShowNewBooking(false); setNewBookingData(null) }}
-          onComplete={() => { setShowNewBooking(false); setNewBookingData(null); loadData() }}
-        />
-      )}
-
-      {/* Modal Assignation */}
-      {assigningBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold mb-4">{lang === 'fr' ? 'Assigner un véhicule' : 'Asignar un vehículo'}</h3>
-            <p className="text-gray-600 mb-4">{lang === 'fr' ? 'Réservation' : 'Reserva'}: {assigningBooking.reference}</p>
-            <p className="text-gray-600 mb-4">{lang === 'fr' ? 'Type' : 'Tipo'}: {getName(assigningBooking.items?.[0]?.vehicle?.name)}</p>
-            <div className="space-y-2 max-h-60 overflow-auto">
-              {availableFleetForAssign.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">{lang === 'fr' ? 'Aucun véhicule disponible' : 'No hay vehículos disponibles'}</p>
-              ) : (
-                availableFleetForAssign.map(f => (
-                  <div key={f.id} onClick={() => assignVehicle(f.id)}
-                    className="p-3 border rounded-lg hover:bg-blue-50 cursor-pointer flex justify-between items-center">
-                    <div>
-                      <span className="font-bold">{f.vehicleNumber}</span>
-                      {f.locationCode && <span className="ml-2 text-gray-500">({f.locationCode})</span>}
-                      {f.licensePlate && <span className="ml-2 text-gray-400">{f.licensePlate}</span>}
-                    </div>
-                    <span className={'px-2 py-1 rounded text-xs ' + (f.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700')}>{f.status}</span>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="mt-4 flex justify-end">
-              <button onClick={() => setAssigningBooking(null)} className="px-4 py-2 bg-gray-200 rounded-lg">{t[lang].cancel}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Cliente */}
-      {showCustomerModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold mb-4">
-              {editingCustomer ? (lang === 'fr' ? 'Modifier le client' : 'Editar cliente') : (lang === 'fr' ? 'Nouveau client' : 'Nuevo cliente')}
-            </h3>
-            <form onSubmit={async (e) => {
-              e.preventDefault()
-              const form = e.target as HTMLFormElement
-              const formData = new FormData(form)
-              const data = {
-                firstName: formData.get('firstName'),
-                lastName: formData.get('lastName'),
-                email: formData.get('email'),
-                phone: formData.get('phone'),
-                address: formData.get('address'),
-                postalCode: formData.get('postalCode'),
-                city: formData.get('city'),
-                country: formData.get('country'),
-                language: formData.get('language'),
-                idDocumentUrl: formData.get('idDocumentUrl') || editingCustomer?.idDocumentUrl,
-                licenseDocumentUrl: formData.get('licenseDocumentUrl') || editingCustomer?.licenseDocumentUrl
-              }
-              await saveCustomer(data)
-            }} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t[lang].firstName}</label>
-                  <input name="firstName" defaultValue={editingCustomer?.firstName || ''} required className="w-full border rounded-lg px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t[lang].lastName}</label>
-                  <input name="lastName" defaultValue={editingCustomer?.lastName || ''} required className="w-full border rounded-lg px-3 py-2" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t[lang].email}</label>
-                <input name="email" type="email" defaultValue={editingCustomer?.email || ''} required className="w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Teléfono' : 'Teléfono'}</label>
-                <input name="phone" defaultValue={editingCustomer?.phone || ''} className="w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Adresse' : 'Dirección'}</label>
-                <input name="address" defaultValue={editingCustomer?.address || ''} className="w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Code postal' : 'Código postal'}</label>
-                  <input name="postalCode" defaultValue={editingCustomer?.postalCode || ''} className="w-full border rounded-lg px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Ville' : 'Ciudad'}</label>
-                  <input name="city" defaultValue={editingCustomer?.city || ''} className="w-full border rounded-lg px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Pays' : 'País'}</label>
-                  <input name="country" defaultValue={editingCustomer?.country || 'ES'} className="w-full border rounded-lg px-3 py-2" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t[lang].language}</label>
-                <select name="language" defaultValue={editingCustomer?.language || 'es'} className="w-full border rounded-lg px-3 py-2">
-                  <option value="es">🇪🇸 Español</option>
-                  <option value="fr">🇫🇷 Francés</option>
-                  <option value="en">🇬🇧 English</option>
-                </select>
-              </div>
-              
-              {editingCustomer && (
-                <>
-                  <div className="border-t pt-4">
-                    <h4 className="font-medium mb-3">{lang === 'fr' ? 'Documents' : 'Documentos'}</h4>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">{lang === 'fr' ? "URL Pièce d'identité" : 'URL Documento identidad'}</label>
-                      <input name="idDocumentUrl" defaultValue={editingCustomer?.idDocumentUrl || ''} className="w-full border rounded-lg px-3 py-2" placeholder="https://..." />
-                    </div>
-                    <div className="mt-3">
-                      <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'URL Permis de conduire' : 'URL Permiso conducir'}</label>
-                      <input name="licenseDocumentUrl" defaultValue={editingCustomer?.licenseDocumentUrl || ''} className="w-full border rounded-lg px-3 py-2" placeholder="https://..." />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  {editingCustomer ? t[lang].save : t[lang].create}
-                </button>
-                <button type="button" onClick={() => setShowCustomerModal(false)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
-                  {t[lang].cancel}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
+          // Jours entre la fin d'une réservation et le début de celle-ci
+          const daysAfterPrevious = Math.floor((startDate.getTime() - bookingEnd.getTime()) / (1000 * 60 * 60 * 24))
+          // Jours entre la fin de celle-ci et le début d'une autre
+          const daysBeforeNext = Math.floor((bookingStart.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24))
+          
+          // Plus la réservation est proche, plus le score est élevé
+          if (daysAfterPrevious >= 0 && daysAfterPrevious <= 3) {
+            score += (4 - daysAfterPrevious) * 10 // 0 jours = 40pts, 1 jour = 30pts, etc.
+          }
+          if (daysBeforeNext >= 0 && daysBeforeNext <= 3) {
+            score += (4 - daysBeforeNext) * 10
+          }
+        })
+        
+        // Bonus pour véhicules déjà utilisés récemment
+        score += fleet.bookings.length * 5
+      }
       
-      {/* Booking Detail Modal */}
-      {showBookingDetail && selectedBookingDetail && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" >
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="p-4 border-b bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-2xl">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-bold">📋 Detalles reserva</h2>
-                  <p className="text-blue-100 text-sm">{selectedBookingDetail.reference}</p>
-                </div>
-                <button onClick={() => setShowBookingDetail(false)} className="text-2xl opacity-70 hover:opacity-100">&times;</button>
-              </div>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              {/* Statut et Source */}
-              <div className="flex gap-3">
-                <span className={'px-3 py-1 rounded-full text-sm font-medium ' + 
-                  (selectedBookingDetail.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 
-                   selectedBookingDetail.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 
-                   selectedBookingDetail.checkedIn ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700')}>
-                  {selectedBookingDetail.checkedIn ? '✅ Check-in hecho' : selectedBookingDetail.status}
-                </span>
-                <span className={'px-3 py-1 rounded-full text-sm ' + 
-                  (selectedBookingDetail.source === 'WIDGET' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700')}>
-                  {selectedBookingDetail.source === 'WIDGET' ? '🌐 En línea' : '🏪 Walk-in (agencia)'}
-                </span>
-              </div>
-              
-              {/* Cliente */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">👤 Cliente</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Nombre completo</p>
-                    <p className="font-medium">{selectedBookingDetail.customer?.firstName} {selectedBookingDetail.customer?.lastName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Teléfono</p>
-                    <p className="font-medium">
-                      <a href={'tel:' + selectedBookingDetail.customer?.phone} className="text-blue-600 hover:underline">
-                        📞 {selectedBookingDetail.customer?.phone}
-                      </a>
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium text-sm">{selectedBookingDetail.customer?.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Idioma</p>
-                    <p className="font-medium">{selectedBookingDetail.language === 'fr' ? '🇫🇷 Francés' : selectedBookingDetail.language === 'es' ? '🇪🇸 Español' : '🇬🇧 English'}</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Vehículo */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">🚲 Vehículo</h3>
-                {(() => {
-                  const assignedVehicle = fleet.find(f => f.id === selectedBookingDetail.fleetVehicleId)
-                  return (
-                    <div className="flex items-center gap-4">
-                      {assignedVehicle?.vehicle?.imageUrl ? (
-                        <img src={assignedVehicle.vehicle.imageUrl} className="w-20 h-20 rounded-lg object-cover" />
-                      ) : selectedBookingDetail.items?.[0]?.vehicle?.imageUrl ? (
-                        <img src={selectedBookingDetail.items[0].vehicle.imageUrl} className="w-20 h-20 rounded-lg object-cover" />
-                      ) : (
-                        <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-3xl">🚲</div>
-                      )}
-                      <div>
-                        {assignedVehicle ? (
-                          <>
-                            <p className="font-bold text-lg text-green-600">{assignedVehicle.vehicleNumber}</p>
-                            <p className="text-gray-600">{getName(assignedVehicle.vehicle?.name)}</p>
-                            <p className="text-sm text-gray-500">{getName(assignedVehicle.vehicle?.category?.name)}</p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="font-bold text-lg text-orange-600">⚠️ Non assigné</p>
-                            <p className="text-gray-600">{getName(selectedBookingDetail.items?.[0]?.vehicle?.name)}</p>
-                            <p className="text-sm text-gray-500">{getName(selectedBookingDetail.items?.[0]?.vehicle?.category?.name)}</p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })()}
-              </div>
-              
-              {/* Dates */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">📅 Período de alquiler</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Inicio</p>
-                    <p className="font-medium">{new Date(selectedBookingDetail.startDate).toLocaleDateString('fr-FR')} à {selectedBookingDetail.startTime}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Fin</p>
-                    <p className="font-medium">{new Date(selectedBookingDetail.endDate).toLocaleDateString('fr-FR')} à {selectedBookingDetail.endTime}</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Options */}
-              {selectedBookingDetail.options && selectedBookingDetail.options.length > 0 && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h3 className="font-bold text-gray-700 mb-3">🎁 Options</h3>
-                  <div className="space-y-2">
-                    {selectedBookingDetail.options.map((opt, i) => (
-                      <div key={i} className="flex justify-between">
-                        <span>{getName(opt.option?.name)} x{opt.quantity}</span>
-                        <span className="font-medium">{opt.totalPrice?.toFixed(2)}€</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Tarificación */}
-              <div className="bg-blue-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">💰 Tarificación</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Precio alquiler</span>
-                    <span className="font-medium">{selectedBookingDetail.totalPrice?.toFixed(2)}€</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold pt-2 border-t border-blue-200">
-                    <span>Total</span>
-                    <span className="text-blue-600">{(selectedBookingDetail.totalPrice || 0).toFixed(2)}€</span>
-                  </div>
-                  <div className="flex justify-between text-gray-500 text-sm pt-2 mt-2 border-t border-dashed border-gray-300">
-                    <span>Fianza (garantía)</span>
-                    <span>{(selectedBookingDetail.depositAmount || 0).toFixed(2)}€</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Pago reserva */}
-              <div className="bg-green-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">💳 Pago reserva</h3>
-                <div className="space-y-2">
-                  {(selectedBookingDetail.paidAmount || 0) > 0 ? (
-                    <>
-                      <div className="flex justify-between text-green-700">
-                        <span>Anticipo pagado</span>
-                        <span className="font-bold">{selectedBookingDetail.paidAmount?.toFixed(2)}€</span>
-                      </div>
-                      <div className="text-sm text-green-600">
-                        📅 {new Date(selectedBookingDetail.createdAt).toLocaleDateString('fr-FR')} • 
-                        {selectedBookingDetail.source === 'WIDGET' ? ' 🌐 En línea • 💳 CB' : 
-                         ` 🏪 En agencia • ${selectedBookingDetail.paymentMethod === 'card' ? '💳 CB' : selectedBookingDetail.paymentMethod === 'cash' ? '💵 Espèces' : '💳 CB/💵 Espèces'}`}
-                      </div>
-                      <div className="flex justify-between pt-2 border-t border-green-200">
-                        <span>Pendiente de pago</span>
-                        <span className="font-bold text-orange-600">{((selectedBookingDetail.totalPrice || 0) - (selectedBookingDetail.paidAmount || 0)).toFixed(2)}€</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-orange-600">
-                      ⚠️ Sin anticipo
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Infos réservation */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-700 mb-3">📝 Información</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Fecha de reserva</p>
-                    <p className="font-medium">{new Date(selectedBookingDetail.createdAt).toLocaleDateString('fr-FR')} à {new Date(selectedBookingDetail.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Agencia</p>
-                    <p className="font-medium">{getName(selectedBookingDetail.agency?.name)}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Footer avec actions */}
-            <div className="p-4 border-t bg-gray-50 flex flex-wrap gap-3 rounded-b-2xl">
-              {!selectedBookingDetail.fleetVehicleId && (
-                <button onClick={() => { setShowBookingDetail(false); openAssignModal(selectedBookingDetail) }}
-                  className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                  🚲 Asignar vehículo
-                </button>
-              )}
-              {!selectedBookingDetail.checkedIn && selectedBookingDetail.fleetVehicleId && (
-                <button onClick={() => { 
-                  const today = new Date().toISOString().split('T')[0];
-                  const startDate = new Date(selectedBookingDetail.startDate).toISOString().split('T')[0];
-                  if (startDate !== today) {
-                    alert('⚠️ Le check-in ne peut être effectué que le jour du départ de la location.');
-                    return;
-                  }
-                  setShowBookingDetail(false); setCheckInBooking(selectedBookingDetail); setShowCheckIn(true) 
-                }}
-                  className="py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
-                  ✅ Check-in
-                </button>
-              )}
-{!selectedBookingDetail.checkedIn && (
-                <button onClick={async () => {
-                  try {
-                    const res = await fetch('https://api-voltrideandmotorrent-production.up.railway.app/api/send-booking-confirmation', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        bookingId: selectedBookingDetail.id,
-                        email: selectedBookingDetail.customer?.email,
-                        firstName: selectedBookingDetail.customer?.firstName,
-                        lastName: selectedBookingDetail.customer?.lastName,
-                        vehicleName: getName(selectedBookingDetail.items?.[0]?.vehicle?.name) || getName(fleet.find(f => f.id === selectedBookingDetail.fleetVehicleId)?.vehicle?.name),
-                        vehicleNumber: fleet.find(f => f.id === selectedBookingDetail.fleetVehicleId)?.vehicleNumber || 'N/A',
-                        startDate: selectedBookingDetail.startDate,
-                        endDate: selectedBookingDetail.endDate,
-                        startTime: selectedBookingDetail.startTime,
-                        endTime: selectedBookingDetail.endTime,
-                        totalPrice: selectedBookingDetail.totalPrice,
-                        paidAmount: selectedBookingDetail.paidAmount || 0,
-                        remainingAmount: (selectedBookingDetail.totalPrice || 0) - (selectedBookingDetail.paidAmount || 0),
-                        paymentMethod: selectedBookingDetail.paymentMethod || 'card',
-                        depositAmount: selectedBookingDetail.depositAmount,
-                        brand: 'VOLTRIDE',
-                        language: selectedBookingDetail.language || 'fr',
-                        isRegisteredVehicle: !!fleet.find(f => f.id === selectedBookingDetail.fleetVehicleId)?.licensePlate
-                      })
-                    })
-                    if (res.ok) {
-                      alert('Email de confirmation renvoyé !')
-                    } else {
-                      alert('Erreur lors de l\'envoi de l\'email')
-                    }
-                  } catch (e) {
-                    alert('Erreur: ' + e.message)
-                  }
-                }}
-                  className="py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">
-                  📧 Reenviar email
-                </button>
-              )}
-              <button onClick={() => setShowBookingDetail(false)}
-                className="py-2 px-4 bg-gray-200 rounded-lg hover:bg-gray-300 ml-auto">
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      return { fleet, score }
+    })
 
-      {/* Check-in Modal */}
-      {showCheckIn && checkInBooking && (
-        <CheckInModal
-          booking={checkInBooking}
-          fleetVehicle={fleet.find(f => f.id === checkInBooking.fleetVehicleId)}
-          settings={checkInBooking?.agency?.brand === 'MOTOR-RENT' ? settings.motorrent : settings.voltride}
-          onClose={() => setShowCheckIn(false)}
-          onComplete={() => { setShowCheckIn(false); setCheckInBooking(null); loadData() }}
-        />
-      )}
+    // 4. Trier par score décroissant (privilégier les véhicules avec réservations proches)
+    scoredVehicles.sort((a, b) => b.score - a.score)
 
-      {/* Walkin Modal */}
-      {showWalkinModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" >
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
-            <div className="bg-green-600 text-white p-4 rounded-t-2xl">
-              <h2 className="text-xl font-bold">👤 Nouveau client walk-in</h2>
-            </div>
-            
-            <div className="p-6">
-              {/* Mode selector */}
-              {!walkinStatus && (
-                <div className="flex gap-2 mb-6">
-                  <button onClick={() => setWalkinMode('tablet')}
-                    className={'flex-1 py-3 rounded-xl border-2 font-medium ' + 
-                      (walkinMode === 'tablet' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200')}>
-                    📱 Tablette comptoir
-                  </button>
-                  <button onClick={() => setWalkinMode('manual')}
-                    className={'flex-1 py-3 rounded-xl border-2 font-medium ' + 
-                      (walkinMode === 'manual' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200')}>
-                    ✏️ Saisie manuelle
-                  </button>
-                </div>
-              )}
+    const selectedVehicle = scoredVehicles[0]
+    const reason = selectedVehicle.score > 0 
+      ? `Assigné automatiquement (suite de location, score: ${selectedVehicle.score})`
+      : `Assigné automatiquement (véhicule libre)`
 
-              {/* Tablet mode */}
-              {walkinMode === 'tablet' && !walkinStatus && (
-                <div className="text-center py-8">
-                  <p className="text-gray-600 mb-4">Le client remplira ses informations sur la tablette comptoir</p>
-                  <button onClick={sendWalkinToTablet}
-                    className="px-8 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700">
-                    📱 Envoyer sur tablette
-                  </button>
-                </div>
-              )}
-
-              {walkinMode === 'tablet' && walkinStatus === 'waiting' && (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-4 animate-pulse">⏳</div>
-                  <p className="text-gray-600">En attente des informations client...</p>
-                  <p className="text-sm text-gray-400 mt-2">Le client remplit le formulaire sur la tablette</p>
-                  <button onClick={cancelWalkin} className="mt-4 text-red-600">{t[lang].cancel}</button>
-                </div>
-              )}
-
-              {walkinMode === 'tablet' && walkinStatus === 'completed' && walkinData && (
-                <div className="space-y-4">
-                  <div className="p-4 bg-green-50 rounded-xl">
-                    <p className="font-bold text-green-700">✅ Información reçues !</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><span className="text-gray-500">Prénom:</span> <strong>{walkinData.firstName}</strong></div>
-                    <div><span className="text-gray-500">Nom:</span> <strong>{walkinData.lastName}</strong></div>
-                    <div><span className="text-gray-500">Email:</span> <strong>{walkinData.email}</strong></div>
-                    <div><span className="text-gray-500">Tél:</span> <strong>{walkinData.phonePrefix}{walkinData.phone}</strong></div>
-                    <div className="col-span-2"><span className="text-gray-500">Adresse:</span> <strong>{walkinData.address}, {walkinData.postalCode} {walkinData.city}, {walkinData.country}</strong></div>
-                  </div>
-                  <button onClick={createWalkinCustomer}
-                    className="w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700">
-                    ✅ Créer le client
-                  </button>
-                </div>
-              )}
-
-              {/* Manual mode */}
-              {walkinMode === 'manual' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Prénom *</label>
-                      <input type="text" value={walkinForm.firstName}
-                        onChange={e => setWalkinForm({...walkinForm, firstName: e.target.value})}
-                        className="w-full border-2 rounded-xl p-3" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Nom *</label>
-                      <input type="text" value={walkinForm.lastName}
-                        onChange={e => setWalkinForm({...walkinForm, lastName: e.target.value})}
-                        className="w-full border-2 rounded-xl p-3" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Email *</label>
-                    <input type="email" value={walkinForm.email}
-                      onChange={e => setWalkinForm({...walkinForm, email: e.target.value})}
-                      className="w-full border-2 rounded-xl p-3" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Teléfono *</label>
-                    <div className="flex gap-2">
-                      <select value={walkinForm.phonePrefix}
-                        onChange={e => setWalkinForm({...walkinForm, phonePrefix: e.target.value})}
-                        className="border-2 rounded-xl p-3 w-24">
-                        <option value="+34">🇪🇸 +34</option>
-                        <option value="+33">🇫🇷 +33</option>
-                        <option value="+44">🇬🇧 +44</option>
-                        <option value="+49">🇩🇪 +49</option>
-                      </select>
-                      <input type="tel" value={walkinForm.phone}
-                        onChange={e => setWalkinForm({...walkinForm, phone: e.target.value})}
-                        className="flex-1 border-2 rounded-xl p-3" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Adresse</label>
-                    <input type="text" value={walkinForm.address}
-                      onChange={e => setWalkinForm({...walkinForm, address: e.target.value})}
-                      className="w-full border-2 rounded-xl p-3" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Ville</label>
-                      <input type="text" value={walkinForm.city}
-                        onChange={e => setWalkinForm({...walkinForm, city: e.target.value})}
-                        className="w-full border-2 rounded-xl p-3" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Code postal</label>
-                      <input type="text" value={walkinForm.postalCode}
-                        onChange={e => setWalkinForm({...walkinForm, postalCode: e.target.value})}
-                        className="w-full border-2 rounded-xl p-3" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Pays</label>
-                    <select value={walkinForm.country}
-                      onChange={e => setWalkinForm({...walkinForm, country: e.target.value})}
-                      className="w-full border-2 rounded-xl p-3">
-                      <option value="ES">🇪🇸 España</option>
-                      <option value="FR">🇫🇷 France</option>
-                      <option value="GB">🇬🇧 United Kingdom</option>
-                      <option value="DE">🇩🇪 Deutschland</option>
-                    </select>
-                  </div>
-                  <button onClick={createWalkinCustomer}
-                    className="w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700">
-                    ✅ Créer le client
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <div className="p-4 border-t">
-              <button onClick={cancelWalkin} className="w-full py-2 text-gray-600 hover:text-gray-800">
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      
-          {/* Extension Contract Modal */}
-      {showExtensionModal && extensionContract && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-4">{lang === 'fr' ? 'Avenant - Extension de contrat' : 'Extensión de contrato'}</h2>
-            <div className="space-y-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium">{extensionContract.contractNumber}</p>
-                <p className="text-sm text-gray-600">{extensionContract.customer?.firstName} {extensionContract.customer?.lastName}</p>
-                <p className="text-sm text-gray-600">{extensionContract.fleetVehicle?.vehicleNumber}</p>
-                <p className="text-sm text-gray-500">
-                  {lang === 'fr' ? 'Fin actuelle:' : 'Fin actual:'} {new Date(extensionContract.currentEndDate).toLocaleDateString('fr-FR')}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Nouvelle date de fin' : 'Nueva fecha de fin'}</label>
-                <input type="date" id="extensionDate" 
-                  defaultValue={new Date(new Date(extensionContract.currentEndDate).getTime() + 86400000).toISOString().split('T')[0]}
-                  min={new Date(new Date(extensionContract.currentEndDate).getTime() + 86400000).toISOString().split('T')[0]}
-                  className="w-full border-2 rounded-xl p-3" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Montant supplémentaire (€)' : 'Importe adicional (€)'}</label>
-                <input type="number" id="extensionAmount" defaultValue="0" min="0" step="0.01" className="w-full border-2 rounded-xl p-3" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{lang === 'fr' ? 'Motif' : 'Motivo'}</label>
-                <textarea id="extensionReason" rows={2} className="w-full border-2 rounded-xl p-3" placeholder={lang === 'fr' ? 'Extension demandée par le client...' : 'Extensión solicitada por el cliente...'}></textarea>
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowExtensionModal(false)} className="flex-1 py-2 bg-gray-200 rounded-xl hover:bg-gray-300">
-                {lang === 'fr' ? 'Annuler' : 'Cancelar'}
-              </button>
-              <button onClick={async () => {
-                const newEndDate = (document.getElementById('extensionDate') as HTMLInputElement).value
-                const amount = parseFloat((document.getElementById('extensionAmount') as HTMLInputElement).value) || 0
-                const reason = (document.getElementById('extensionReason') as HTMLTextAreaElement).value
-                try {
-                  await fetch(API_URL + '/api/contracts/' + extensionContract.id + '/extend', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ newEndDate, additionalAmount: amount, reason })
-                  })
-                  setShowExtensionModal(false)
-                  setExtensionContract(null)
-                  loadContracts()
-                  alert(lang === 'fr' ? 'Extension enregistrée!' : '¡Extensión registrada!')
-                } catch (e) { console.error(e); alert('Erreur') }
-              }} className="flex-1 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700">
-                {lang === 'fr' ? "Valider l'avenant" : 'Validar extensión'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-    </div>
-  )
+    return { fleetId: selectedVehicle.fleet.id, reason }
+  } catch (error) {
+    console.error('Auto-assign error:', error)
+    return { fleetId: null, reason: 'Erreur lors de l\'assignation automatique' }
+  }
 }
+
+// ============== AUTHENTICATION ==============
+// Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body
+    const user = await prisma.user.findUnique({ where: { email } })
+    
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect' })
+    }
+    
+    const validPassword = await bcrypt.compare(password, user.password)
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect' })
+    }
+    
+    // Update last login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() }
+    })
+    
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role, brands: user.brands, agencyIds: user.agencyIds },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    )
+    
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        brands: user.brands,
+        agencyIds: user.agencyIds,
+        allowedApps: user.allowedApps || [],
+        language: user.language
+      }
+    })
+  } catch (e: any) {
+    console.error('Login error:', e)
+    res.status(500).json({ error: 'Erreur de connexion' })
+  }
+})
+
+// Verify token
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token manquant' })
+    }
+    
+    const token = authHeader.split(' ')[1]
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+    
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } })
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: 'Utilisateur non trouvé' })
+    }
+    
+    res.json({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      brands: user.brands,
+      agencyIds: user.agencyIds,
+      allowedApps: user.allowedApps || []
+    })
+  } catch (e) {
+    res.status(401).json({ error: 'Token invalide' })
+  }
+})
+
+// Create user (admin only)
+app.post('/api/users', async (req, res) => {
+  try {
+    const hashedPassword = await bcrypt.hash(req.body.password, 10)
+    const user = await prisma.user.create({
+      data: {
+        email: req.body.email,
+        password: hashedPassword,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        role: req.body.role || 'OPERATOR',
+        brands: req.body.brands || ['VOLTRIDE', 'MOTOR-RENT'],
+        agencyIds: req.body.agencyIds || [],
+        allowedApps: req.body.allowedApps || [],
+        language: req.body.language || 'es'
+      }
+    })
+    res.json({ ...user, password: undefined })
+  } catch (e: any) {
+    console.error('Create user error:', e)
+    res.status(500).json({ error: 'Erreur création utilisateur' })
+  }
+})
+
+// Get all users
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, brands: true, agencyIds: true, allowedApps: true, language: true, isActive: true, lastLoginAt: true, createdAt: true }
+    })
+    res.json(users)
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur récupération utilisateurs' })
+  }
+})
+
+// Update user
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const data: any = { ...req.body }
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10)
+    }
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data
+    })
+    res.json({ ...user, password: undefined })
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur mise à jour utilisateur' })
+  }
+})
+
+// Delete user
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    await prisma.user.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur suppression utilisateur' })
+  }
+})
+
+
+// ============== ROLE PERMISSIONS ==============
+// Get all permissions
+app.get('/api/permissions', async (req, res) => {
+  try {
+    const permissions = await prisma.rolePermission.findMany({
+      orderBy: [{ role: 'asc' }, { permission: 'asc' }]
+    })
+    res.json(permissions)
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch permissions' })
+  }
+})
+
+// Get permissions by role
+app.get('/api/permissions/:role', async (req, res) => {
+  try {
+    const permissions = await prisma.rolePermission.findMany({
+      where: { role: req.params.role as any }
+    })
+    res.json(permissions)
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch permissions' })
+  }
+})
+
+// Update or create permission
+app.post('/api/permissions', async (req, res) => {
+  try {
+    const { role, permission, allowed } = req.body
+    const result = await prisma.rolePermission.upsert({
+      where: { role_permission: { role, permission } },
+      update: { allowed },
+      create: { role, permission, allowed }
+    })
+    res.json(result)
+  } catch (e: any) {
+    console.error('Permission error:', e)
+    res.status(500).json({ error: 'Failed to update permission' })
+  }
+})
+
+// Bulk update permissions
+app.post('/api/permissions/bulk', async (req, res) => {
+  try {
+    const { permissions } = req.body // Array of { role, permission, allowed }
+    const results = await Promise.all(
+      permissions.map((p: any) =>
+        prisma.rolePermission.upsert({
+          where: { role_permission: { role: p.role, permission: p.permission } },
+          update: { allowed: p.allowed },
+          create: { role: p.role, permission: p.permission, allowed: p.allowed }
+        })
+      )
+    )
+    res.json(results)
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to update permissions' })
+  }
+})
+
+// Initialize default permissions
+app.post('/api/permissions/init', async (req, res) => {
+  try {
+    const roles = ['ADMIN', 'MANAGER', 'OPERATOR']
+    const perms = ['dashboard', 'planning', 'bookings', 'fleet', 'checkout', 'customers', 'contracts', 'invoices', 'settings', 'users']
+    
+    const defaults: Record<string, Record<string, boolean>> = {
+      ADMIN: { dashboard: true, planning: true, bookings: true, fleet: true, checkout: true, customers: true, contracts: true, invoices: true, settings: true, users: true },
+      MANAGER: { dashboard: true, planning: true, bookings: true, fleet: true, checkout: true, customers: true, contracts: true, invoices: true, settings: false, users: false },
+      OPERATOR: { dashboard: true, planning: true, bookings: true, fleet: false, checkout: true, customers: false, contracts: false, invoices: false, settings: false, users: false }
+    }
+    
+    const results = []
+    for (const role of roles) {
+      for (const perm of perms) {
+        const result = await prisma.rolePermission.upsert({
+          where: { role_permission: { role: role as any, permission: perm } },
+          update: { allowed: defaults[role][perm] },
+          create: { role: role as any, permission: perm, allowed: defaults[role][perm] }
+        })
+        results.push(result)
+      }
+    }
+    res.json({ message: 'Permissions initialized', count: results.length })
+  } catch (e: any) {
+    console.error('Init permissions error:', e)
+    res.status(500).json({ error: 'Failed to initialize permissions' })
+  }
+})
+
+// ============== PDF GENERATION ==============
+// Générer le PDF du contrat
+app.get('/api/contracts/:id/pdf', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findUnique({
+      where: { id: req.params.id },
+      include: {
+        customer: true,
+        fleetVehicle: { include: { vehicle: { include: { category: true } } } },
+        agency: true
+      }
+    })
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+    
+    const brand = contract.fleetVehicle?.vehicle?.category?.brand || 'VOLTRIDE'
+    const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
+    const lang = (req.query.lang as string) || 'fr'
+    
+    const pdfBuffer = await generateContractPDF(contract, brandSettings, lang)
+    
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="contrat-${contract.contractNumber}.pdf"`)
+    res.send(pdfBuffer)
+  } catch (e: any) {
+    console.error('PDF generation error:', e)
+    res.status(500).json({ error: 'Failed to generate PDF', details: e.message })
+  }
+})
+
+// Send contract by email
+app.post("/api/contracts/:id/send", async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findUnique({
+      where: { id: req.params.id },
+      include: { customer: true, fleetVehicle: { include: { vehicle: { include: { category: true } } } }, agency: true }
+    })
+    if (!contract) return res.status(404).json({ error: "Contract not found" })
+    const email = req.body.email || contract.customer?.email
+    if (!email) return res.status(400).json({ error: "No email provided" })
+    const brand = contract.fleetVehicle?.vehicle?.category?.brand || "VOLTRIDE"
+    const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
+    const lang = "es"
+    const pdfBuffer = await generateContractPDF(contract, brandSettings, lang)
+    const vehicleName = contract.fleetVehicle?.vehicle?.name || "Vehículo"
+    const parsed = typeof vehicleName === "string" ? (() => { try { return JSON.parse(vehicleName) } catch { return { es: vehicleName } } })() : vehicleName
+    const vName = (parsed as any)?.es || "Vehículo"
+    await resend.emails.send({
+      from: "Voltride <no-reply@voltride.es>",
+      to: email,
+      subject: `Contrato de alquiler - ${contract.contractNumber}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+        <div style="text-align:center;margin-bottom:20px"><img src="${brandSettings?.logoUrl || ""}" alt="Logo" style="height:50px"/></div>
+        <h2 style="color:#f59e0b">Contrato de Alquiler</h2>
+        <p>Estimado/a ${contract.customer?.firstName || ""} ${contract.customer?.lastName || ""},</p>
+        <p>Adjunto encontrará su contrato de alquiler para el vehículo <strong>${vName}</strong>.</p>
+        <p><strong>Número de contrato:</strong> ${contract.contractNumber}</p>
+        <p><strong>Fecha inicio:</strong> ${new Date(contract.currentStartDate).toLocaleDateString("es-ES")}</p>
+        <p><strong>Fecha fin:</strong> ${new Date(contract.currentEndDate).toLocaleDateString("es-ES")}</p>
+        <p>Gracias por confiar en nosotros.</p>
+        <p style="margin-top:30px;color:#666;font-size:12px">Voltride - Alquiler de vehículos eléctricos</p>
+      </div>`,
+      attachments: [{ filename: `contrato-${contract.contractNumber}.pdf`, content: pdfBuffer.toString("base64") }]
+    })
+    res.json({ success: true, message: "Contract sent to " + email })
+  } catch (e: any) {
+    console.error("Send contract error:", e)
+    res.status(500).json({ error: "Failed to send contract", details: e.message })
+  }
+})
+
+
+// Générer le PDF de la facture
+app.get('/api/contracts/:id/invoice-pdf', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findUnique({
+      where: { id: req.params.id },
+      include: {
+        customer: true,
+        fleetVehicle: { include: { vehicle: { include: { category: true } } } },
+        agency: true
+      }
+    })
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+    
+    const brand = contract.fleetVehicle?.vehicle?.category?.brand || 'VOLTRIDE'
+    const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
+    const lang = (req.query.lang as string) || 'fr'
+    
+    const pdfBuffer = await generateInvoicePDF(contract, brandSettings, lang)
+    
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="facture-${contract.contractNumber}.pdf"`)
+    res.send(pdfBuffer)
+  } catch (e: any) {
+    console.error('Invoice PDF generation error:', e)
+    res.status(500).json({ error: 'Failed to generate invoice PDF', details: e.message })
+  }
+})
+
+console.log('PDF routes loaded')
+
+// ============== PUSH NOTIFICATIONS ==============
+webpush.setVapidDetails(process.env.VAPID_EMAIL || 'mailto:contact@voltride.com', process.env.VAPID_PUBLIC_KEY || '', process.env.VAPID_PRIVATE_KEY || '')
+
+app.get('/api/push/vapid-public-key', (req, res) => { res.json({ publicKey: process.env.VAPID_PUBLIC_KEY }) })
+
+app.post('/api/push/subscribe', async (req, res) => {
+  try {
+    const { subscription, userId } = req.body
+    const existing = await prisma.pushSubscription.findUnique({ where: { endpoint: subscription.endpoint } })
+    const result = existing
+      ? await prisma.pushSubscription.update({ where: { endpoint: subscription.endpoint }, data: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth, userId, userAgent: req.headers['user-agent'] } })
+      : await prisma.pushSubscription.create({ data: { endpoint: subscription.endpoint, p256dh: subscription.keys.p256dh, auth: subscription.keys.auth, userId, userAgent: req.headers['user-agent'] } })
+    res.json({ success: true, subscription: result })
+  } catch (error) { console.error('Push subscribe error:', error); res.status(500).json({ error: 'Failed to subscribe' }) }
+})
+
+app.post('/api/push/unsubscribe', async (req, res) => {
+  try {
+    const { endpoint } = req.body
+    await prisma.pushSubscription.delete({ where: { endpoint } }).catch(() => {})
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: 'Failed to unsubscribe' }) }
+})
+
+app.post('/api/push/send', async (req, res) => {
+  try {
+    const { userId, title, body, data } = req.body
+    
+    // Stocker la notification dans l'historique
+    await prisma.notification.create({
+      data: { userId, title, body, icon: '/icon-192.png', data: data || {} }
+    })
+    if (!title || !body) return res.status(400).json({ error: 'Title et body requis' })
+    
+    const subs = userId 
+      ? await prisma.pushSubscription.findMany({ where: { userId } })
+      : await prisma.pushSubscription.findMany()
+    
+    const results = await Promise.allSettled(subs.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          JSON.stringify({ title, body, icon: '/icon-192.png', data })
+        )
+        return { success: true }
+      } catch (err: any) {
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          await prisma.pushSubscription.delete({ where: { endpoint: sub.endpoint } }).catch(() => {})
+        }
+        throw err
+      }
+    }))
+    
+    res.json({ 
+      total: subs.length, 
+      success: results.filter(r => r.status === 'fulfilled').length,
+      failed: results.filter(r => r.status === 'rejected').length 
+    })
+  } catch (error) { console.error('Push send error:', error); res.status(500).json({ error: 'Failed to send' }) }
+})
+
+app.post('/api/push/test', async (req, res) => {
+  try {
+    const { endpoint } = req.body
+    const sub = await prisma.pushSubscription.findUnique({ where: { endpoint } })
+    if (!sub) return res.status(404).json({ error: "Not found" })
+    await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify({ title: "Test OK!", body: "Les notifications fonctionnent", icon: "/icon-192.png" }))
+    res.json({ success: true })
+  } catch (error) { console.error('Push test error:', error); res.status(500).json({ error: 'Failed to send test' }) }
+})
+
+console.log('Push notification routes loaded')
+
+// ============== NOTIFICATION HELPER ==============
+async function sendNotificationByType(type: string, title: string, body: string, data?: any) {
+  try {
+    // Récupérer les paramètres de notification pour ce type
+    const setting = await prisma.notificationSetting.findUnique({ where: { notificationType: type } })
+    if (!setting) return { sent: 0 }
+    
+    // Déterminer les rôles à notifier
+    const rolesToNotify: string[] = []
+    if (setting.roleAdmin) rolesToNotify.push('ADMIN')
+    if (setting.roleManager) rolesToNotify.push('MANAGER')
+    if (setting.roleOperator) rolesToNotify.push('OPERATOR')
+    
+    if (rolesToNotify.length === 0) return { sent: 0 }
+    
+    // Récupérer les utilisateurs de ces rôles
+    const users = await prisma.user.findMany({
+      where: { role: { in: rolesToNotify as any }, isActive: true }
+    })
+    
+    let sent = 0
+    for (const user of users) {
+      // Créer la notification dans l'historique
+      await prisma.notification.create({
+        data: { userId: user.id, title, body, icon: '/icon-192.png', data: data || {} }
+      })
+      
+      // Envoyer push notification
+      const subs = await prisma.pushSubscription.findMany({ where: { userId: user.id } })
+      for (const sub of subs) {
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            JSON.stringify({ title, body, icon: '/icon-192.png', data })
+          )
+          sent++
+        } catch (e: any) {
+          if (e.statusCode === 410 || e.statusCode === 404) {
+            await prisma.pushSubscription.delete({ where: { endpoint: sub.endpoint } }).catch(() => {})
+          }
+        }
+      }
+    }
+    return { sent, users: users.length }
+  } catch (e) { console.error('sendNotificationByType error:', e); return { sent: 0, error: e } }
+}
+
+
+
+
+
+// ============== CRON NOTIFICATIONS (à appeler toutes les 5-10 min) ==============
+app.get('/api/cron/check-notifications', async (req, res) => {
+  try {
+    const now = new Date()
+    const today = now.toISOString().split('T')[0]
+    const currentHour = now.getHours()
+    const currentMinute = now.getMinutes()
+    const results = { checkinImminent: 0, checkoutImminent: 0, lateReturn: 0 }
+    
+    // Récupérer les réservations du jour
+    const todayBookings = await prisma.booking.findMany({
+      where: {
+        OR: [
+          { startDate: { gte: new Date(today), lt: new Date(today + 'T23:59:59') } },
+          { endDate: { gte: new Date(today), lt: new Date(today + 'T23:59:59') } }
+        ],
+        status: { in: ['CONFIRMED', 'CHECKED_IN'] }
+      },
+      include: { customer: true, fleetVehicle: true, agency: true }
+    })
+    
+    for (const booking of todayBookings) {
+      // Parse l'heure de début (format "HH:MM")
+      const [startHour, startMin] = booking.startTime.split(':').map(Number)
+      const [endHour, endMin] = booking.endTime.split(':').map(Number)
+      
+      // Check-in imminent (30 min avant, si pas encore check-in)
+      if (!booking.checkedIn && booking.startDate.toISOString().split('T')[0] === today) {
+        const startMinutes = startHour * 60 + startMin
+        const nowMinutes = currentHour * 60 + currentMinute
+        const diff = startMinutes - nowMinutes
+        
+        if (diff > 0 && diff <= 30) {
+          // Vérifier si notification déjà envoyée (via tag unique)
+          const existing = await prisma.notification.findFirst({
+            where: { 
+              data: { path: ['bookingId'], equals: booking.id },
+              title: { contains: 'Check-in imminent' },
+              createdAt: { gte: new Date(today) }
+            }
+          })
+          
+          if (!existing) {
+            await sendNotificationByType(
+              'checkin_imminent',
+              '⏰ Check-in imminent',
+              `${booking.customer?.firstName} ${booking.customer?.lastName} arrive dans ${diff} min (${booking.startTime})`,
+              { bookingId: booking.id, reference: booking.reference }
+            )
+            results.checkinImminent++
+          }
+        }
+      }
+      
+      // Check-out imminent (30 min avant, si check-in fait mais pas check-out)
+      if (booking.checkedIn && !booking.checkedOut && booking.endDate.toISOString().split('T')[0] === today) {
+        const endMinutes = endHour * 60 + endMin
+        const nowMinutes = currentHour * 60 + currentMinute
+        const diff = endMinutes - nowMinutes
+        
+        if (diff > 0 && diff <= 30) {
+          const existing = await prisma.notification.findFirst({
+            where: { 
+              data: { path: ['bookingId'], equals: booking.id },
+              title: { contains: 'Check-out imminent' },
+              createdAt: { gte: new Date(today) }
+            }
+          })
+          
+          if (!existing) {
+            await sendNotificationByType(
+              'checkout_imminent',
+              '⏰ Check-out imminent',
+              `${booking.customer?.firstName} ${booking.customer?.lastName} doit rendre dans ${diff} min (${booking.endTime})`,
+              { bookingId: booking.id, reference: booking.reference }
+            )
+            results.checkoutImminent++
+          }
+        }
+      }
+      
+      // Retard de retour (si heure de fin dépassée et pas check-out)
+      if (booking.checkedIn && !booking.checkedOut && booking.endDate.toISOString().split('T')[0] === today) {
+        const endMinutes = endHour * 60 + endMin
+        const nowMinutes = currentHour * 60 + currentMinute
+        
+        if (nowMinutes > endMinutes) {
+          const lateMinutes = nowMinutes - endMinutes
+          
+          // Envoyer notification toutes les 15 min de retard
+          if (lateMinutes % 15 < 5) {
+            const existing = await prisma.notification.findFirst({
+              where: { 
+                data: { path: ['bookingId'], equals: booking.id },
+                title: { contains: 'Retard' },
+                createdAt: { gte: new Date(Date.now() - 10 * 60 * 1000) } // 10 min
+              }
+            })
+            
+            if (!existing) {
+              await sendNotificationByType(
+                'late_return',
+                '⚠️ Retard de retour',
+                `${booking.customer?.firstName} ${booking.customer?.lastName} a ${lateMinutes} min de retard!`,
+                { bookingId: booking.id, reference: booking.reference, lateMinutes }
+              )
+              results.lateReturn++
+            }
+          }
+        }
+      }
+    }
+    
+    res.json({ success: true, checked: todayBookings.length, notifications: results })
+  } catch (error) { 
+    console.error('Cron notifications error:', error)
+    res.status(500).json({ error: 'Failed to check notifications' }) 
+  }
+})
+
+// ============== NOTIFICATIONS HISTORY ==============
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const { userId } = req.query
+    const where = userId ? { userId: userId as string } : {}
+    const notifications = await prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    })
+    res.json(notifications)
+  } catch (error) { res.status(500).json({ error: 'Failed to get notifications' }) }
+})
+
+app.get('/api/notifications/unread-count', async (req, res) => {
+  try {
+    const { userId } = req.query
+    const where = userId ? { userId: userId as string, isRead: false } : { isRead: false }
+    const count = await prisma.notification.count({ where })
+    res.json({ count })
+  } catch (error) { res.status(500).json({ error: 'Failed to count' }) }
+})
+
+app.put('/api/notifications/:id/read', async (req, res) => {
+  try {
+    const notification = await prisma.notification.update({
+      where: { id: req.params.id },
+      data: { isRead: true }
+    })
+    res.json(notification)
+  } catch (error) { res.status(500).json({ error: 'Failed to mark as read' }) }
+})
+
+app.put('/api/notifications/read-all', async (req, res) => {
+  try {
+    const { userId } = req.body
+    const where = userId ? { userId } : {}
+    await prisma.notification.updateMany({ where, data: { isRead: true } })
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: 'Failed to mark all as read' }) }
+})
+
+app.delete('/api/notifications/:id', async (req, res) => {
+  try {
+    await prisma.notification.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: 'Failed to delete' }) }
+})
+
+
+
+
+// ============== VEHICLE NUMBERING CATEGORIES ==============
+app.get('/api/numbering-categories', async (req, res) => {
+  try {
+    const categories = await prisma.vehicleNumberingCategory.findMany({ where: { isActive: true }, orderBy: { code: 'asc' }, include: { categories: true } })
+    res.json(categories)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch numbering categories' }) }
+})
+
+app.post('/api/numbering-categories', async (req, res) => {
+  try {
+    const category = await prisma.vehicleNumberingCategory.create({
+      data: { code: req.body.code, prefix: req.body.prefix, name: req.body.name, description: req.body.description, numberPadding: req.body.numberPadding || 3, inspectionType: req.body.inspectionType || 'FULL', isActive: true }
+    })
+    res.json(category)
+  } catch (error) { res.status(500).json({ error: 'Failed to create numbering category' }) }
+})
+
+app.put('/api/numbering-categories/:id', async (req, res) => {
+  try {
+    const category = await prisma.vehicleNumberingCategory.update({ where: { id: req.params.id }, data: { code: req.body.code, prefix: req.body.prefix, name: req.body.name, description: req.body.description, numberPadding: req.body.numberPadding, inspectionType: req.body.inspectionType, isActive: req.body.isActive } })
+    res.json(category)
+  } catch (error) { res.status(500).json({ error: 'Failed to update numbering category' }) }
+})
+
+// ============== FLEET ==============
+app.get('/api/fleet', async (req, res) => {
+  try {
+    const { agencyId, status, vehicleId } = req.query
+    const where: any = { isActive: true }
+    if (agencyId) where.agencyId = agencyId
+    if (status) where.status = status
+    if (vehicleId) where.vehicleId = vehicleId
+    
+    const fleet = await prisma.fleet.findMany({
+      where,
+      include: { vehicle: { include: { category: true, pricing: true } }, agency: true, documents: true, damages: { where: { isResolved: false } } },
+      orderBy: { vehicleNumber: 'asc' }
+    })
+    res.json(fleet)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch fleet' }) }
+})
+
+
+// Get available fleet vehicles (MUST BE BEFORE /:id route!)
+app.get('/api/fleet/available', async (req, res) => {
+  try {
+    const { agencyId, vehicleId, startDate, endDate } = req.query
+    const where: any = { isActive: true, status: { in: ['AVAILABLE', 'RESERVED'] } }
+    if (agencyId) where.agencyId = agencyId
+    if (vehicleId) where.vehicleId = vehicleId
+    
+    const fleetVehicles = await prisma.fleet.findMany({
+      where,
+      include: { vehicle: { include: { category: true, pricing: true } }, agency: true }
+    })
+    
+    if (!startDate || !endDate) return res.json(fleetVehicles)
+    
+    const start = new Date(startDate as string)
+    const end = new Date(endDate as string)
+    
+    const conflictingBookings = await prisma.booking.findMany({
+      where: {
+        fleetVehicleId: { in: fleetVehicles.map(f => f.id) },
+        status: { in: ['CONFIRMED', 'PENDING'] },
+        startDate: { lte: end },
+        endDate: { gte: start }
+      },
+      select: { fleetVehicleId: true }
+    })
+    
+    const conflictingIds = new Set(conflictingBookings.map(b => b.fleetVehicleId))
+    res.json(fleetVehicles.filter(f => !conflictingIds.has(f.id)))
+  } catch (e: any) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to get available vehicles' })
+  }
+})
+
+
+
+app.put('/api/fleet/:id/status', async (req, res) => {
+  try {
+    const fleetVehicle = await prisma.fleet.update({ where: { id: req.params.id }, data: { status: req.body.status } })
+    res.json(fleetVehicle)
+  } catch (error) { res.status(500).json({ error: 'Failed to update fleet status' }) }
+})
+
+
+// ============== FLEET DOCUMENTS ==============
+
+
+
+// ============== FLEET DAMAGES ==============
+app.get('/api/fleet/:fleetId/damages', async (req, res) => {
+  try {
+    const { resolved } = req.query
+    const where: any = { fleetId: req.params.fleetId }
+    if (resolved !== undefined) where.isResolved = resolved === 'true'
+    const damages = await prisma.fleetDamage.findMany({ where, orderBy: { reportedAt: 'desc' } })
+    res.json(damages)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch damages' }) }
+})
+
+app.post('/api/fleet/:fleetId/damages', async (req, res) => {
+  try {
+    const damage = await prisma.fleetDamage.create({
+      data: {
+        fleetId: req.params.fleetId,
+        description: req.body.description,
+        location: req.body.location,
+        locationDetail: req.body.locationDetail,
+        severity: req.body.severity || 'MINOR',
+        photoUrl: req.body.photoUrl,
+        photoThumbnail: req.body.photoThumbnail,
+        reportedBy: req.body.reportedBy,
+        inspectionId: req.body.inspectionId,
+        contractId: req.body.contractId
+      }
+    })
+    res.json(damage)
+  } catch (error) { res.status(500).json({ error: 'Failed to create damage report' }) }
+})
+
+app.put('/api/fleet/damages/:id/resolve', async (req, res) => {
+  try {
+    const damage = await prisma.fleetDamage.update({
+      where: { id: req.params.id },
+      data: { isResolved: true, resolvedAt: new Date(), resolvedBy: req.body.resolvedBy, resolutionNote: req.body.resolutionNote }
+    })
+    res.json(damage)
+  } catch (error) { res.status(500).json({ error: 'Failed to resolve damage' }) }
+})
+
+// ============== FLEET INSPECTIONS ==============
+app.get('/api/fleet/:fleetId/inspections', async (req, res) => {
+  try {
+    const inspections = await prisma.fleetInspection.findMany({
+      where: { fleetId: req.params.fleetId, isDeleted: false },
+      include: { photos: true, damages: true, contract: true },
+      orderBy: { inspectedAt: 'desc' }
+    })
+    res.json(inspections)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch inspections' }) }
+})
+
+app.get('/api/inspections/:id', async (req, res) => {
+  try {
+    const inspection = await prisma.fleetInspection.findUnique({
+      where: { id: req.params.id },
+      include: { photos: true, damages: true, fleet: { include: { vehicle: true } }, contract: true }
+    })
+    if (!inspection) return res.status(404).json({ error: 'Inspection not found' })
+    res.json(inspection)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch inspection' }) }
+})
+
+app.post('/api/fleet/:fleetId/inspections', async (req, res) => {
+  try {
+    const inspection = await prisma.fleetInspection.create({
+      data: {
+        fleetId: req.params.fleetId,
+        contractId: req.body.contractId,
+        type: req.body.type,
+        mileage: req.body.mileage,
+        condition: req.body.condition,
+        fuelLevel: req.body.fuelLevel,
+        operatorId: req.body.operatorId,
+        operatorNotes: req.body.operatorNotes,
+        customerSignature: req.body.customerSignature,
+        customerSignedAt: req.body.customerSignature ? new Date() : null,
+        customerIpAddress: req.body.customerIpAddress,
+        customerDeviceInfo: req.body.customerDeviceInfo
+      },
+      include: { photos: true }
+    })
+    
+    // Update fleet mileage
+    await prisma.fleet.update({ where: { id: req.params.fleetId }, data: { currentMileage: req.body.mileage, lastMileageUpdate: new Date() } })
+    
+    // Create mileage log
+    const fleet = await prisma.fleet.findUnique({ where: { id: req.params.fleetId } })
+    if (fleet) {
+      await prisma.mileageLog.create({
+        data: {
+          fleetId: req.params.fleetId,
+          previousMileage: fleet.currentMileage,
+          newMileage: req.body.mileage,
+          difference: req.body.mileage - fleet.currentMileage,
+          source: req.body.type === 'CHECK_OUT' ? 'CHECK_OUT' : req.body.type === 'CHECK_IN' ? 'CHECK_IN' : 'MANUAL',
+          referenceId: inspection.id,
+          recordedBy: req.body.operatorId
+        }
+      })
+    }
+    
+    res.json(inspection)
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create inspection' }) }
+})
+
+app.post('/api/inspections/:id/photos', async (req, res) => {
+  try {
+    const photo = await prisma.inspectionPhoto.create({
+      data: {
+        inspectionId: req.params.id,
+        angle: req.body.angle,
+        photoUrl: req.body.photoUrl,
+        photoThumbnail: req.body.photoThumbnail
+      }
+    })
+    res.json(photo)
+  } catch (error) { res.status(500).json({ error: 'Failed to add inspection photo' }) }
+})
+
+app.post('/api/inspections/:id/sign', async (req, res) => {
+  try {
+    const inspection = await prisma.fleetInspection.update({
+      where: { id: req.params.id },
+      data: {
+        customerSignature: req.body.signature,
+        customerSignedAt: new Date(),
+        customerIpAddress: req.body.ipAddress,
+        customerDeviceInfo: req.body.deviceInfo
+      }
+    })
+    res.json(inspection)
+  } catch (error) { res.status(500).json({ error: 'Failed to sign inspection' }) }
+})
+
+// ============== MAINTENANCE RECORDS ==============
+
+app.get('/api/maintenance', async (req, res) => {
+  try {
+    const { status, priority, agencyId } = req.query
+    const where: any = {}
+    if (status) where.status = status
+    if (priority) where.priority = priority
+    if (agencyId) where.fleet = { agencyId }
+    
+    const records = await prisma.maintenanceRecord.findMany({
+      where,
+      include: { fleet: { include: { vehicle: { include: { category: true } }, agency: true } } },
+      orderBy: [{ priority: 'desc' }, { scheduledDate: 'asc' }]
+    })
+    res.json(records)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch maintenance records' }) }
+})
+
+
+app.put('/api/maintenance/:id', async (req, res) => {
+  try {
+    const record = await prisma.maintenanceRecord.update({
+      where: { id: req.params.id },
+      data: {
+        type: req.body.type,
+        description: req.body.description,
+        mileage: req.body.mileage,
+        laborCost: req.body.laborCost,
+        partsCost: req.body.partsCost,
+        totalCost: req.body.totalCost,
+        performedBy: req.body.performedBy,
+        invoiceNumber: req.body.invoiceNumber,
+        invoiceUrl: req.body.invoiceUrl,
+        scheduledDate: req.body.scheduledDate ? new Date(req.body.scheduledDate) : undefined,
+        startedAt: req.body.startedAt ? new Date(req.body.startedAt) : undefined,
+        completedAt: req.body.completedAt ? new Date(req.body.completedAt) : undefined,
+        status: req.body.status,
+        priority: req.body.priority,
+        partsReplaced: req.body.partsReplaced,
+        technicianNotes: req.body.technicianNotes,
+        notes: req.body.notes,
+      },
+      include: { fleet: true }
+    })
+    
+    // Update fleet status based on maintenance status
+    if (req.body.status === 'IN_PROGRESS') {
+      await prisma.fleet.update({ where: { id: record.fleetId }, data: { status: 'MAINTENANCE' } })
+    } else if (req.body.status === 'COMPLETED') {
+      await prisma.fleet.update({
+        where: { id: record.fleetId },
+        data: { status: 'AVAILABLE', lastMaintenanceDate: new Date(), lastMaintenanceMileage: record.mileage }
+      })
+    }
+    
+    res.json(record)
+  } catch (error) { res.status(500).json({ error: 'Failed to update maintenance record' }) }
+})
+
+// ============== SPARE PARTS ==============
+
+
+app.put('/api/spare-parts/:id', async (req, res) => {
+  try {
+    const part = await prisma.fleetSparePart.update({
+      where: { id: req.params.id },
+      data: {
+        name: req.body.name,
+        partNumber: req.body.partNumber,
+        category: req.body.category,
+        location: req.body.location,
+        price: req.body.price,
+        laborCost: req.body.laborCost,
+        totalCost: req.body.price + (req.body.laborCost || 0),
+        quantityInStock: req.body.quantityInStock,
+        minimumStock: req.body.minimumStock,
+        supplierName: req.body.supplierName,
+        supplierRef: req.body.supplierRef,
+        isActive: req.body.isActive
+      }
+    })
+    res.json(part)
+  } catch (error) { res.status(500).json({ error: 'Failed to update spare part' }) }
+})
+
+// ============== SPARE PART TEMPLATES ==============
+app.get('/api/vehicles/:vehicleId/spare-part-templates', async (req, res) => {
+  try {
+    const templates = await prisma.vehicleSparePartTemplate.findMany({ where: { vehicleId: req.params.vehicleId, isActive: true }, orderBy: { name: 'asc' } })
+    res.json(templates)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch spare part templates' }) }
+})
+
+app.post('/api/vehicles/:vehicleId/spare-part-templates', async (req, res) => {
+  try {
+    const template = await prisma.vehicleSparePartTemplate.create({
+      data: {
+        vehicleId: req.params.vehicleId,
+        name: req.body.name,
+        partNumber: req.body.partNumber,
+        category: req.body.category,
+        location: req.body.location,
+        defaultPrice: req.body.defaultPrice,
+        defaultLaborCost: req.body.defaultLaborCost
+      }
+    })
+    res.json(template)
+  } catch (error) { res.status(500).json({ error: 'Failed to create spare part template' }) }
+})
+
+// Copy templates to fleet vehicle
+app.post('/api/fleet/:fleetId/copy-spare-parts-from-templates', async (req, res) => {
+  try {
+    const fleet = await prisma.fleet.findUnique({ where: { id: req.params.fleetId }, include: { vehicle: true } })
+    if (!fleet) return res.status(404).json({ error: 'Fleet vehicle not found' })
+    
+    const templates = await prisma.vehicleSparePartTemplate.findMany({ where: { vehicleId: fleet.vehicleId, isActive: true } })
+    
+    const parts = await Promise.all(templates.map(t => 
+      prisma.fleetSparePart.create({
+        data: {
+          fleetId: req.params.fleetId,
+          name: t.name,
+          partNumber: t.partNumber,
+          category: t.category,
+          location: t.location,
+          price: t.defaultPrice,
+          laborCost: t.defaultLaborCost || 0,
+          totalCost: Number(t.defaultPrice) + Number(t.defaultLaborCost || 0)
+        }
+      })
+    ))
+    
+    res.json(parts)
+  } catch (error) { res.status(500).json({ error: 'Failed to copy spare parts from templates' }) }
+})
+
+// ============== RENTAL CONTRACTS ==============
+app.get('/api/contracts', async (req, res) => {
+  try {
+    const { agencyId, status, customerId } = req.query
+    const where: any = {}
+    if (agencyId) where.agencyId = agencyId
+    if (status) where.status = status
+    if (customerId) where.customerId = customerId
+    
+    const contracts = await prisma.rentalContract.findMany({
+      where,
+      include: { fleetVehicle: { include: { vehicle: true } }, agency: true, customer: true, booking: true },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(contracts)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch contracts' }) }
+})
+
+app.get('/api/contracts/:id', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findUnique({
+      where: { id: req.params.id },
+      include: {
+        fleetVehicle: { include: { vehicle: { include: { category: true, pricing: true } }, documents: { where: { sendToCustomer: true } } } },
+        agency: true,
+        customer: true,
+        booking: true,
+        inspections: { include: { photos: true } },
+        deductions: { include: { sparePart: true } },
+        contractOptions: { include: { rentalOption: true } },
+        extensions: true,
+        payments: true
+      }
+    })
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+    res.json(contract)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch contract' }) }
+})
+
+// Generate contract number
+const generateContractNumber = async (agencyCode: string) => {
+  const year = new Date().getFullYear()
+  const prefix = `CTR-${agencyCode}-${year}-`
+  
+  const lastContract = await prisma.rentalContract.findFirst({
+    where: { contractNumber: { startsWith: prefix } },
+    orderBy: { contractNumber: 'desc' }
+  })
+  
+  let nextNumber = 1
+  if (lastContract) {
+    const lastNumber = parseInt(lastContract.contractNumber.replace(prefix, ''))
+    nextNumber = lastNumber + 1
+  }
+  
+  return prefix + String(nextNumber).padStart(5, '0')
+}
+
+app.post('/api/contracts', async (req, res) => {
+  try {
+    const agency = await prisma.agency.findUnique({ where: { id: req.body.agencyId } })
+    if (!agency) return res.status(400).json({ error: 'Agency not found' })
+    
+    const contractNumber = await generateContractNumber(agency.code)
+    
+    // Find or create customer
+    let customer = await prisma.customer.findFirst({ where: { email: req.body.customer.email } })
+    if (!customer) {
+      customer = await prisma.customer.create({
+        data: {
+          firstName: req.body.customer.firstName,
+          lastName: req.body.customer.lastName,
+          email: req.body.customer.email,
+          phone: req.body.customer.phone,
+          address: req.body.customer.address,
+          postalCode: req.body.customer.postalCode,
+          city: req.body.customer.city,
+          country: req.body.customer.country || 'ES',
+          language: req.body.customer.language || 'es'
+        }
+      })
+    }
+    
+    // Calcul de la commission si agence partenaire ou franchise
+    let commissionRate = null
+    let commissionAmount = null
+    let commissionType = null
+    if (agency.agencyType === 'PARTNER' || agency.agencyType === 'FRANCHISE') {
+      commissionRate = agency.commissionRate || 0
+      // Calcul sur le prix HT (subtotal + options - discount)
+      const totalHT = (req.body.subtotal || 0) + (req.body.optionsTotal || 0) - (req.body.discountAmount || 0)
+      commissionAmount = Math.round(totalHT * commissionRate * 100) / 100
+      commissionType = agency.agencyType === 'PARTNER' ? 'REVERSAL' as const : 'DEDUCTION' as const
+    }
+    
+    const contract = await prisma.rentalContract.create({
+      data: {
+        contractNumber,
+        bookingId: req.body.bookingId,
+        fleetVehicleId: req.body.fleetVehicleId,
+        agencyId: req.body.agencyId,
+        customerId: customer.id,
+        originalStartDate: new Date(req.body.startDate),
+        originalEndDate: new Date(req.body.endDate),
+        currentStartDate: new Date(req.body.startDate),
+        currentEndDate: new Date(req.body.endDate),
+        source: req.body.source || 'WALK_IN',
+        dailyRate: req.body.dailyRate,
+        totalDays: req.body.totalDays,
+        subtotal: req.body.subtotal,
+        optionsTotal: req.body.optionsTotal || 0,
+        discountAmount: req.body.discountAmount || 0,
+        discountReason: req.body.discountReason,
+        taxRate: req.body.taxRate || 21,
+        taxAmount: req.body.taxAmount,
+        totalAmount: req.body.totalAmount,
+        depositAmount: req.body.depositAmount,
+        depositMethod: req.body.depositMethod,
+        status: 'DRAFT',
+        internalNotes: req.body.internalNotes,
+        customerNotes: req.body.customerNotes,
+        commissionRate: commissionRate,
+        commissionAmount: commissionAmount,
+        commissionType: commissionType,
+        commissionStatus: commissionRate ? 'PENDING' as const : undefined
+      },
+      include: { fleetVehicle: { include: { vehicle: true } }, agency: true, customer: true }
+    })
+    
+    // Update fleet status
+    await prisma.fleet.update({ where: { id: req.body.fleetVehicleId }, data: { status: 'RESERVED' } })
+    
+    // Link booking if exists
+    if (req.body.bookingId) {
+      await prisma.booking.update({ where: { id: req.body.bookingId }, data: { fleetVehicleId: req.body.fleetVehicleId, assignmentType: 'MANUAL', assignedAt: new Date() } })
+    }
+    
+    res.json(contract)
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create contract' }) }
+})
+
+
+app.put('/api/contracts/:id/status', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.update({
+      where: { id: req.params.id },
+      data: { status: req.body.status }
+    })
+    
+    // Update fleet status based on contract status
+    if (req.body.status === 'ACTIVE') {
+      await prisma.fleet.update({ where: { id: contract.fleetVehicleId }, data: { status: 'RENTED' } })
+    } else if (req.body.status === 'COMPLETED' || req.body.status === 'CANCELLED') {
+      await prisma.fleet.update({ where: { id: contract.fleetVehicleId }, data: { status: 'AVAILABLE' } })
+    }
+    
+    res.json(contract)
+  } catch (error) { res.status(500).json({ error: 'Failed to update contract status' }) }
+})
+
+// Sign contract
+app.post('/api/contracts/:id/sign', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.update({
+      where: { id: req.params.id },
+      data: {
+        customerSignature: req.body.customerSignature,
+        customerSignedAt: new Date(),
+        customerIpAddress: req.body.ipAddress,
+        customerDeviceInfo: req.body.deviceInfo,
+        operatorSignature: req.body.operatorSignature,
+        operatorSignedAt: req.body.operatorSignature ? new Date() : undefined,
+        operatorId: req.body.operatorId,
+        status: 'PENDING_SIGNATURE'
+      }
+    })
+    res.json(contract)
+  } catch (error) { res.status(500).json({ error: 'Failed to sign contract' }) }
+})
+
+// Check-out (start rental)
+app.post('/api/contracts/:id/check-out', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findUnique({ where: { id: req.params.id }, include: { fleetVehicle: true } })
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+    
+    // Create inspection
+    const inspection = await prisma.fleetInspection.create({
+      data: {
+        fleetId: contract.fleetVehicleId,
+        contractId: contract.id,
+        type: 'CHECK_OUT',
+        mileage: req.body.mileage,
+        condition: req.body.condition,
+        fuelLevel: req.body.fuelLevel,
+        operatorId: req.body.operatorId,
+        operatorNotes: req.body.notes,
+        customerSignature: req.body.customerSignature,
+        customerSignedAt: req.body.customerSignature ? new Date() : null
+      }
+    })
+    
+    // Update contract
+    await prisma.rentalContract.update({
+      where: { id: req.params.id },
+      data: { status: 'ACTIVE', actualStartDate: new Date(), startMileage: req.body.mileage }
+    })
+    
+    // Update fleet
+    await prisma.fleet.update({
+      where: { id: contract.fleetVehicleId },
+      data: { status: 'RENTED', currentMileage: req.body.mileage }
+    })
+    
+    res.json({ contract, inspection })
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to check-out' }) }
+})
+
+// Check-in (end rental)
+app.post('/api/contracts/:id/check-in', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findUnique({ where: { id: req.params.id }, include: { fleetVehicle: true } })
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+    
+    // Create inspection
+    const inspection = await prisma.fleetInspection.create({
+      data: {
+        fleetId: contract.fleetVehicleId,
+        contractId: contract.id,
+        type: 'CHECK_IN',
+        mileage: req.body.mileage,
+        condition: req.body.condition,
+        fuelLevel: req.body.fuelLevel,
+        operatorId: req.body.operatorId,
+        operatorNotes: req.body.notes,
+        customerSignature: req.body.customerSignature,
+        customerSignedAt: req.body.customerSignature ? new Date() : null
+      }
+    })
+    
+    const totalMileage = req.body.mileage - (contract.startMileage || 0)
+    
+    // Update contract
+    await prisma.rentalContract.update({
+      where: { id: req.params.id },
+      data: {
+        status: 'COMPLETED',
+        actualEndDate: new Date(),
+        endMileage: req.body.mileage,
+        totalMileage
+      }
+    })
+    
+    // Update fleet
+    await prisma.fleet.update({
+      where: { id: contract.fleetVehicleId },
+      data: {
+        status: 'AVAILABLE',
+        currentMileage: req.body.mileage,
+        totalRentals: { increment: 1 },
+        totalRentalDays: { increment: contract.totalDays }
+      }
+    })
+    
+    res.json({ contract, inspection })
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to check-in' }) }
+})
+
+
+// ============== BOOKING CHECK-OUT (Départ client) ==============
+// ============== CONTRACT DEDUCTIONS ==============
+
+
+app.put('/api/deductions/:id/customer-agree', async (req, res) => {
+  try {
+    const deduction = await prisma.contractDeduction.update({
+      where: { id: req.params.id },
+      data: { customerAgreed: true }
+    })
+    res.json(deduction)
+  } catch (error) { res.status(500).json({ error: 'Failed to update deduction' }) }
+})
+
+// ============== CONTRACT EXTENSIONS ==============
+app.get('/api/contracts/:contractId/extensions', async (req, res) => {
+  try {
+    const extensions = await prisma.contractExtension.findMany({
+      where: { contractId: req.params.contractId },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(extensions)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch extensions' }) }
+})
+
+// Generate extension number
+const generateExtensionNumber = async (contractNumber: string) => {
+  const prefix = `EXT-${contractNumber}-`
+  const lastExtension = await prisma.contractExtension.findFirst({
+    where: { extensionNumber: { startsWith: prefix } },
+    orderBy: { extensionNumber: 'desc' }
+  })
+  
+  let nextNumber = 1
+  if (lastExtension) {
+    const lastNumber = parseInt(lastExtension.extensionNumber.replace(prefix, ''))
+    nextNumber = lastNumber + 1
+  }
+  
+  return prefix + String(nextNumber).padStart(2, '0')
+}
+
+// Check availability for extension
+app.post('/api/contracts/:contractId/extensions/check-availability', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findUnique({
+      where: { id: req.params.contractId },
+      include: { fleetVehicle: { include: { vehicle: true } }, agency: true }
+    })
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+    
+    const requestedEndDate = new Date(req.body.requestedEndDate)
+    
+    // Check if current vehicle is available
+    const conflictingBooking = await prisma.booking.findFirst({
+      where: {
+        fleetVehicleId: contract.fleetVehicleId,
+        status: { in: ['CONFIRMED', 'PENDING'] },
+        startDate: { lt: requestedEndDate },
+        endDate: { gt: contract.currentEndDate },
+        id: { not: contract.bookingId || undefined }
+      }
+    })
+    
+    if (!conflictingBooking) {
+      return res.json({
+        available: true,
+        status: 'AVAILABLE',
+        currentVehicleAvailable: true,
+        solutionType: 'SAME_VEHICLE'
+      })
+    }
+    
+    // Find alternative vehicles
+    const alternativeVehicles = await prisma.fleet.findMany({
+      where: {
+        vehicleId: contract.fleetVehicle.vehicleId,
+        agencyId: contract.agencyId,
+        id: { not: contract.fleetVehicleId },
+        status: 'AVAILABLE',
+        isActive: true
+      },
+      include: { vehicle: true }
+    })
+    
+    if (alternativeVehicles.length > 0) {
+      return res.json({
+        available: true,
+        status: 'AVAILABLE_WITH_CHANGE',
+        currentVehicleAvailable: false,
+        conflictingBooking,
+        solutionType: 'ALTERNATIVE_VEHICLE',
+        alternativeVehicles
+      })
+    }
+    
+    return res.json({
+      available: false,
+      status: 'UNAVAILABLE',
+      currentVehicleAvailable: false,
+      conflictingBooking,
+      reason: 'No vehicles available for the requested period'
+    })
+  } catch (error) { res.status(500).json({ error: 'Failed to check availability' }) }
+})
+
+// Create extension request
+app.post('/api/contracts/:contractId/extensions', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.findUnique({
+      where: { id: req.params.contractId },
+      include: { fleetVehicle: { include: { vehicle: { include: { category: true, pricing: true } } } }, agency: true }
+    })
+    if (!contract) return res.status(404).json({ error: 'Contract not found' })
+    
+    const extensionNumber = await generateExtensionNumber(contract.contractNumber)
+    const requestedEndDate = new Date(req.body.requestedEndDate)
+    const additionalDays = Math.ceil((requestedEndDate.getTime() - contract.currentEndDate.getTime()) / (1000 * 60 * 60 * 24))
+    
+    const subtotal = Number(contract.dailyRate) * additionalDays
+    const taxAmount = subtotal * (Number(contract.taxRate) / 100)
+    const totalAmount = subtotal + taxAmount
+    
+    const extension = await prisma.contractExtension.create({
+      data: {
+        extensionNumber,
+        contractId: req.params.contractId,
+        previousEndDate: contract.currentEndDate,
+        requestedEndDate,
+        additionalDays,
+        requestSource: req.body.requestSource || 'OPERATOR_PHONE',
+        requestedBy: req.body.requestedBy,
+        availabilityStatus: req.body.availabilityStatus || 'PENDING_CHECK',
+        currentVehicleAvailable: req.body.currentVehicleAvailable || false,
+        solutionType: req.body.solutionType,
+        alternativeVehicleId: req.body.alternativeVehicleId,
+        dailyRate: contract.dailyRate,
+        subtotal,
+        taxRate: contract.taxRate,
+        taxAmount,
+        totalAmount,
+        status: 'PENDING_PAYMENT'
+      }
+    })
+    
+    res.json(extension)
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create extension' }) }
+})
+
+// Create Stripe payment link for extension
+app.post('/api/extensions/:id/create-payment-link', async (req, res) => {
+  try {
+    const extension = await prisma.contractExtension.findUnique({
+      where: { id: req.params.id },
+      include: { contract: { include: { customer: true, fleetVehicle: { include: { vehicle: { include: { category: true, pricing: true } } } }, agency: true } } }
+    })
+    if (!extension) return res.status(404).json({ error: 'Extension not found' })
+    
+    const brand = extension.contract.fleetVehicle.vehicle.category.brand
+    const stripe = getStripeInstance(brand)
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer_email: extension.contract.customer.email,
+      line_items: [{
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: `Prolongation ${extension.additionalDays} jour(s)`,
+            description: `Contrat ${extension.contract.contractNumber} - ${extension.contract.fleetVehicle.vehicleNumber}`
+          },
+          unit_amount: Math.round(Number(extension.totalAmount) * 100)
+        },
+        quantity: 1
+      }],
+      mode: 'payment',
+      success_url: `${req.body.successUrl}?extensionId=${extension.id}`,
+      cancel_url: req.body.cancelUrl,
+      metadata: {
+        extensionId: extension.id,
+        contractId: extension.contractId,
+        type: 'CONTRACT_EXTENSION'
+      }
+    })
+    
+    await prisma.contractExtension.update({
+      where: { id: req.params.id },
+      data: {
+        stripeSessionId: session.id,
+        stripePaymentLinkUrl: session.url,
+        status: 'PAYMENT_LINK_SENT'
+      }
+    })
+    
+    // Create payment link record
+    await prisma.stripePaymentLink.create({
+      data: {
+        referenceType: 'CONTRACT_EXTENSION',
+        referenceId: extension.id,
+        stripePaymentLinkId: session.id,
+        stripePaymentLinkUrl: session.url || '',
+        amount: extension.totalAmount,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdBy: req.body.operatorId,
+        sentToEmail: extension.contract.customer.email
+      }
+    })
+    
+    res.json({ sessionId: session.id, url: session.url })
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create payment link' }) }
+})
+
+// Approve extension (after payment)
+app.post('/api/extensions/:id/approve', async (req, res) => {
+  try {
+    const extension = await prisma.contractExtension.findUnique({
+      where: { id: req.params.id },
+      include: { contract: true }
+    })
+    if (!extension) return res.status(404).json({ error: 'Extension not found' })
+    
+    // Update extension
+    await prisma.contractExtension.update({
+      where: { id: req.params.id },
+      data: {
+        status: 'APPROVED',
+        approvedEndDate: extension.requestedEndDate,
+        paymentStatus: 'PAID',
+        paidAt: new Date(),
+        paidAmount: extension.totalAmount
+      }
+    })
+    
+    // Update contract
+    await prisma.rentalContract.update({
+      where: { id: extension.contractId },
+      data: {
+        currentEndDate: extension.requestedEndDate,
+        totalDays: { increment: extension.additionalDays },
+        totalAmount: { increment: Number(extension.totalAmount) }
+      }
+    })
+    
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: 'Failed to approve extension' }) }
+})
+
+// ============== BRAND SETTINGS ==============
+app.get('/api/brand-settings', async (req, res) => {
+  try {
+    const settings = await prisma.brandSettings.findMany({ orderBy: { brand: 'asc' } })
+    res.json(settings)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch brand settings' }) }
+})
+
+app.get('/api/brand-settings/:brand', async (req, res) => {
+  try {
+    const settings = await prisma.brandSettings.findUnique({ where: { brand: req.params.brand } })
+    if (!settings) return res.status(404).json({ error: 'Brand settings not found' })
+    res.json(settings)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch brand settings' }) }
+})
+
+app.post('/api/brand-settings', async (req, res) => {
+  try {
+    const settings = await prisma.brandSettings.create({
+      data: {
+        brand: req.body.brand,
+        name: req.body.name,
+        legalName: req.body.legalName,
+        logoUrl: req.body.logoUrl,
+        primaryColor: req.body.primaryColor,
+        secondaryColor: req.body.secondaryColor,
+        email: req.body.email,
+        phone: req.body.phone,
+        website: req.body.website,
+        address: req.body.address,
+        city: req.body.city,
+        postalCode: req.body.postalCode,
+        country: req.body.country || 'ES',
+        taxId: req.body.taxId,
+        stripePublishableKey: req.body.stripePublishableKey,
+        stripeSecretKey: req.body.stripeSecretKey,
+        stripeWebhookSecret: req.body.stripeWebhookSecret,
+        stripeAccountId: req.body.stripeAccountId,
+        contractTemplateUrl: req.body.contractTemplateUrl,
+        invoiceTemplateUrl: req.body.invoiceTemplateUrl,
+        termsAndConditionsUrl: req.body.termsAndConditionsUrl,
+        privacyPolicyUrl: req.body.privacyPolicyUrl,
+        emailFromName: req.body.emailFromName,
+        emailFromAddress: req.body.emailFromAddress,
+        cgvResume: req.body.cgvResume,
+        cgvComplete: req.body.cgvComplete,
+        rgpd: req.body.rgpd,
+        mentionsLegales: req.body.mentionsLegales
+      }
+    })
+    res.json(settings)
+  } catch (error) { res.status(500).json({ error: 'Failed to create brand settings' }) }
+})
+
+app.put('/api/brand-settings/:brand', async (req, res) => {
+  try {
+    const settings = await prisma.brandSettings.update({
+      where: { brand: req.params.brand },
+      data: {
+        name: req.body.name,
+        legalName: req.body.legalName,
+        logoUrl: req.body.logoUrl,
+        primaryColor: req.body.primaryColor,
+        secondaryColor: req.body.secondaryColor,
+        email: req.body.email,
+        phone: req.body.phone,
+        website: req.body.website,
+        address: req.body.address,
+        city: req.body.city,
+        postalCode: req.body.postalCode,
+        country: req.body.country,
+        taxId: req.body.taxId,
+        stripePublishableKey: req.body.stripePublishableKey,
+        stripeSecretKey: req.body.stripeSecretKey,
+        stripeWebhookSecret: req.body.stripeWebhookSecret,
+        stripeAccountId: req.body.stripeAccountId,
+        contractTemplateUrl: req.body.contractTemplateUrl,
+        invoiceTemplateUrl: req.body.invoiceTemplateUrl,
+        termsAndConditionsUrl: req.body.termsAndConditionsUrl,
+        privacyPolicyUrl: req.body.privacyPolicyUrl,
+        emailFromName: req.body.emailFromName,
+        emailFromAddress: req.body.emailFromAddress,
+        isActive: req.body.isActive,
+        cgvResume: req.body.cgvResume,
+        cgvComplete: req.body.cgvComplete,
+        rgpd: req.body.rgpd,
+        mentionsLegales: req.body.mentionsLegales
+      }
+    })
+    res.json(settings)
+  } catch (error) { res.status(500).json({ error: 'Failed to update brand settings' }) }
+})
+
+// ============== EXTENSION SETTINGS ==============
+app.get('/api/extension-settings', async (req, res) => {
+  try {
+    const { agencyId } = req.query
+    const settings = await prisma.extensionSettings.findFirst({
+      where: agencyId ? { agencyId: agencyId as string } : { agencyId: null }
+    })
+    res.json(settings)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch extension settings' }) }
+})
+
+app.post('/api/extension-settings', async (req, res) => {
+  try {
+    const settings = await prisma.extensionSettings.upsert({
+      where: { agencyId: req.body.agencyId || 'global' },
+      update: req.body,
+      create: req.body
+    })
+    res.json(settings)
+  } catch (error) { res.status(500).json({ error: 'Failed to save extension settings' }) }
+})
+
+// ============== BOOKING ASSIGNMENT ==============
+
+// Assign fleet vehicle to booking
+app.put('/api/bookings/:id/assign', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { fleetVehicleId } = req.body
+    
+    const booking = await prisma.booking.update({
+      where: { id },
+      data: {
+        fleetVehicleId,
+        assignmentType: 'MANUAL',
+        assignedAt: new Date()
+      },
+      include: {
+        agency: true,
+        customer: true,
+        items: { include: { vehicle: true } }
+      }
+    })
+    
+    // Update fleet vehicle status if booking starts today
+    const today = new Date().toISOString().split('T')[0]
+    const startDate = booking.startDate.toISOString().split('T')[0]
+    if (startDate === today && fleetVehicleId) {
+      await prisma.fleet.update({
+        where: { id: fleetVehicleId },
+        data: { status: 'RESERVED' }
+      })
+    }
+    
+    res.json(booking)
+  } catch (e: any) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to assign vehicle' })
+  }
+})
+
+// Update booking dates/times
+app.put('/api/bookings/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { startDate, endDate, startTime, endTime, fleetVehicleId, status, checkedIn, checkedInAt, checkedOut, checkedOutAt, options } = req.body
+    
+    const updateData: any = {}
+    if (startDate) updateData.startDate = new Date(startDate)
+    if (endDate) updateData.endDate = new Date(endDate)
+    if (startTime) updateData.startTime = startTime
+    if (endTime) updateData.endTime = endTime
+    if (fleetVehicleId !== undefined) {
+      updateData.fleetVehicleId = fleetVehicleId
+      updateData.assignmentType = fleetVehicleId ? 'MANUAL' : null
+      updateData.assignedAt = fleetVehicleId ? new Date() : null
+    }
+    if (status) updateData.status = status
+    if (checkedIn !== undefined) updateData.checkedIn = checkedIn
+    if (checkedInAt) updateData.checkedInAt = new Date(checkedInAt)
+    if (checkedOut !== undefined) updateData.checkedOut = checkedOut
+    if (checkedOutAt) updateData.checkedOutAt = new Date(checkedOutAt)
+    
+    // Check-in fields
+    if (req.body.startMileage !== undefined) updateData.startMileage = req.body.startMileage
+    if (req.body.fuelLevelStart) updateData.fuelLevelStart = req.body.fuelLevelStart
+    if (req.body.depositMethod) updateData.depositMethod = req.body.depositMethod
+    if (req.body.paidAmount !== undefined) updateData.paidAmount = req.body.paidAmount
+    if (req.body.idCardUrl) updateData.idCardUrl = req.body.idCardUrl
+    if (req.body.idCardReversoUrl) updateData.idCardVersoUrl = req.body.idCardReversoUrl
+    if (req.body.licenseUrl) updateData.licenseUrl = req.body.licenseUrl
+    if (req.body.licenseReversoUrl) updateData.licenseVersoUrl = req.body.licenseReversoUrl
+    if (req.body.signatureUrl) updateData.signatureUrl = req.body.signatureUrl
+    // Check-in photos
+    if (req.body.checkInPhotos) {
+      const photos = req.body.checkInPhotos
+      if (photos.front) updateData.photoFront = photos.front
+      if (photos.left) updateData.photoLeft = photos.left
+      if (photos.right) updateData.photoRight = photos.right
+      if (photos.rear) updateData.photoRear = photos.rear
+      if (photos.counter) updateData.photoCounter = photos.counter
+    }
+    
+    // Mise à jour des options si fournies
+    if (options && Array.isArray(options)) {
+      console.log('Updating options for booking:', id, 'Options:', JSON.stringify(options))
+      
+      // Supprimer les anciennes options
+      await prisma.bookingOption.deleteMany({ where: { bookingId: id } })
+      console.log('Deleted old options')
+      
+      // Récupérer les dates de la réservation
+      const existingBooking = await prisma.booking.findUnique({ where: { id } })
+      const start = updateData.startDate || existingBooking?.startDate
+      const end = updateData.endDate || existingBooking?.endDate
+      const days = start && end ? Math.max(1, Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24))) : 1
+      console.log('Days calculated:', days)
+      
+      // Ajouter les nouvelles options
+      for (const opt of options) {
+        if (opt.quantity > 0 && opt.optionId) {
+          console.log('Processing option:', opt.optionId, 'quantity:', opt.quantity)
+          
+          const optionData = await prisma.option.findUnique({ where: { id: opt.optionId } })
+          if (optionData) {
+            const dayKey = days <= 14 ? 'day' + days : 'day14'
+            const pricePerDay = (optionData as any)[dayKey] || 0
+            const totalPrice = pricePerDay * opt.quantity
+            
+            console.log('Creating option:', { optionId: opt.optionId, quantity: opt.quantity, unitPrice: pricePerDay, totalPrice })
+            
+            await prisma.bookingOption.create({
+              data: {
+                bookingId: id,
+                optionId: opt.optionId,
+                quantity: opt.quantity,
+                unitPrice: pricePerDay,
+                totalPrice: totalPrice
+              }
+            })
+            console.log('Option created successfully')
+          } else {
+            console.log('Option not found:', opt.optionId)
+          }
+        }
+      }
+    }
+    
+    const booking = await prisma.booking.update({
+      where: { id },
+      data: updateData,
+      include: {
+        agency: true,
+        customer: true,
+        fleetVehicle: { include: { vehicle: true } },
+        options: { include: { option: true } },
+        items: { include: { vehicle: true } }
+      }
+    })
+    
+    res.json(booking)
+  } catch (e: any) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to update booking' })
+  }
+})
+
+// Create new booking (operator)
+app.post('/api/bookings/operator', async (req, res) => {
+  try {
+    const {
+      agencyId,
+      fleetVehicleId,
+      customerId,
+      customerData, // { firstName, lastName, email, phone }
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      vehicleId,
+      quantity = 1,
+      unitPrice,
+      totalPrice,
+      depositAmount,
+      paidAmount = 0,
+      paymentMethod,
+      language = 'fr'
+    } = req.body
+    
+    // Create or find customer
+    let customer
+    if (customerId) {
+      customer = await prisma.customer.findUnique({ where: { id: customerId } })
+    } else if (customerData) {
+      // Check if customer exists by email
+      customer = await prisma.customer.findFirst({ where: { email: customerData.email } })
+      if (!customer) {
+        customer = await prisma.customer.create({
+          data: {
+            firstName: customerData.firstName,
+            lastName: customerData.lastName,
+            email: customerData.email,
+            phone: customerData.phone,
+            language
+          }
+        })
+      }
+    }
+    
+    if (!customer) {
+      return res.status(400).json({ error: 'Customer required' })
+    }
+    
+    // Generate reference avec la marque de l'agence
+    const agencyForRef = await prisma.agency.findUnique({ where: { id: agencyId } })
+    const reference = await generateBookingReference(agencyForRef?.brand || 'VOLTRIDE')
+    
+    // Create booking
+    const booking = await prisma.booking.create({
+      data: {
+        reference,
+        agencyId,
+        customerId: customer.id,
+        fleetVehicleId,
+        assignmentType: fleetVehicleId ? 'MANUAL' : null,
+        assignedAt: fleetVehicleId ? new Date() : null,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        startTime,
+        endTime,
+        totalPrice,
+        depositAmount,
+        paidAmount: paidAmount || 0,
+        paymentMethod: paymentMethod || null,
+        status: 'CONFIRMED',
+        language,
+        source: 'WALK_IN',
+        items: {
+          create: [{
+            vehicleId,
+            quantity,
+            unitPrice: unitPrice || totalPrice,
+            totalPrice: (unitPrice || totalPrice) * quantity
+          }]
+        }
+      },
+      include: {
+        agency: true,
+        customer: true,
+        items: { include: { vehicle: true } }
+      }
+    })
+    
+    // Update fleet vehicle status
+    if (fleetVehicleId) {
+      const today = new Date().toISOString().split('T')[0]
+      const startDateStr = new Date(startDate).toISOString().split('T')[0]
+      if (startDateStr === today) {
+        await prisma.fleet.update({
+          where: { id: fleetVehicleId },
+          data: { status: 'RESERVED' }
+        })
+      }
+    }
+    
+    res.json(booking)
+  } catch (e: any) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to create booking' })
+  }
+})
+
+// Get available fleet vehicles for a date range
+
+// Search customers
+app.get('/api/customers/search', async (req, res) => {
+  try {
+    const { q } = req.query
+    if (!q || (q as string).length < 2) {
+      return res.json([])
+    }
+    
+    const customers = await prisma.customer.findMany({
+      where: {
+        OR: [
+          { firstName: { contains: q as string, mode: 'insensitive' } },
+          { lastName: { contains: q as string, mode: 'insensitive' } },
+          { email: { contains: q as string, mode: 'insensitive' } },
+          { phone: { contains: q as string } }
+        ]
+      },
+      take: 10
+    })
+    
+    res.json(customers)
+  } catch (e: any) {
+    console.error(e)
+    res.status(500).json({ error: 'Failed to search customers' })
+  }
+})
+
+console.log('Booking assignment and operator routes loaded')
+
+// ============== DELETE FLEET VEHICLE ==============
+
+// ============== DELETE DOCUMENT ==============
+
+// ============== DELETE SPARE PART ==============
+
+// ============== UPDATE SPARE PART ==============
+
+console.log('Delete and update routes loaded')
+
+// ============== AGENCY SCHEDULE PERIODS ==============
+app.get('/api/agencies/:agencyId/schedule-periods', async (req, res) => {
+  try {
+    const periods = await prisma.agencySchedulePeriod.findMany({
+      where: { agencyId: req.params.agencyId },
+      orderBy: { startDate: 'asc' }
+    })
+    res.json(periods)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch schedule periods' }) }
+})
+
+app.post('/api/agencies/:agencyId/schedule-periods', async (req, res) => {
+  try {
+    const period = await prisma.agencySchedulePeriod.create({
+      data: {
+        agencyId: req.params.agencyId,
+        name: req.body.name,
+        startDate: new Date(req.body.startDate),
+        endDate: new Date(req.body.endDate),
+        isDefault: req.body.isDefault || false,
+        mondayOpen: req.body.mondayOpen,
+        mondayClose: req.body.mondayClose,
+        mondayIsClosed: req.body.mondayIsClosed || false,
+        tuesdayOpen: req.body.tuesdayOpen,
+        tuesdayClose: req.body.tuesdayClose,
+        tuesdayIsClosed: req.body.tuesdayIsClosed || false,
+        wednesdayOpen: req.body.wednesdayOpen,
+        wednesdayClose: req.body.wednesdayClose,
+        wednesdayIsClosed: req.body.wednesdayIsClosed || false,
+        thursdayOpen: req.body.thursdayOpen,
+        thursdayClose: req.body.thursdayClose,
+        thursdayIsClosed: req.body.thursdayIsClosed || false,
+        fridayOpen: req.body.fridayOpen,
+        fridayClose: req.body.fridayClose,
+        fridayIsClosed: req.body.fridayIsClosed || false,
+        saturdayOpen: req.body.saturdayOpen,
+        saturdayClose: req.body.saturdayClose,
+        saturdayIsClosed: req.body.saturdayIsClosed || false,
+        sundayOpen: req.body.sundayOpen,
+        sundayClose: req.body.sundayClose,
+        sundayIsClosed: req.body.sundayIsClosed ?? true
+      }
+    })
+    res.json(period)
+  } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create schedule period' }) }
+})
+
+app.put('/api/schedule-periods/:id', async (req, res) => {
+  try {
+    const period = await prisma.agencySchedulePeriod.update({
+      where: { id: req.params.id },
+      data: {
+        name: req.body.name,
+        startDate: new Date(req.body.startDate),
+        endDate: new Date(req.body.endDate),
+        isDefault: req.body.isDefault,
+        mondayOpen: req.body.mondayOpen,
+        mondayClose: req.body.mondayClose,
+        mondayIsClosed: req.body.mondayIsClosed,
+        tuesdayOpen: req.body.tuesdayOpen,
+        tuesdayClose: req.body.tuesdayClose,
+        tuesdayIsClosed: req.body.tuesdayIsClosed,
+        wednesdayOpen: req.body.wednesdayOpen,
+        wednesdayClose: req.body.wednesdayClose,
+        wednesdayIsClosed: req.body.wednesdayIsClosed,
+        thursdayOpen: req.body.thursdayOpen,
+        thursdayClose: req.body.thursdayClose,
+        thursdayIsClosed: req.body.thursdayIsClosed,
+        fridayOpen: req.body.fridayOpen,
+        fridayClose: req.body.fridayClose,
+        fridayIsClosed: req.body.fridayIsClosed,
+        saturdayOpen: req.body.saturdayOpen,
+        saturdayClose: req.body.saturdayClose,
+        saturdayIsClosed: req.body.saturdayIsClosed,
+        sundayOpen: req.body.sundayOpen,
+        sundayClose: req.body.sundayClose,
+        sundayIsClosed: req.body.sundayIsClosed
+      }
+    })
+    res.json(period)
+  } catch (error) { res.status(500).json({ error: 'Failed to update schedule period' }) }
+})
+
+app.delete('/api/schedule-periods/:id', async (req, res) => {
+  try {
+    await prisma.agencySchedulePeriod.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: 'Failed to delete schedule period' }) }
+})
+
+// ============== AGENCY CLOSURES ==============
+app.get('/api/agencies/:agencyId/closures', async (req, res) => {
+  try {
+    const closures = await prisma.agencyClosure.findMany({
+      where: { agencyId: req.params.agencyId },
+      orderBy: { startDate: 'asc' }
+    })
+    res.json(closures)
+  } catch (error) { res.status(500).json({ error: 'Failed to fetch closures' }) }
+})
+
+app.post('/api/agencies/:agencyId/closures', async (req, res) => {
+  try {
+    const closure = await prisma.agencyClosure.create({
+      data: {
+        agencyId: req.params.agencyId,
+        startDate: new Date(req.body.startDate),
+        endDate: new Date(req.body.endDate),
+        reason: req.body.reason
+      }
+    })
+    res.json(closure)
+  } catch (error) { res.status(500).json({ error: 'Failed to create closure' }) }
+})
+
+app.delete('/api/closures/:id', async (req, res) => {
+  try {
+    await prisma.agencyClosure.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: 'Failed to delete closure' }) }
+})
+
+// Get agency schedule for a specific date
+app.get('/api/agencies/:agencyId/schedule', async (req, res) => {
+  try {
+    const { date } = req.query
+    const targetDate = date ? new Date(date as string) : new Date()
+    
+    // Check if closed
+    const closure = await prisma.agencyClosure.findFirst({
+      where: {
+        agencyId: req.params.agencyId,
+        startDate: { lte: targetDate },
+        endDate: { gte: targetDate }
+      }
+    })
+    if (closure) {
+      return res.json({ isClosed: true, reason: closure.reason })
+    }
+    
+    // Find applicable period
+    const period = await prisma.agencySchedulePeriod.findFirst({
+      where: {
+        agencyId: req.params.agencyId,
+        startDate: { lte: targetDate },
+        endDate: { gte: targetDate }
+      }
+    }) || await prisma.agencySchedulePeriod.findFirst({
+      where: { agencyId: req.params.agencyId, isDefault: true }
+    })
+    
+    if (!period) {
+      return res.json({ isClosed: false, schedule: null })
+    }
+    
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const dayName = dayNames[targetDate.getDay()]
+    
+    res.json({
+      isClosed: (period as any)[`${dayName}IsClosed`],
+      openTime: (period as any)[`${dayName}Open`],
+      closeTime: (period as any)[`${dayName}Close`],
+      periodName: period.name
+    })
+  } catch (error) { res.status(500).json({ error: 'Failed to get schedule' }) }
+})
+
+console.log('Agency schedule routes loaded')
+
+// ============== COMMISSION REPORT ==============
+// Route pour générer et envoyer le rapport de commissions
+app.post('/api/commissions/report', async (req, res) => {
+  try {
+    const { agencyId, startDate, endDate, sendEmail } = req.body
+    
+    // Récupérer l'agence
+    const agency = await prisma.agency.findUnique({ where: { id: agencyId } })
+    if (!agency) return res.status(404).json({ error: 'Agency not found' })
+    if (agency.agencyType === 'OWN') return res.status(400).json({ error: 'Commission report only for PARTNER or FRANCHISE agencies' })
+    
+    // Récupérer les contrats avec commission pour cette agence et période
+    const contracts = await prisma.rentalContract.findMany({
+      where: {
+        agencyId,
+        commissionAmount: { not: null },
+        currentStartDate: { gte: new Date(startDate) },
+        currentEndDate: { lte: new Date(endDate) },
+        status: { in: ['ACTIVE', 'COMPLETED'] }
+      },
+      include: {
+        fleetVehicle: { include: { vehicle: true } },
+        customer: true
+      },
+      orderBy: { currentStartDate: 'asc' }
+    })
+    
+    // Calculer les totaux
+    const totalHT = contracts.reduce((sum, c) => sum + (Number(c.subtotal || 0) + Number(c.optionsTotal || 0) - Number(c.discountAmount || 0)), 0)
+    const totalCommission = contracts.reduce((sum, c) => sum + (Number(c.commissionAmount) || 0), 0)
+    
+    const report = {
+      agency: {
+        name: agency.name,
+        code: agency.code,
+        agencyType: agency.agencyType,
+        commissionRate: agency.commissionRate
+      },
+      period: { startDate, endDate },
+      contracts: contracts.map(c => ({
+        contractNumber: c.contractNumber,
+        vehicleNumber: c.fleetVehicle?.vehicleNumber,
+        vehicleName: c.fleetVehicle?.vehicle?.name,
+        customer: `${c.customer?.firstName} ${c.customer?.lastName}`,
+        startDate: c.currentStartDate,
+        endDate: c.currentEndDate,
+        totalHT: Number(c.subtotal || 0) + Number(c.optionsTotal || 0) - Number(c.discountAmount || 0),
+        commissionRate: c.commissionRate,
+        commissionAmount: c.commissionAmount
+      })),
+      totals: {
+        contractsCount: contracts.length,
+        totalHT: Math.round(totalHT * 100) / 100,
+        totalCommission: Math.round(totalCommission * 100) / 100
+      }
+    }
+    
+    // Envoyer par email si demandé
+    if (sendEmail && agency.email) {
+      // TODO: Implémenter l'envoi d'email avec le rapport
+      // Pour l'instant on retourne juste le rapport
+    }
+    
+    res.json(report)
+  } catch (error) {
+    console.error('Commission report error:', error)
+    res.status(500).json({ error: 'Failed to generate commission report' })
+  }
+})
+
+// Route pour obtenir les commissions en attente
+app.get('/api/commissions/pending', async (req, res) => {
+  try {
+    const { agencyId } = req.query
+    
+    const where: any = {
+      commissionAmount: { not: null },
+      commissionStatus: 'PENDING'
+    }
+    if (agencyId) where.agencyId = agencyId
+    
+    const contracts = await prisma.rentalContract.findMany({
+      where,
+      include: {
+        agency: true,
+        fleetVehicle: { include: { vehicle: true } },
+        customer: true
+      },
+      orderBy: { currentStartDate: 'desc' }
+    })
+    
+    res.json(contracts)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch pending commissions' })
+  }
+})
+
+// Route pour marquer une commission comme payée
+app.put('/api/commissions/:contractId/paid', async (req, res) => {
+  try {
+    const contract = await prisma.rentalContract.update({
+      where: { id: req.params.contractId },
+      data: { commissionStatus: 'PAID' }
+    })
+    res.json(contract)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update commission status' })
+  }
+})
+
+
+// ============== NOTIFICATION SETTINGS ==============
+// GET - Récupérer tous les paramètres de notifications
+app.get('/api/notification-settings', async (req, res) => {
+  try {
+    const settings = await prisma.notificationSetting.findMany()
+    res.json(settings)
+  } catch (error) {
+    console.error('Error fetching notification settings:', error)
+    res.status(500).json({ error: 'Failed to fetch notification settings' })
+  }
+})
+
+// POST - Initialiser ou mettre à jour les paramètres
+app.post('/api/notification-settings', async (req, res) => {
+  try {
+    const { notificationType, roleAdmin, roleManager, roleOperator } = req.body
+    const setting = await prisma.notificationSetting.upsert({
+      where: { notificationType },
+      update: { roleAdmin, roleManager, roleOperator },
+      create: { notificationType, roleAdmin, roleManager, roleOperator }
+    })
+    res.json(setting)
+  } catch (error) {
+    console.error('Error saving notification setting:', error)
+    res.status(500).json({ error: 'Failed to save notification setting' })
+  }
+})
+
+// POST - Sauvegarder tous les paramètres en une fois
+app.post('/api/notification-settings/bulk', async (req, res) => {
+  try {
+    const { settings } = req.body // Array of { notificationType, roleAdmin, roleManager, roleOperator }
+    const results = await Promise.all(
+      settings.map((s: any) => 
+        prisma.notificationSetting.upsert({
+          where: { notificationType: s.notificationType },
+          update: { roleAdmin: s.roleAdmin, roleManager: s.roleManager, roleOperator: s.roleOperator },
+          create: { notificationType: s.notificationType, roleAdmin: s.roleAdmin, roleManager: s.roleManager, roleOperator: s.roleOperator }
+        })
+      )
+    )
+    res.json({ success: true, count: results.length })
+  } catch (error) {
+    console.error('Error saving notification settings:', error)
+    res.status(500).json({ error: 'Failed to save notification settings' })
+  }
+})
+
+console.log('Notification settings routes loaded')
+// ============== APP SETTINGS (ENTREPRISE) ==============
+// GET - Récupérer un paramètre par clé
+app.get('/api/settings/:key', async (req, res) => {
+  try {
+    const setting = await prisma.appSettings.findUnique({
+      where: { key: req.params.key }
+    })
+    if (setting) {
+      res.json(setting.value)
+    } else {
+      res.json(null)
+    }
+  } catch (error) {
+    console.error('Error fetching setting:', error)
+    res.status(500).json({ error: 'Failed to fetch setting' })
+  }
+})
+
+// PUT - Sauvegarder un paramètre
+app.put('/api/settings/:key', async (req, res) => {
+  try {
+    const setting = await prisma.appSettings.upsert({
+      where: { key: req.params.key },
+      update: { value: req.body },
+      create: { key: req.params.key, value: req.body }
+    })
+    res.json(setting)
+  } catch (error) {
+    console.error('Error saving setting:', error)
+    res.status(500).json({ error: 'Failed to save setting' })
+  }
+})
+
+console.log('App settings routes loaded')
+// ============== EMAIL CONFIRMATION ==============
+
+const emailTemplates = {
+  fr: {
+    subject: 'Confirmation de réservation',
+    greeting: 'Bonjour',
+    confirmationText: 'Votre réservation a bien été enregistrée.',
+    vehicleLabel: 'Véhicule',
+    periodLabel: 'Période de location',
+    from: 'du',
+    to: 'au',
+    at: 'à',
+    totalLabel: 'Total de la réservation',
+    paidLabel: 'Montant payé',
+    remainingLabel: 'Reste à payer sur place',
+    depositLabel: 'Caution (à prévoir au check-in)',
+    documentsTitle: 'Documents à prévoir le jour de la location',
+    documentsRegistered: [
+      "Pièce d'identité ou passeport (le permis de conduire étranger ne fait pas office de pièce d'identité)",
+      "Permis de conduire physique valide",
+      "Carte de crédit uniquement pour la caution (pas de carte de débit ni espèces)"
+    ],
+    documentsNonRegistered: [
+      "Pièce d'identité ou passeport (le permis de conduire étranger ne fait pas office de pièce d'identité)",
+      "Carte de crédit uniquement pour la caution (pas de carte de débit ni espèces)"
+    ],
+    paymentTitle: 'Récapitulatif du paiement',
+    paymentMethod: 'Mode de paiement',
+    card: 'Carte bancaire',
+    cash: 'Espèces',
+    footer: "Merci pour votre confiance. À bientôt !",
+    team: "L'équipe"
+  },
+  es: {
+    subject: 'Confirmación de reserva',
+    greeting: 'Hola',
+    confirmationText: 'Su reserva ha sido registrada correctamente.',
+    vehicleLabel: 'Vehículo',
+    periodLabel: 'Período de alquiler',
+    from: 'del',
+    to: 'al',
+    at: 'a las',
+    totalLabel: 'Total de la reserva',
+    paidLabel: 'Importe pagado',
+    remainingLabel: 'Resto a pagar en el local',
+    depositLabel: 'Fianza (a prever en el check-in)',
+    documentsTitle: 'Documentos necesarios el día del alquiler',
+    documentsRegistered: [
+      "Documento de identidad o pasaporte (el permiso de conducir extranjero no sirve como documento de identidad)",
+      "Permiso de conducir físico válido",
+      "Tarjeta de crédito únicamente para la fianza (no tarjeta de débito ni efectivo)"
+    ],
+    documentsNonRegistered: [
+      "Documento de identidad o pasaporte (el permiso de conducir extranjero no sirve como documento de identidad)",
+      "Tarjeta de crédito únicamente para la fianza (no tarjeta de débito ni efectivo)"
+    ],
+    paymentTitle: 'Resumen del pago',
+    paymentMethod: 'Método de pago',
+    card: 'Tarjeta bancaria',
+    cash: 'Efectivo',
+    footer: "Gracias por su confianza. ¡Hasta pronto!",
+    team: "El equipo"
+  },
+  en: {
+    subject: 'Booking Confirmation',
+    greeting: 'Hello',
+    confirmationText: 'Your booking has been successfully registered.',
+    vehicleLabel: 'Vehicle',
+    periodLabel: 'Rental period',
+    from: 'from',
+    to: 'to',
+    at: 'at',
+    totalLabel: 'Total booking amount',
+    paidLabel: 'Amount paid',
+    remainingLabel: 'Remaining to pay on site',
+    depositLabel: 'Deposit (required at check-in)',
+    documentsTitle: 'Documents required on rental day',
+    documentsRegistered: [
+      "ID card or passport (foreign driving license does not serve as ID)",
+      "Valid physical driving license",
+      "Credit card only for deposit (no debit card or cash)"
+    ],
+    documentsNonRegistered: [
+      "ID card or passport (foreign driving license does not serve as ID)",
+      "Credit card only for deposit (no debit card or cash)"
+    ],
+    paymentTitle: 'Payment summary',
+    paymentMethod: 'Payment method',
+    card: 'Credit card',
+    cash: 'Cash',
+    footer: "Thank you for your trust. See you soon!",
+    team: "The team"
+  }
+}
+
+app.post('/api/send-booking-confirmation', async (req, res) => {
+  console.log('[EMAIL] === Starting email send ===')
+  console.log('[EMAIL] Request body:', JSON.stringify(req.body, null, 2))
+  
+  try {
+    const { 
+      bookingId, email, firstName, lastName, vehicleName, vehicleNumber,
+      startDate, endDate, startTime, endTime, totalPrice, paidAmount, 
+      remainingAmount, paymentMethod, brand, language = 'fr', isRegisteredVehicle = false
+    } = req.body
+
+    console.log('[EMAIL] Parsed data - email:', email, 'brand:', brand, 'language:', language, 'isRegistered:', isRegisteredVehicle)
+
+    const t = emailTemplates[language as keyof typeof emailTemplates] || emailTemplates.fr
+    const brandName = brand === 'VOLTRIDE' ? 'Voltride' : 'Motor-Rent'
+    const brandColor = brand === 'VOLTRIDE' ? '#0e7490' : '#ffaf10'
+    const logoUrl = brand === 'VOLTRIDE' 
+      ? 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1766883143/IMG-20251228-WA0001-removebg-preview_n0fsq5.png'
+      : 'https://res.cloudinary.com/dof8xnabp/image/upload/v1737372450/MOTOR_RENT_LOGO_copy_kxwqjk.png'
+
+    const documents = isRegisteredVehicle ? t.documentsRegistered : t.documentsNonRegistered
+
+    const formatDate = (date: string) => {
+      const d = new Date(date)
+      return d.toLocaleDateString(language === 'en' ? 'en-GB' : language === 'es' ? 'es-ES' : 'fr-FR')
+    }
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"></head>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+      <div style="background: ${brandColor}; color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+        <img src="${logoUrl}" alt="${brandName}" style="max-width: 200px; max-height: 80px; margin-bottom: 10px;" />
+        <p style="margin: 10px 0 0 0; font-size: 18px;">${t.subject}</p>
+      </div>
+      <div style="padding: 25px; border: 1px solid #ddd; border-top: none; background: white;">
+        <p style="font-size: 16px;">${t.greeting} ${firstName},</p>
+        <p>${t.confirmationText}</p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${brandColor};">
+          <h3 style="margin-top: 0; color: ${brandColor};">🚲 ${t.vehicleLabel}</h3>
+          <p style="margin: 0; font-size: 16px;"><strong>${vehicleNumber}</strong> - ${vehicleName}</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${brandColor};">
+          <h3 style="margin-top: 0; color: ${brandColor};">📅 ${t.periodLabel}</h3>
+          <p style="margin: 0;">${t.from} <strong>${formatDate(startDate)}</strong> ${t.at} <strong>${startTime}</strong></p>
+          <p style="margin: 5px 0 0 0;">${t.to} <strong>${formatDate(endDate)}</strong> ${t.at} <strong>${endTime}</strong></p>
+        </div>
+        
+        <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #0e7490;">💰 ${t.paymentTitle}</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0;">${t.totalLabel}</td><td style="text-align: right; padding: 8px 0;"><strong>${totalPrice}€</strong></td></tr>
+            <tr><td style="padding: 8px 0;">${t.paidLabel} (${paymentMethod === 'card' ? t.card : t.cash})</td><td style="text-align: right; padding: 8px 0; color: green;"><strong>${paidAmount}€</strong></td></tr>
+            ${remainingAmount > 0 ? '<tr><td style="padding: 8px 0;">' + t.remainingLabel + '</td><td style="text-align: right; padding: 8px 0; color: orange;"><strong>' + remainingAmount + '€</strong></td></tr>' : ''}
+            <tr style="border-top: 2px solid #ccc;"><td style="padding: 12px 0; font-weight: bold;">${t.depositLabel}</td><td style="text-align: right; padding: 12px 0;"><strong>${req.body.depositAmount || 100}€</strong></td></tr>
+          </table>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffc107;">
+          <h3 style="margin-top: 0; color: #856404;">📋 ${t.documentsTitle}</h3>
+          <ul style="margin: 0; padding-left: 20px; color: #856404;">
+            ${documents.map((doc: string) => '<li style="margin-bottom: 8px;">' + doc + '</li>').join('')}
+          </ul>
+        </div>
+        
+        <p style="text-align: center; color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+          ${t.footer}<br/>
+          <strong>${t.team} ${brandName}</strong>
+        </p>
+      </div>
+      <div style="text-align: center; padding: 15px; color: #999; font-size: 12px;">
+        © ${new Date().getFullYear()} ${brandName} - Tous droits réservés
+      </div>
+    </body>
+    </html>
+    `
+
+    const fromEmail = brand === 'VOLTRIDE' ? 'reservations@voltride.es' : 'reservations@motor-rent.es'
+    
+    console.log('[EMAIL] Sending email from:', fromEmail, 'to:', email)
+    
+    const result = await resend.emails.send({
+      from: brandName + ' <' + fromEmail + '>',
+      to: email,
+      subject: t.subject + ' - ' + vehicleNumber,
+      html
+    })
+
+    console.log('[EMAIL] Resend response:', JSON.stringify(result, null, 2))
+    console.log('[EMAIL] Confirmation sent to ' + email + ' for booking ' + bookingId)
+    res.json({ success: true, resendResponse: result })
+  } catch (error: any) {
+    console.error('[EMAIL] Error details:', error)
+    res.status(500).json({ error: error.message || 'Failed to send email' })
+  }
+})
+
+console.log('Email confirmation routes loaded')
+app.listen(PORT, '0.0.0.0', () => { console.log('🚀 API running on port ' + PORT) })
+
+// ============== DEPOSIT/CAUTION SYSTEM ==============
+
+// 1. Créer un SetupIntent pour enregistrer la carte du client (sans débiter)
+app.post('/api/create-setup-intent', async (req, res) => {
+  try {
+    const { brand, customerId, customerEmail, customerName, bookingId, depositAmount } = req.body
+    const stripe = getStripeInstance(brand)
+    
+    // Créer ou récupérer le customer Stripe
+    let stripeCustomerId = null
+    const existingCustomers = await stripe.customers.list({ email: customerEmail, limit: 1 })
+    
+    if (existingCustomers.data.length > 0) {
+      stripeCustomerId = existingCustomers.data[0].id
+    } else {
+      const customer = await stripe.customers.create({
+        email: customerEmail,
+        name: customerName,
+        metadata: { customerId, brand }
+      })
+      stripeCustomerId = customer.id
+    }
+    
+    // Créer le SetupIntent
+    const setupIntent = await stripe.setupIntents.create({
+      customer: stripeCustomerId,
+      payment_method_types: ['card'],
+      metadata: {
+        bookingId,
+        depositAmount: depositAmount.toString(),
+        brand,
+        type: 'deposit'
+      }
+    })
+    
+    res.json({
+      clientSecret: setupIntent.client_secret,
+      stripeCustomerId
+    })
+  } catch (error) {
+    console.error('SetupIntent error:', error)
+    res.status(500).json({ error: 'Failed to create setup intent' })
+  }
+})
+
+// 2. Pré-autoriser la caution (appeler J-1 ou manuellement)
+app.post('/api/authorize-deposit', async (req, res) => {
+  try {
+    const { bookingId, brand } = req.body
+    const stripe = getStripeInstance(brand)
+    
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { customer: true }
+    })
+    
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' })
+    }
+    
+    if (!booking.stripeCustomerId || !booking.stripePaymentMethodId) {
+      return res.status(400).json({ error: 'No payment method registered for this booking' })
+    }
+    
+    // Créer une pré-autorisation (capture: false)
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(booking.depositAmount * 100), // en centimes
+      currency: 'eur',
+      customer: booking.stripeCustomerId,
+      payment_method: booking.stripePaymentMethodId,
+      capture_method: 'manual', // NE PAS capturer automatiquement
+      confirm: true,
+      off_session: true,
+      metadata: {
+        bookingId,
+        type: 'deposit_hold',
+        brand
+      }
+    })
+    
+    // Sauvegarder le paymentIntent ID
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        depositPaymentIntentId: paymentIntent.id,
+        depositStatus: 'AUTHORIZED'
+      }
+    })
+    
+    res.json({
+      success: true,
+      paymentIntentId: paymentIntent.id,
+      status: paymentIntent.status
+    })
+  } catch (error: any) {
+    console.error('Authorize deposit error:', error)
+    res.status(500).json({ error: error.message || 'Failed to authorize deposit' })
+  }
+})
+
+// 3. Libérer la caution (check-out sans problème)
+app.post('/api/release-deposit', async (req, res) => {
+  try {
+    const { bookingId, brand } = req.body
+    const stripe = getStripeInstance(brand)
+    
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } })
+    
+    if (!booking?.depositPaymentIntentId) {
+      return res.status(400).json({ error: 'No deposit authorization found' })
+    }
+    
+    // Annuler la pré-autorisation (libérer les fonds)
+    await stripe.paymentIntents.cancel(booking.depositPaymentIntentId)
+    
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { depositStatus: 'RELEASED' }
+    })
+    
+    res.json({ success: true, message: 'Deposit released' })
+  } catch (error: any) {
+    console.error('Release deposit error:', error)
+    res.status(500).json({ error: error.message || 'Failed to release deposit' })
+  }
+})
+
+// 4. Capturer la caution (partiellement ou totalement si dommages)
+app.post('/api/capture-deposit', async (req, res) => {
+  try {
+    const { bookingId, brand, amount, reason } = req.body
+    const stripe = getStripeInstance(brand)
+    
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } })
+    
+    if (!booking?.depositPaymentIntentId) {
+      return res.status(400).json({ error: 'No deposit authorization found' })
+    }
+    
+    // Capturer le montant spécifié (ou total si non spécifié)
+    const captureAmount = amount ? Math.round(amount * 100) : undefined
+    
+    await stripe.paymentIntents.capture(booking.depositPaymentIntentId, {
+      amount_to_capture: captureAmount
+    })
+    
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        depositStatus: 'CAPTURED',
+        depositCapturedAmount: amount || booking.depositAmount,
+        depositCaptureReason: reason
+      }
+    })
+    
+    res.json({ success: true, capturedAmount: amount || booking.depositAmount })
+  } catch (error: any) {
+    console.error('Capture deposit error:', error)
+    res.status(500).json({ error: error.message || 'Failed to capture deposit' })
+  }
+})
+
+// 5. Sauvegarder le payment method après SetupIntent
+app.post('/api/save-payment-method', async (req, res) => {
+  try {
+    const { bookingId, stripeCustomerId, paymentMethodId } = req.body
+    
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        stripeCustomerId,
+        stripePaymentMethodId: paymentMethodId,
+        depositStatus: 'CARD_SAVED'
+      }
+    })
+    
+    res.json({ success: true })
+  } catch (error) {
+    console.error('Save payment method error:', error)
+    res.status(500).json({ error: 'Failed to save payment method' })
+  }
+})
+
+// 6. Récupérer les settings widget
+app.get('/api/widget-settings/:brand', async (req, res) => {
+  try {
+    const key = `widget-${req.params.brand.toLowerCase()}`
+    const setting = await prisma.appSettings.findUnique({ where: { key } })
+    res.json(setting?.value || null)
+  } catch (error) {
+    console.error('Widget settings error:', error)
+    res.status(500).json({ error: 'Failed to fetch widget settings' })
+  }
+})
+// 7. CRON - Pré-autoriser les cautions J-1
+app.post('/api/cron/authorize-deposits', async (req, res) => {
+  try {
+    // Vérifier le secret (optionnel mais recommandé pour sécuriser)
+    const cronSecret = req.headers['x-cron-secret']
+    if (process.env.CRON_SECRET && cronSecret !== process.env.CRON_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    // Calculer la date de demain
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+    
+    const dayAfterTomorrow = new Date(tomorrow)
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1)
+
+    // Trouver les réservations qui commencent demain avec une carte enregistrée
+    const bookings = await prisma.booking.findMany({
+      where: {
+        startDate: {
+          gte: tomorrow,
+          lt: dayAfterTomorrow
+        },
+        depositStatus: 'CARD_SAVED',
+        stripeCustomerId: { not: null },
+        stripePaymentMethodId: { not: null }
+      },
+      include: {
+        agency: true,
+        customer: true
+      }
+    })
+
+    console.log(`[CRON] Found ${bookings.length} bookings to authorize for tomorrow`)
+
+    const results = []
+    
+    for (const booking of bookings) {
+      try {
+        const brand = booking.agency?.brand || 'VOLTRIDE'
+        const stripe = getStripeInstance(brand)
+        
+        // Calculer le montant de la caution (somme des deposits des véhicules)
+        const bookingWithItems = await prisma.booking.findUnique({
+          where: { id: booking.id },
+          include: { items: { include: { vehicle: true } } }
+        })
+        
+        let depositAmount = 0
+        bookingWithItems?.items.forEach(item => {
+          depositAmount += (item.vehicle?.deposit || 0) * item.quantity
+        })
+
+        if (depositAmount <= 0) {
+          console.log(`[CRON] Booking ${booking.reference}: No deposit amount, skipping`)
+          results.push({ reference: booking.reference, status: 'skipped', reason: 'No deposit amount' })
+          continue
+        }
+
+        // Créer une pré-autorisation
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(depositAmount * 100),
+          currency: 'eur',
+          customer: booking.stripeCustomerId!,
+          payment_method: booking.stripePaymentMethodId!,
+          capture_method: 'manual',
+          confirm: true,
+          off_session: true,
+          metadata: {
+            bookingId: booking.id,
+            bookingRef: booking.reference,
+            type: 'deposit_hold',
+            brand
+          }
+        })
+
+        // Mettre à jour la réservation
+        await prisma.booking.update({
+          where: { id: booking.id },
+          data: {
+            depositPaymentIntentId: paymentIntent.id,
+            depositStatus: 'AUTHORIZED'
+          }
+        })
+
+        console.log(`[CRON] Booking ${booking.reference}: Authorized ${depositAmount}€`)
+        results.push({ reference: booking.reference, status: 'authorized', amount: depositAmount })
+
+      } catch (err: any) {
+        console.error(`[CRON] Booking ${booking.reference}: Error - ${err.message}`)
+        results.push({ reference: booking.reference, status: 'error', error: err.message })
+      }
+    }
+
+    res.json({
+      success: true,
+      date: tomorrow.toISOString().split('T')[0],
+      processed: bookings.length,
+      results
+    })
+
+  } catch (error: any) {
+    console.error('[CRON] authorize-deposits error:', error)
+    res.status(500).json({ error: error.message || 'Failed to process deposits' })
+  }
+})
+
+// GET version pour tester manuellement
+app.get('/api/cron/authorize-deposits/preview', async (req, res) => {
+  try {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+    
+    const dayAfterTomorrow = new Date(tomorrow)
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1)
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        startDate: {
+          gte: tomorrow,
+          lt: dayAfterTomorrow
+        },
+        depositStatus: 'CARD_SAVED',
+        stripeCustomerId: { not: null },
+        stripePaymentMethodId: { not: null }
+      },
+      include: {
+        agency: true,
+        customer: true,
+        items: { include: { vehicle: true } }
+      }
+    })
+
+    const preview = bookings.map(b => ({
+      reference: b.reference,
+      customer: `${b.customer?.firstName} ${b.customer?.lastName}`,
+      startDate: b.startDate,
+      depositAmount: b.items.reduce((sum, item) => sum + (item.vehicle?.deposit || 0) * item.quantity, 0)
+    }))
+
+    res.json({
+      date: tomorrow.toISOString().split('T')[0],
+      count: bookings.length,
+      bookings: preview
+    })
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+console.log('Deposit/Caution routes loaded')
+
+// ============== INVOICE ROUTES ==============
+
+// GET /api/invoices - List invoices
+app.get('/api/invoices', async (req, res) => {
+  try {
+    const { brand, status } = req.query
+    const where: any = {}
+    if (brand) where.brand = brand
+    if (status) where.status = status
+    const invoices = await prisma.invoice.findMany({
+      where,
+      orderBy: { date: 'desc' }
+    })
+    // Enrich with customer/booking/agency data
+    const enriched = await Promise.all(invoices.map(async (inv) => {
+      const [customer, booking, agency] = await Promise.all([
+        prisma.customer.findUnique({ where: { id: inv.customerId } }),
+        prisma.booking.findUnique({ where: { id: inv.bookingId }, include: { items: { include: { vehicle: true } }, fleetVehicle: { include: { vehicle: true } } } }),
+        prisma.agency.findUnique({ where: { id: inv.agencyId } })
+      ])
+      const agencyName = agency?.name || ''
+      const parsedName = typeof agencyName === 'string' ? (() => { try { return JSON.parse(agencyName) } catch { return { es: agencyName } } })() : agencyName
+      return {
+        ...inv,
+        customerName: customer ? customer.firstName + ' ' + customer.lastName : 'N/A',
+        customerEmail: customer?.email || '',
+        bookingRef: booking?.reference || '',
+        agencyName: (parsedName as any)?.es || (parsedName as any)?.en || JSON.stringify(parsedName),
+        vehicleName: booking?.fleetVehicle?.vehicle?.name ? ((typeof booking.fleetVehicle.vehicle.name === 'string' ? (() => { try { return JSON.parse(booking.fleetVehicle.vehicle.name) } catch { return { es: booking.fleetVehicle.vehicle.name } } })() : booking.fleetVehicle.vehicle.name) as any)?.es || '' : ''
+      }
+    }))
+    res.json(enriched)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/invoices - Create invoice from booking
+app.post('/api/invoices', async (req, res) => {
+  try {
+    const { bookingId } = req.body
+    if (!bookingId) return res.status(400).json({ error: 'bookingId required' })
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { items: { include: { vehicle: true } }, options: { include: { option: true } }, customer: true, agency: true, fleetVehicle: { include: { vehicle: true } } }
+    })
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    // Check if invoice already exists
+    const existing = await prisma.invoice.findFirst({ where: { bookingId } })
+    if (existing) return res.status(400).json({ error: 'Invoice already exists', invoice: existing })
+    // Generate invoice number: VR-YYYY-XXXXX
+    const year = new Date().getFullYear()
+    const count = await prisma.invoice.count({ where: { brand: booking.agency?.brand || 'VOLTRIDE' } })
+    const invoiceNumber = 'VR-' + year + '-' + String(count + 1).padStart(5, '0')
+    const totalTTC = booking.totalPrice
+    const taxRate = 21
+    const subtotal = Math.round(totalTTC / 1.21 * 100) / 100
+    const taxAmount = Math.round((totalTTC - subtotal) * 100) / 100
+    const paidAmount = booking.paidAmount || 0
+    const items = booking.items.map(item => {
+      const vName = item.vehicle?.name
+      const parsed = typeof vName === 'string' ? (() => { try { return JSON.parse(vName) } catch { return { es: vName } } })() : vName
+      return {
+        description: (parsed as any)?.es || (parsed as any)?.en || 'Vehicle',
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        total: item.totalPrice
+      }
+    })
+    const options = booking.options.map(opt => {
+      const oName = opt.option?.name
+      const parsed = typeof oName === 'string' ? (() => { try { return JSON.parse(oName) } catch { return { es: oName } } })() : oName
+      return {
+        description: (parsed as any)?.es || (parsed as any)?.en || 'Option',
+        quantity: opt.quantity,
+        unitPrice: opt.unitPrice,
+        total: opt.totalPrice
+      }
+    })
+    const invoice = await prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        bookingId,
+        customerId: booking.customerId,
+        agencyId: booking.agencyId,
+        brand: booking.agency?.brand || 'VOLTRIDE',
+        subtotal,
+        taxRate,
+        taxAmount,
+        totalTTC,
+        paidAmount,
+        remainingAmount: Math.max(0, totalTTC - paidAmount),
+        items,
+        options,
+        status: 'DRAFT'
+      }
+    })
+    res.status(201).json(invoice)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// PUT /api/invoices/:id - Update invoice
+app.put('/api/invoices/:id', async (req, res) => {
+  try {
+    const { status, paidAmount, notes, deductions, depositRefunded } = req.body
+    const data: any = {}
+    if (status) data.status = status
+    if (paidAmount !== undefined) {
+      data.paidAmount = paidAmount
+      const inv = await prisma.invoice.findUnique({ where: { id: req.params.id } })
+      if (inv) data.remainingAmount = Math.max(0, inv.totalTTC - paidAmount)
+    }
+    if (notes !== undefined) data.notes = notes
+    if (deductions !== undefined) data.deductions = deductions
+    if (depositRefunded !== undefined) data.depositRefunded = depositRefunded
+    const invoice = await prisma.invoice.update({ where: { id: req.params.id }, data })
+    res.json(invoice)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/invoices/:id/send - Send invoice by email
+app.post('/api/invoices/:id/send', async (req, res) => {
+  try {
+    const invoice = await prisma.invoice.findUnique({ where: { id: req.params.id } })
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+    const customer = await prisma.customer.findUnique({ where: { id: invoice.customerId } })
+    if (!customer?.email) return res.status(400).json({ error: 'Customer has no email' })
+    // Update status to SENT
+    await prisma.invoice.update({ where: { id: req.params.id }, data: { status: 'SENT' } })
+    // TODO: Send actual email with PDF
+    res.json({ success: true, message: 'Invoice marked as sent to ' + customer.email })
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/invoices/generate-from-checkout - Auto-generate after checkout
+app.post('/api/invoices/generate-from-checkout', async (req, res) => {
+  try {
+    const { bookingId } = req.body
+    if (!bookingId) return res.status(400).json({ error: 'bookingId required' })
+    // Check if already exists
+    const existing = await prisma.invoice.findFirst({ where: { bookingId } })
+    if (existing) return res.json(existing)
+    // Trigger creation via the POST /api/invoices logic
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { items: { include: { vehicle: true } }, options: { include: { option: true } }, customer: true, agency: true, fleetVehicle: { include: { vehicle: true } } }
+    })
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    const year = new Date().getFullYear()
+    const count = await prisma.invoice.count({ where: { brand: booking.agency?.brand || 'VOLTRIDE' } })
+    const invoiceNumber = 'VR-' + year + '-' + String(count + 1).padStart(5, '0')
+    const totalTTC = booking.totalPrice
+    const taxRate = 21
+    const subtotal = Math.round(totalTTC / 1.21 * 100) / 100
+    const taxAmount = Math.round((totalTTC - subtotal) * 100) / 100
+    const paidAmount = booking.paidAmount || 0
+    const items = booking.items.map(item => {
+      const vName = item.vehicle?.name
+      const parsed = typeof vName === 'string' ? (() => { try { return JSON.parse(vName) } catch { return { es: vName } } })() : vName
+      return { description: (parsed as any)?.es || 'Vehicle', quantity: item.quantity, unitPrice: item.unitPrice, total: item.totalPrice }
+    })
+    const options = booking.options.map(opt => {
+      const oName = opt.option?.name
+      const parsed = typeof oName === 'string' ? (() => { try { return JSON.parse(oName) } catch { return { es: oName } } })() : oName
+      return { description: (parsed as any)?.es || 'Option', quantity: opt.quantity, unitPrice: opt.unitPrice, total: opt.totalPrice }
+    })
+    const invoice = await prisma.invoice.create({
+      data: { invoiceNumber, bookingId, customerId: booking.customerId, agencyId: booking.agencyId, brand: booking.agency?.brand || 'VOLTRIDE', subtotal, taxRate, taxAmount, totalTTC, paidAmount, remainingAmount: Math.max(0, totalTTC - paidAmount), items, options, status: 'DRAFT' }
+    })
+    res.status(201).json(invoice)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+console.log('Invoice routes loaded')
+
+// ============== EXPENSE ROUTES ==============
+
+// GET /api/expenses
+app.get('/api/expenses', async (req, res) => {
+  try {
+    const { brand, category } = req.query
+    const where: any = {}
+    if (brand) where.brand = brand
+    if (category) where.category = category
+    const expenses = await prisma.expense.findMany({ where, orderBy: { date: 'desc' } })
+    res.json(expenses)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/expenses
+app.post('/api/expenses', async (req, res) => {
+  try {
+    const { date, supplier, description, category, brand, subtotal, taxRate, taxAmount, totalTTC, paidAmount, status, documentUrl, notes } = req.body
+    if (!supplier || !description) return res.status(400).json({ error: 'supplier and description required' })
+    const year = new Date().getFullYear()
+    const count = await prisma.expense.count({ where: { brand: brand || 'VOLTRIDE' } })
+    const expenseNumber = 'EX-' + year + '-' + String(count + 1).padStart(5, '0')
+    const expense = await prisma.expense.create({
+      data: {
+        expenseNumber, date: date ? new Date(date) : new Date(), supplier, description, category: category || 'Otros',
+        brand: brand || 'VOLTRIDE', subtotal: subtotal || 0, taxRate: taxRate || 21, taxAmount: taxAmount || 0,
+        totalTTC: totalTTC || 0, paidAmount: paidAmount || 0, status: status || 'PENDING', documentUrl, notes
+      }
+    })
+    res.status(201).json(expense)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// PUT /api/expenses/:id
+app.put('/api/expenses/:id', async (req, res) => {
+  try {
+    const expense = await prisma.expense.update({ where: { id: req.params.id }, data: req.body })
+    res.json(expense)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// DELETE /api/expenses/:id
+app.delete('/api/expenses/:id', async (req, res) => {
+  try {
+    await prisma.expense.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+console.log('Expense routes loaded')

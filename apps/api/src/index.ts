@@ -25,7 +25,7 @@ const app = express()
 const prisma = new PrismaClient()
 const resend = new Resend(process.env.RESEND_API_KEY)
 app.use(cors({ origin: true, credentials: true }))
-app.use(express.json())
+app.use((req, res, next) => { if (req.path === '/api/stripe-webhook') { next() } else { express.json()(req, res, next) } })
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })

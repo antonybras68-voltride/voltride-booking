@@ -1302,10 +1302,10 @@ export default function App() {
             {showNotifPanel && (
               <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-2xl border z-50 max-h-96 overflow-hidden">
                 <div className="p-3 border-b flex justify-between items-center bg-gray-50">
-                  <span className="font-bold">🔔 Notifications</span>
+                  <span className="font-bold">🔔 Notificaciones</span>
                   {unreadCount > 0 && (
                     <button onClick={markAllAsRead} className="text-xs text-blue-600 hover:underline">
-                      Tout marquer lu
+                      Marcar todo leído
                     </button>
                   )}
                 </div>
@@ -1324,7 +1324,7 @@ export default function App() {
                           <p className={`text-sm ${!notif.isRead ? 'font-semibold' : ''}`}>{notif.title}</p>
                           <p className="text-xs text-gray-500">{notif.body}</p>
                           <p className="text-xs text-gray-400 mt-1">
-                            {new Date(notif.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            {new Date(notif.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                         <button 
@@ -1343,7 +1343,7 @@ export default function App() {
             )}
           </div>
           
-          <span className="text-sm text-gray-500">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          <span className="text-sm text-gray-500">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
 
         <div className="p-6">
@@ -1480,9 +1480,9 @@ export default function App() {
 
   return (
                             <th key={i} className={'px-1 py-2 text-center w-24 ' + (isToday ? 'bg-yellow-100' : isWeekend ? 'bg-gray-100' : '')}>
-                              <div className="text-xs text-gray-500 uppercase">{day.toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
+                              <div className="text-xs text-gray-500 uppercase">{day.toLocaleDateString('es-ES', { weekday: 'short' })}</div>
                               <div className={'text-lg ' + (isToday ? 'font-bold text-yellow-600' : '')}>{day.getDate()}</div>
-<div className="text-xs text-gray-400">{day.toLocaleDateString('fr-FR', { month: 'short' })}</div>
+<div className="text-xs text-gray-400">{day.toLocaleDateString('es-ES', { month: 'short' })}</div>
                               {isToday && <div className="text-xs text-yellow-600">{t[lang].today}</div>}
                             </th>
                           )
@@ -2051,8 +2051,8 @@ export default function App() {
                     <div className="text-xs text-gray-500">{b.customer?.phone}</div>
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    <div>{new Date(b.startDate).toLocaleDateString('fr-FR')} {b.startTime}</div>
-                    <div className="text-gray-500">→ {new Date(b.endDate).toLocaleDateString('fr-FR')} {b.endTime}</div>
+                    <div>{new Date(b.startDate).toLocaleDateString('es-ES')} {b.startTime}</div>
+                    <div className="text-gray-500">→ {new Date(b.endDate).toLocaleDateString('es-ES')} {b.endTime}</div>
                   </td>
                   <td className="px-4 py-3 text-sm">{getName(b.items?.[0]?.vehicle?.name)}</td>
                   <td className="px-4 py-3">
@@ -2140,9 +2140,9 @@ export default function App() {
                 {[
                   { id: 'ALL', label: 'Tous', color: 'bg-gray-100 text-gray-700' },
                   { id: 'AVAILABLE', label: 'Disponibles', color: 'bg-green-100 text-green-700' },
-                  { id: 'RENTED', label: 'En location', color: 'bg-blue-100 text-blue-700' },
-                  { id: 'MAINTENANCE', label: 'Maintenance', color: 'bg-orange-100 text-orange-700' },
-                  { id: 'OUT_OF_SERVICE', label: 'Hors service', color: 'bg-red-100 text-red-700' }
+                  { id: 'RENTED', label: 'En alquiler', color: 'bg-blue-100 text-blue-700' },
+                  { id: 'MAINTENANCE', label: 'Mantenimiento', color: 'bg-orange-100 text-orange-700' },
+                  { id: 'OUT_OF_SERVICE', label: 'Fuera de servicio', color: 'bg-red-100 text-red-700' }
                 ].map(s => (
                   <button key={s.id} onClick={() => setFleetStatusFilter(s.id)}
                     className={'px-3 py-1.5 rounded-lg text-sm font-medium transition ' + 
@@ -2180,12 +2180,12 @@ export default function App() {
                         <div className={'text-xs px-2 py-0.5 rounded inline-block mt-1 ' + 
                           (f.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' : 
                            f.status === 'RENTED' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700')}>
-                          {f.status === 'AVAILABLE' ? 'Disponible' : f.status === 'RENTED' ? 'En location' : 'Maintenance'}
+                          {f.status === 'AVAILABLE' ? 'Disponible' : f.status === 'RENTED' ? 'En alquiler' : 'Mantenimiento'}
                         </div>
                       </div>
                       <button onClick={(e) => { e.stopPropagation(); handleFleetClick(f, 'edit') }} 
                         className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
-                        Éditer
+                        Editar
                       </button>
                     </div>
                   </div>
@@ -2204,7 +2204,7 @@ export default function App() {
               
               {rentedBookings.length === 0 ? (
                 <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
-                  Aucun véhicule en location actuellement
+                  No hay vehículos en alquiler actualmente
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2226,9 +2226,9 @@ export default function App() {
                         </div>
                         <div className="text-right">
                           <div className="text-xs text-gray-500">Depuis</div>
-                          <div className="text-sm font-medium">{new Date(booking.startDate).toLocaleDateString('fr-FR')}</div>
+                          <div className="text-sm font-medium">{new Date(booking.startDate).toLocaleDateString('es-ES')}</div>
                           <div className="text-xs text-blue-600 mt-1">
-                            Retour prévu: {new Date(booking.endDate).toLocaleDateString('fr-FR')}
+                            Devolución prevista: {new Date(booking.endDate).toLocaleDateString('es-ES')}
                           </div>
                         </div>
                       </div>
@@ -2334,7 +2334,7 @@ export default function App() {
                         </div>
                         <div>
                           <label className="text-xs text-gray-500 uppercase">{lang === 'fr' ? 'Créé le' : 'Creado el'}</label>
-                          <p className="font-medium">{selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString('fr-FR') : '-'}</p>
+                          <p className="font-medium">{selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString('es-ES') : '-'}</p>
                         </div>
                       </div>
 
@@ -2391,7 +2391,7 @@ export default function App() {
                                 <div>
                                   <span className="font-mono text-sm">{b.reference}</span>
                                   <span className="ml-2 text-sm text-gray-500">
-                                    {new Date(b.startDate).toLocaleDateString('fr-FR')} → {new Date(b.endDate).toLocaleDateString('fr-FR')}
+                                    {new Date(b.startDate).toLocaleDateString('es-ES')} → {new Date(b.endDate).toLocaleDateString('es-ES')}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -2486,7 +2486,7 @@ export default function App() {
                         <td className="px-4 py-3 font-medium">{contract.contractNumber}</td>
                         <td className="px-4 py-3">{contract.customer?.firstName} {contract.customer?.lastName}</td>
                         <td className="px-4 py-3">{contract.fleetVehicle?.vehicleNumber || contract.fleetVehicle?.vehicle?.name?.fr || contract.fleetVehicle?.vehicle?.name || 'N/A'}</td>
-                        <td className="px-4 py-3 text-sm">{new Date(contract.currentStartDate).toLocaleDateString('fr-FR')} - {new Date(contract.currentEndDate).toLocaleDateString('fr-FR')}</td>
+                        <td className="px-4 py-3 text-sm">{new Date(contract.currentStartDate).toLocaleDateString('es-ES')} - {new Date(contract.currentEndDate).toLocaleDateString('es-ES')}</td>
                         <td className="px-4 py-3 font-semibold">{(Number(contract.totalAmount) || 0).toFixed(2)} EUR</td>
                         <td className="px-4 py-3"><span className={"px-2 py-1 rounded-full text-xs font-medium " + (contract.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : contract.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' : contract.status === 'CANCELLED' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')}>{contract.status}</span></td>
                         <td className="px-4 py-3 space-x-2">
@@ -2682,7 +2682,7 @@ export default function App() {
           <div className="font-bold">{tooltip.booking.customer?.firstName} {tooltip.booking.customer?.lastName}</div>
           {tooltip.booking.customer?.phone && <div className="text-yellow-300">📞 {tooltip.booking.customer.phone}</div>}
           <div className="text-gray-300">{tooltip.booking.reference}</div>
-          <div className="text-gray-300">{new Date(tooltip.booking.startDate).toLocaleDateString('fr-FR')} → {new Date(tooltip.booking.endDate).toLocaleDateString('fr-FR')}</div>
+          <div className="text-gray-300">{new Date(tooltip.booking.startDate).toLocaleDateString('es-ES')} → {new Date(tooltip.booking.endDate).toLocaleDateString('es-ES')}</div>
           <div className="text-gray-300">{tooltip.booking.startTime} - {tooltip.booking.endTime}</div>
           {tooltip.booking.checkedIn && <div className="text-green-400">✓ {t[lang].checkedIn}</div>}
         </div>
@@ -3127,11 +3127,11 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Inicio</p>
-                    <p className="font-medium">{new Date(selectedBookingDetail.startDate).toLocaleDateString('fr-FR')} à {selectedBookingDetail.startTime}</p>
+                    <p className="font-medium">{new Date(selectedBookingDetail.startDate).toLocaleDateString('es-ES')} à {selectedBookingDetail.startTime}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Fin</p>
-                    <p className="font-medium">{new Date(selectedBookingDetail.endDate).toLocaleDateString('fr-FR')} à {selectedBookingDetail.endTime}</p>
+                    <p className="font-medium">{new Date(selectedBookingDetail.endDate).toLocaleDateString('es-ES')} à {selectedBookingDetail.endTime}</p>
                   </div>
                 </div>
               </div>
@@ -3181,7 +3181,7 @@ export default function App() {
                         <span className="font-bold">{selectedBookingDetail.paidAmount?.toFixed(2)}€</span>
                       </div>
                       <div className="text-sm text-green-600">
-                        📅 {new Date(selectedBookingDetail.createdAt).toLocaleDateString('fr-FR')} • 
+                        📅 {new Date(selectedBookingDetail.createdAt).toLocaleDateString('es-ES')} • 
                         {selectedBookingDetail.source === 'WIDGET' ? ' 🌐 En línea • 💳 CB' : 
                          ` 🏪 En agencia • ${selectedBookingDetail.paymentMethod === 'card' ? '💳 CB' : selectedBookingDetail.paymentMethod === 'cash' ? '💵 Espèces' : '💳 CB/💵 Espèces'}`}
                       </div>
@@ -3204,7 +3204,7 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-500">Fecha de reserva</p>
-                    <p className="font-medium">{new Date(selectedBookingDetail.createdAt).toLocaleDateString('fr-FR')} à {new Date(selectedBookingDetail.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</p>
+                    <p className="font-medium">{new Date(selectedBookingDetail.createdAt).toLocaleDateString('es-ES')} à {new Date(selectedBookingDetail.createdAt).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Agencia</p>
@@ -3459,7 +3459,7 @@ export default function App() {
                 <p className="text-sm text-gray-600">{extensionContract.customer?.firstName} {extensionContract.customer?.lastName}</p>
                 <p className="text-sm text-gray-600">{extensionContract.fleetVehicle?.vehicleNumber}</p>
                 <p className="text-sm text-gray-500">
-                  {lang === 'fr' ? 'Fin actuelle:' : 'Fin actual:'} {new Date(extensionContract.currentEndDate).toLocaleDateString('fr-FR')}
+                  {lang === 'fr' ? 'Fin actuelle:' : 'Fin actual:'} {new Date(extensionContract.currentEndDate).toLocaleDateString('es-ES')}
                 </p>
               </div>
               <div>

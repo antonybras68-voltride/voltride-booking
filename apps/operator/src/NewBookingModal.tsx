@@ -102,7 +102,13 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
   const validateDates = () => {
     setDateValidationError(null)
     if (!bookingStartDate || !bookingEndDate || !bookingStartTime || !bookingEndTime) return
-    
+    // Bloquer si date/heure de début est dans le passé
+    const now = new Date()
+    const startDateTime2 = new Date(`${bookingStartDate}T${bookingStartTime}`)
+    if (startDateTime2 < now) {
+      setDateValidationError('No se puede crear una reserva con fecha/hora de inicio en el pasado')
+      return
+    }
     const startDateTime = new Date(`${bookingStartDate}T${bookingStartTime}`)
     const endDateTime = new Date(`${bookingEndDate}T${bookingEndTime}`)
     
@@ -118,17 +124,17 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
     }
     
     if (endDateTime <= startDateTime) {
-      setDateValidationError('La date/heure de fin doit être après la date/heure de début')
+      setDateValidationError('La fecha/hora de fin debe ser posterior a la fecha/hora de inicio')
       return
     }
     
     if (agencySchedule && !agencySchedule.isClosed && agencySchedule.openTime && agencySchedule.closeTime) {
       if (bookingStartTime < agencySchedule.openTime || bookingStartTime > agencySchedule.closeTime) {
-        setDateValidationError(`L'heure de début doit être entre ${agencySchedule.openTime} et ${agencySchedule.closeTime}`)
+        setDateValidationError(`La hora de inicio debe estar entre ${agencySchedule.openTime} et ${agencySchedule.closeTime}`)
         return
       }
       if (bookingEndTime < agencySchedule.openTime || bookingEndTime > agencySchedule.closeTime) {
-        setDateValidationError(`L'heure de fin doit être entre ${agencySchedule.openTime} et ${agencySchedule.closeTime}`)
+        setDateValidationError(`La hora de fin debe estar entre ${agencySchedule.openTime} et ${agencySchedule.closeTime}`)
         return
       }
     }

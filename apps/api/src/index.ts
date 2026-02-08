@@ -500,7 +500,32 @@ app.post('/api/bookings', async (req, res) => {
       `${customer.firstName} ${customer.lastName} - ${new Date(req.body.startDate).toLocaleDateString('fr-FR')}`,
       { bookingId: booking.id, reference: booking.reference }
     )
-    
+    // Email notification admin
+    try {
+      const brand = finalBooking?.agency?.brand || 'VOLTRIDE'
+      const adminEmail = brand === 'VOLTRIDE' ? 'info@voltride.es' : 'info@motor-rent.es'
+      const fromEmail = brand === 'VOLTRIDE' ? 'reservations@voltride.es' : 'reservations@motor-rent.es'
+      const brandName = brand === 'VOLTRIDE' ? 'Voltride' : 'Motor-Rent'
+      const vehicleName = finalBooking?.items?.[0]?.vehicle?.name
+      const vName = typeof vehicleName === 'object' ? (vehicleName?.es || vehicleName?.fr || '') : (vehicleName || '')
+      await resend.emails.send({
+        from: brandName + ' <' + fromEmail + '>',
+        to: adminEmail,
+        subject: '🆕 Nueva reserva ' + finalBooking?.reference,
+        html: '<div style="font-family:Arial;max-width:600px;margin:0 auto">'
+          + '<h2 style="color:#0e7490">🆕 Nueva reserva - ' + finalBooking?.reference + '</h2>'
+          + '<table style="width:100%;border-collapse:collapse">'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Cliente</td><td style="padding:8px;border-bottom:1px solid #eee;font-weight:bold">' + finalBooking?.customer?.firstName + ' ' + finalBooking?.customer?.lastName + '</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Email</td><td style="padding:8px;border-bottom:1px solid #eee">' + finalBooking?.customer?.email + '</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Teléfono</td><td style="padding:8px;border-bottom:1px solid #eee">' + (finalBooking?.customer?.phone || '-') + '</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Vehículo</td><td style="padding:8px;border-bottom:1px solid #eee">' + vName + '</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Período</td><td style="padding:8px;border-bottom:1px solid #eee">' + new Date(finalBooking?.startDate).toLocaleDateString('es-ES') + ' ' + finalBooking?.startTime + ' → ' + new Date(finalBooking?.endDate).toLocaleDateString('es-ES') + ' ' + finalBooking?.endTime + '</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Precio</td><td style="padding:8px;border-bottom:1px solid #eee;font-weight:bold;color:#0e7490">' + finalBooking?.totalPrice?.toFixed(2) + '€</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Origen</td><td style="padding:8px;border-bottom:1px solid #eee">🌐 Widget (online)</td></tr>'
+          + '<tr><td style="padding:8px;color:#666">Agencia</td><td style="padding:8px">' + (finalBooking?.agency?.name?.es || finalBooking?.agency?.name?.fr || '') + '</td></tr>'
+          + '</table></div>'
+      })
+    } catch (emailErr) { console.error('Admin notification email error:', emailErr) }
     res.json(finalBooking)
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create booking' }) }
 })
@@ -3807,7 +3832,31 @@ app.post('/api/bookings/operator', async (req, res) => {
         })
       }
     }
-    
+   // Email notification admin
+    try {
+      const adminEmail = booking.agency?.brand === 'VOLTRIDE' ? 'info@voltride.es' : 'info@motor-rent.es'
+      const fromEmail2 = booking.agency?.brand === 'VOLTRIDE' ? 'reservations@voltride.es' : 'reservations@motor-rent.es'
+      const brandName2 = booking.agency?.brand === 'VOLTRIDE' ? 'Voltride' : 'Motor-Rent'
+      const vehicleName2 = booking.items?.[0]?.vehicle?.name
+      const vName2 = typeof vehicleName2 === 'object' ? (vehicleName2?.es || vehicleName2?.fr || '') : (vehicleName2 || '')
+      await resend.emails.send({
+        from: brandName2 + ' <' + fromEmail2 + '>',
+        to: adminEmail,
+        subject: '🆕 Nueva reserva ' + booking.reference,
+        html: '<div style="font-family:Arial;max-width:600px;margin:0 auto">'
+          + '<h2 style="color:#0e7490">🆕 Nueva reserva - ' + booking.reference + '</h2>'
+          + '<table style="width:100%;border-collapse:collapse">'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Cliente</td><td style="padding:8px;border-bottom:1px solid #eee;font-weight:bold">' + booking.customer?.firstName + ' ' + booking.customer?.lastName + '</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Email</td><td style="padding:8px;border-bottom:1px solid #eee">' + booking.customer?.email + '</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Teléfono</td><td style="padding:8px;border-bottom:1px solid #eee">' + (booking.customer?.phone || '-') + '</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Vehículo</td><td style="padding:8px;border-bottom:1px solid #eee">' + vName2 + '</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Período</td><td style="padding:8px;border-bottom:1px solid #eee">' + new Date(booking.startDate).toLocaleDateString('es-ES') + ' ' + booking.startTime + ' → ' + new Date(booking.endDate).toLocaleDateString('es-ES') + ' ' + booking.endTime + '</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Precio</td><td style="padding:8px;border-bottom:1px solid #eee;font-weight:bold;color:#0e7490">' + booking.totalPrice?.toFixed(2) + '€</td></tr>'
+          + '<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">Origen</td><td style="padding:8px;border-bottom:1px solid #eee">🏪 Agencia (operador)</td></tr>'
+          + '<tr><td style="padding:8px;color:#666">Agencia</td><td style="padding:8px">' + (booking.agency?.name?.es || booking.agency?.name?.fr || '') + '</td></tr>'
+          + '</table></div>'
+      })
+    } catch (emailErr) { console.error('Admin notification email error:', emailErr) } 
     res.json(booking)
   } catch (e: any) {
     console.error(e)

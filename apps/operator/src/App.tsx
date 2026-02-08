@@ -401,7 +401,8 @@ export default function App() {
   // Auto-sélectionner l'agence pour COLLABORATOR/FRANCHISEE
   useEffect(() => {
     if (user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE') && user.agencyIds?.length > 0 && !selectedAgency) {
-      setSelectedAgency(user.agencyIds[0])
+      const matchingAgency = allAgencies.filter((a: any) => a.brand === brand).find((a: any) => user.agencyIds.includes(a.id))
+      if (matchingAgency) setSelectedAgency(matchingAgency.id)
     }
   }, [user, agencies])
   useEffect(() => { if (tab === "contracts") loadContracts() }, [tab, brand])

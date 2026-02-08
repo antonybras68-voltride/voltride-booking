@@ -1235,8 +1235,6 @@ export default function App() {
               <>
                 <div className="text-white font-medium text-sm">{user?.firstName} {user?.lastName}</div>
                 <div className="text-white/70 text-xs">{user?.role}</div>
-                  <button onClick={() => { setLang('fr'); localStorage.setItem('lang', 'fr') }}
-                  <button onClick={() => { setLang('es'); localStorage.setItem('lang', 'es') }}
                 <button 
                   type="button"
                   onClick={() => { handleLogout(); }}

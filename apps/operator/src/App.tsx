@@ -877,13 +877,30 @@ export default function App() {
     })
 
     if (hasConflict) {
-      alert('❌ Conflit : une réservation existe déjà sur cette période')
+      alert('❌ Conflicto: ya existe una reserva en este período')
       setDraggedBooking(null)
       setDragType(null)
       setDropTarget(null)
       return
     }
 
+    // Si move vers un véhicule de catégorie différente, demander confirmation
+    if (dragType === 'move' && newFleetId !== draggedBooking.fleetVehicleId) {
+      const sourceVehicle = fleet.find(f => f.id === draggedBooking.fleetVehicleId)
+      const targetVehicle = fleet.find(f => f.id === newFleetId)
+      const sourceCategory = sourceVehicle?.vehicle?.categoryId
+      const targetCategory = targetVehicle?.vehicle?.categoryId
+      if (sourceCategory !== targetCategory) {
+        const sourceCatName = getName(sourceVehicle?.vehicle?.category?.name) || 'N/A'
+        const targetCatName = getName(targetVehicle?.vehicle?.category?.name) || 'N/A'
+        if (!confirm(`⚠️ Cambio de categoría:\n${sourceCatName} → ${targetCatName}\n\n¿Confirmar el cambio?`)) {
+          setDraggedBooking(null)
+          setDragType(null)
+          setDropTarget(null)
+          return
+        }
+      }
+    }
     // Update booking
     try {
       await api.updateBooking(draggedBooking.id, {
@@ -893,7 +910,7 @@ export default function App() {
       })
       loadData()
     } catch (e) {
-      alert('Erreur lors de la modification')
+      alert('Error al modificar la reserva')
     }
 
     setDraggedBooking(null)

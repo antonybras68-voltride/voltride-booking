@@ -396,7 +396,7 @@ export default function App() {
     return d
   })
 
-  useEffect(() => { loadData() }, [selectedAgency, brand])
+  useEffect(() => { loadData() }, [selectedAgency, brand, user])
   
   // Auto-sélectionner l'agence pour COLLABORATOR/FRANCHISEE
   useEffect(() => {

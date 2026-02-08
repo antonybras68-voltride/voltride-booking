@@ -667,7 +667,16 @@ app.post('/api/create-checkout-session', async (req, res) => {
 // ============== STRIPE WEBHOOK ==============
 app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    const event = req.body
+    const sig = req.headers['stripe-signature']
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_VOLTRIDE
+    let event
+    if (sig && webhookSecret) {
+      const stripe = stripeVoltride || stripeMotorrent
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret)
+    } else {
+      event = JSON.parse(req.body.toString())
+      console.warn('⚠️ Webhook sans vérification de signature!')
+    }
     
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object

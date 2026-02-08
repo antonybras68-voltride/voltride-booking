@@ -2382,7 +2382,7 @@ app.get('/api/cron/check-notifications', async (req, res) => {
       const [startHour, startMin] = booking.startTime.split(':').map(Number)
       const [endHour, endMin] = booking.endTime.split(':').map(Number)
       
-      // Check-in imminent (30 min avant, si pas encore check-in)
+      // Check-in inminente (30 min antes)
       if (!booking.checkedIn && booking.startDate.toISOString().split('T')[0] === today) {
         const startMinutes = startHour * 60 + startMin
         const nowMinutes = currentHour * 60 + currentMinute
@@ -2393,7 +2393,7 @@ app.get('/api/cron/check-notifications', async (req, res) => {
           const existing = await prisma.notification.findFirst({
             where: { 
               data: { path: ['bookingId'], equals: booking.id },
-              title: { contains: 'Check-in imminent' },
+              title: { contains: 'Check-in inminente' },
               createdAt: { gte: new Date(today) }
             }
           })
@@ -2401,8 +2401,8 @@ app.get('/api/cron/check-notifications', async (req, res) => {
           if (!existing) {
             await sendNotificationByType(
               'checkin_imminent',
-              '⏰ Check-in imminent',
-              `${booking.customer?.firstName} ${booking.customer?.lastName} arrive dans ${diff} min (${booking.startTime})`,
+              '⏰ Check-in inminente',
+              `${booking.customer?.firstName} ${booking.customer?.lastName} llega en ${diff} min (${booking.startTime})`,
               { bookingId: booking.id, reference: booking.reference }
             )
             results.checkinImminent++
@@ -2410,7 +2410,7 @@ app.get('/api/cron/check-notifications', async (req, res) => {
         }
       }
       
-      // Check-out imminent (30 min avant, si check-in fait mais pas check-out)
+      // Check-out inminente (30 min antes)
       if (booking.checkedIn && !booking.checkedOut && booking.endDate.toISOString().split('T')[0] === today) {
         const endMinutes = endHour * 60 + endMin
         const nowMinutes = currentHour * 60 + currentMinute
@@ -2420,7 +2420,7 @@ app.get('/api/cron/check-notifications', async (req, res) => {
           const existing = await prisma.notification.findFirst({
             where: { 
               data: { path: ['bookingId'], equals: booking.id },
-              title: { contains: 'Check-out imminent' },
+              title: { contains: 'Check-out inminente' },
               createdAt: { gte: new Date(today) }
             }
           })
@@ -2428,8 +2428,8 @@ app.get('/api/cron/check-notifications', async (req, res) => {
           if (!existing) {
             await sendNotificationByType(
               'checkout_imminent',
-              '⏰ Check-out imminent',
-              `${booking.customer?.firstName} ${booking.customer?.lastName} doit rendre dans ${diff} min (${booking.endTime})`,
+              '⏰ Check-out inminente',
+              `${booking.customer?.firstName} ${booking.customer?.lastName} debe devolver en ${diff} min (${booking.endTime})`,
               { bookingId: booking.id, reference: booking.reference }
             )
             results.checkoutImminent++
@@ -2437,7 +2437,7 @@ app.get('/api/cron/check-notifications', async (req, res) => {
         }
       }
       
-      // Retard de retour (si heure de fin dépassée et pas check-out)
+      // Retraso en devolución
       if (booking.checkedIn && !booking.checkedOut && booking.endDate.toISOString().split('T')[0] === today) {
         const endMinutes = endHour * 60 + endMin
         const nowMinutes = currentHour * 60 + currentMinute
@@ -2445,12 +2445,12 @@ app.get('/api/cron/check-notifications', async (req, res) => {
         if (nowMinutes > endMinutes) {
           const lateMinutes = nowMinutes - endMinutes
           
-          // Envoyer notification toutes les 15 min de retard
+          // Enviar notificación cada 15 min de retraso
           if (lateMinutes % 15 < 5) {
             const existing = await prisma.notification.findFirst({
               where: { 
                 data: { path: ['bookingId'], equals: booking.id },
-                title: { contains: 'Retard' },
+                title: { contains: 'Retraso' },
                 createdAt: { gte: new Date(Date.now() - 10 * 60 * 1000) } // 10 min
               }
             })
@@ -2458,8 +2458,8 @@ app.get('/api/cron/check-notifications', async (req, res) => {
             if (!existing) {
               await sendNotificationByType(
                 'late_return',
-                '⚠️ Retard de retour',
-                `${booking.customer?.firstName} ${booking.customer?.lastName} a ${lateMinutes} min de retard!`,
+                '⚠️ Retraso en devolución',
+                `${booking.customer?.firstName} ${booking.customer?.lastName} tiene ${lateMinutes} min de retraso`,
                 { bookingId: booking.id, reference: booking.reference, lateMinutes }
               )
               results.lateReturn++

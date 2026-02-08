@@ -15,7 +15,7 @@ export default function App() {
   const [user, setUser] = useState<any>(null)
   const [token, setToken] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
-  const [lang, setLang] = useState<'fr' | 'es'>(() => (localStorage.getItem('lang') as 'fr' | 'es') || 'es')
+  const [lang, setLang] = useState<'fr' | 'es'>('es')
   
   // Notifications bell
   const [notifications, setNotifications] = useState<any[]>([])
@@ -1235,16 +1235,8 @@ export default function App() {
               <>
                 <div className="text-white font-medium text-sm">{user?.firstName} {user?.lastName}</div>
                 <div className="text-white/70 text-xs">{user?.role}</div>
-                <div className="flex gap-1 mt-2">
                   <button onClick={() => { setLang('fr'); localStorage.setItem('lang', 'fr') }}
-                    className={'flex-1 py-1 text-xs rounded transition ' + (lang === 'fr' ? 'bg-white text-gray-800 font-bold' : 'bg-white/30 text-white')}>
-                    🇫🇷 FR
-                  </button>
                   <button onClick={() => { setLang('es'); localStorage.setItem('lang', 'es') }}
-                    className={'flex-1 py-1 text-xs rounded transition ' + (lang === 'es' ? 'bg-white text-gray-800 font-bold' : 'bg-white/30 text-white')}>
-                    🇪🇸 ES
-                  </button>
-                </div>
                 <button 
                   type="button"
                   onClick={() => { handleLogout(); }}

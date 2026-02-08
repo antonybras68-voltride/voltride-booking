@@ -3651,7 +3651,37 @@ app.put('/api/bookings/:id', async (req, res) => {
         }
       }
     }
-    
+    // Recalculer le prix si les dates ont changé
+    if (startDate || endDate) {
+      const existingBooking = await prisma.booking.findUnique({ 
+        where: { id },
+        include: { items: { include: { vehicle: { include: { pricing: true } } } } }
+      })
+      if (existingBooking) {
+        const newStart = updateData.startDate || existingBooking.startDate
+        const newEnd = updateData.endDate || existingBooking.endDate
+        const days = Math.max(1, Math.ceil((new Date(newEnd).getTime() - new Date(newStart).getTime()) / (1000 * 60 * 60 * 24)))
+        
+        let newTotal = 0
+        for (const item of existingBooking.items) {
+          const pricing = item.vehicle?.pricing?.[0]
+          if (pricing) {
+            const dayKey = 'day' + Math.min(days, 14)
+            let itemPrice = Number((pricing as any)[dayKey]) || 0
+            if (days > 14) {
+              const dailyRate = (Number((pricing as any).day14) || 0) / 14
+              itemPrice += Math.floor((days - 14) * dailyRate)
+            }
+            newTotal += itemPrice * item.quantity
+          }
+        }
+        
+        if (newTotal > 0) {
+          updateData.totalPrice = newTotal
+          console.log('Recalculated price:', { days, newTotal })
+        }
+      }
+    }
     const booking = await prisma.booking.update({
       where: { id },
       data: updateData,

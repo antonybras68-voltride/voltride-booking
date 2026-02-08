@@ -51,7 +51,7 @@ export default function App() {
       newBooking: 'Nouvelle réservation',
       newUser: 'Nouvel utilisateur',
       save: 'Sauvegarder',
-      cancel: 'Annuler',
+      cancel: 'Cancelar',
       delete: 'Supprimer',
       edit: 'Modifier',
       create: 'Créer',
@@ -2612,7 +2612,7 @@ export default function App() {
                   {editingUser ? t[lang].save : t[lang].create}
                 </button>
                 <button type="button" onClick={() => { setShowNewUserModal(false); setEditingUser(null) }} className="flex-1 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
-                  Annuler
+                  Cancelar
                 </button>
               </div>
             </form>
@@ -2668,7 +2668,7 @@ export default function App() {
           {!contextMenu.booking.checkedIn && (
             <button onClick={() => { setCancelBooking(contextMenu.booking); setShowCancelModal(true); setContextMenu(null) }}
               className="w-full px-4 py-2 text-left hover:bg-gray-100 text-red-600 flex items-center gap-2">
-              ❌ Annuler
+              ❌ Cancelar
             </button>
           )}
         </div>
@@ -2692,49 +2692,70 @@ export default function App() {
       {showEditModal && editingBooking && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 m-4">
-            <h2 className="text-xl font-bold mb-4">✏️ Modifier la réservation</h2>
+            <h2 className="text-xl font-bold mb-4">✏️ Modificar la reserva</h2>
             <div className="space-y-4 max-h-[70vh] overflow-y-auto">
               {/* Info client */}
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="font-medium">{editingBooking.customer?.firstName} {editingBooking.customer?.lastName}</p>
-                <p className="text-sm text-gray-500">Réf: {editingBooking.reference}</p>
+                <p className="text-sm text-gray-500">Ref: {editingBooking.reference}</p>
               </div>
               
-              {/* Dates et heures */}
+              {/* Fechas y horas */}
               <div className="border rounded-xl p-4">
-                <h3 className="font-medium mb-3">📅 Dates et heures</h3>
+                <h3 className="font-medium mb-3">📅 Fechas y horas</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Date début</label>
+                    <label className="block text-sm font-medium mb-1">Fecha inicio</label>
                     <input type="date" value={editForm.startDate} onChange={e => setEditForm({...editForm, startDate: e.target.value})} className="w-full border-2 rounded-xl p-3" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Heure début</label>
+                    <label className="block text-sm font-medium mb-1">Hora inicio</label>
                     <input type="time" value={editForm.startTime} onChange={e => setEditForm({...editForm, startTime: e.target.value})} className="w-full border-2 rounded-xl p-3" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Date fin</label>
+                    <label className="block text-sm font-medium mb-1">Fecha fin</label>
                     <input type="date" value={editForm.endDate} onChange={e => setEditForm({...editForm, endDate: e.target.value})} className="w-full border-2 rounded-xl p-3" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Heure fin</label>
+                    <label className="block text-sm font-medium mb-1">Hora fin</label>
                     <input type="time" value={editForm.endTime} onChange={e => setEditForm({...editForm, endTime: e.target.value})} className="w-full border-2 rounded-xl p-3" />
                   </div>
                 </div>
               </div>
-              
+              {/* Résumé prix estimé */}
+              {(() => {
+                const oldDays = Math.max(1, Math.ceil((new Date(editingBooking.endDate).getTime() - new Date(editingBooking.startDate).getTime()) / (1000 * 60 * 60 * 24)))
+                const newDays = editForm.startDate && editForm.endDate ? Math.max(1, Math.ceil((new Date(editForm.endDate).getTime() - new Date(editForm.startDate).getTime()) / (1000 * 60 * 60 * 24))) : oldDays
+                const daysChanged = newDays !== oldDays
+                return (
+                  <div className={'rounded-xl p-4 ' + (daysChanged ? 'bg-orange-50 border-2 border-orange-300' : 'bg-gray-50')}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">📊 Duración</span>
+                      <span className="font-bold">{newDays} día{newDays > 1 ? 's' : ''} {daysChanged && <span className="text-orange-600 text-sm">(antes: {oldDays} día{oldDays > 1 ? 's' : ''})</span>}</span>
+                    </div>
+                    {daysChanged && (
+                      <p className="text-orange-600 text-sm mt-2">⚠️ El precio se recalculará automáticamente al guardar</p>
+                    )}
+                    <div className="flex justify-between items-center mt-2">
+                      <span>Precio actual</span>
+                      <span className="font-bold text-blue-600">{editingBooking.totalPrice?.toFixed(2)}€</span>
+                    </div>
+                  </div>
+                )
+              })()}
+
               {/* Vehículo */}
               <div className="border rounded-xl p-4">
                 <h3 className="font-medium mb-3">🚲 Vehículo</h3>
                 <div className="p-3 bg-blue-50 rounded-lg mb-3">
-                  <p className="font-medium">Actuel: {editingBooking.fleetVehicle?.vehicleNumber} - {editingBooking.fleetVehicle?.vehicle?.name?.fr || editingBooking.fleetVehicle?.vehicle?.name?.es}</p>
+                  <p className="font-medium">Actual: {editingBooking.fleetVehicle?.vehicleNumber} - {editingBooking.fleetVehicle?.vehicle?.name?.fr || editingBooking.fleetVehicle?.vehicle?.name?.es}</p>
                 </div>
                 <select 
                   value={editForm.fleetVehicleId || editingBooking.fleetVehicleId} 
                   onChange={e => setEditForm({...editForm, fleetVehicleId: e.target.value})}
                   className="w-full border-2 rounded-xl p-3"
                 >
-                  <option value={editingBooking.fleetVehicleId}>Garder le véhicule actuel</option>
+                  <option value={editingBooking.fleetVehicleId}>Mantener el vehículo actual</option>
                   {fleet.filter(f => f.status === 'AVAILABLE' && f.agencyId === editingBooking.agencyId).map(f => (
                     <option key={f.id} value={f.id}>{f.vehicleNumber} - {f.vehicle?.name?.fr || f.vehicle?.name?.es}</option>
                   ))}
@@ -2743,7 +2764,7 @@ export default function App() {
               
               {/* Équipements */}
               <div className="border rounded-xl p-4">
-                <h3 className="font-medium mb-3">🎒 Équipements / Options</h3>
+                <h3 className="font-medium mb-3">🎒 Equipamiento / Opciones</h3>
                 <div className="space-y-2">
                   {availableOptions.map((opt: any) => {
                     const currentOpt = (editForm.options || []).find((o: any) => o.optionId === opt.id)
@@ -2786,7 +2807,7 @@ export default function App() {
                     )
                   })}
                   {availableOptions.length === 0 && (
-                    <p className="text-gray-500 text-sm">Chargement des options...</p>
+                    <p className="text-gray-500 text-sm">Cargando opciones...</p>
                   )}
                 </div>
               </div>
@@ -2794,7 +2815,7 @@ export default function App() {
             
             <div className="flex gap-3 mt-6">
               <button onClick={() => { setShowEditModal(false); setEditingBooking(null); setEditForm({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00' }) }} className="flex-1 py-3 bg-gray-200 rounded-xl hover:bg-gray-300">
-                Annuler
+                Cancelar
               </button>
               <button onClick={async () => {
                 try {
@@ -2824,13 +2845,13 @@ export default function App() {
                   setEditingBooking(null)
                   setEditForm({ startDate: '', endDate: '', startTime: '10:00', endTime: '10:00', fleetVehicleId: '', options: null })
                   loadData()
-                  alert('Réservation modifiée avec succès !')
+                  alert('Reserva modificada con éxito !')
                 } catch (e: any) { 
                   console.error('Erreur modification:', e)
-                  alert('Erreur lors de la modification: ' + (e.message || 'Erreur inconnue'))
+                  alert('Error al modificar: ' + (e.message || 'Erreur inconnue'))
                 }
               }} className="flex-1 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
-                Enregistrer
+                Guardar
               </button>
             </div>
           </div>
@@ -2840,7 +2861,7 @@ export default function App() {
       {showCancelModal && cancelBooking && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" >
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold mb-4">❌ {lang === "fr" ? "Annuler la réservation" : "Cancelar la reserva"}</h3>
+            <h3 className="text-xl font-bold mb-4">❌ {lang === "fr" ? "Cancelar la réservation" : "Cancelar la reserva"}</h3>
             <p className="text-gray-600 mb-4">{lang === "fr" ? "Réservation" : "Reserva"} {cancelBooking.reference} - {cancelBooking.customer?.lastName}</p>
             <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)}
               placeholder="Motif d'annulation (obligatoire)"
@@ -3479,7 +3500,7 @@ export default function App() {
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowExtensionModal(false)} className="flex-1 py-2 bg-gray-200 rounded-xl hover:bg-gray-300">
-                {lang === 'fr' ? 'Annuler' : 'Cancelar'}
+                {lang === 'fr' ? 'Cancelar' : 'Cancelar'}
               </button>
               <button onClick={async () => {
                 const newEndDate = (document.getElementById('extensionDate') as HTMLInputElement).value

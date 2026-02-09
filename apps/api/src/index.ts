@@ -152,10 +152,11 @@ app.put('/api/vehicles/:id', async (req, res) => {
     res.json(vehicle)
   } catch (error) { res.status(500).json({ error: 'Failed to update vehicle' }) }
 })
-
-app.delete('/api/vehicles/:id', async (req, res) => {
+app.delete("/api/vehicles/:id", async (req, res) => {
   try { await prisma.vehicle.delete({ where: { id: req.params.id } }); res.json({ success: true }) }
-  catch (error) { res.status(500).json({ error: 'Failed to delete vehicle' }) }
+  catch (error) { res.status(500).json({ error: "Failed to delete vehicle" }) }
+})
+
 
 // ============== VEHICLE CHARACTERISTICS ==============
 console.log("Vehicle characteristics routes loaded")
@@ -185,7 +186,6 @@ app.delete("/api/characteristics/:id", async (req, res) => {
     await prisma.vehicleCharacteristic.delete({ where: { id: req.params.id } })
     res.json({ success: true })
   } catch (error) { res.status(500).json({ error: "Failed to delete characteristic" }) }
-})
 })
 
 // ============== FLEET AVAILABILITY FOR WIDGET ==============

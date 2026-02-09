@@ -208,6 +208,7 @@ function App() {
   const [step, setStep] = useState<Step>('dates')
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [startSchedule, setStartSchedule] = useState<{open: string, close: string} | null>(null)
+  const [closures, setClosures] = useState<{startDate: string; endDate: string; reason: string}[]>([])
   const [endSchedule, setEndSchedule] = useState<{open: string, close: string} | null>(null)
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [fleetAvailability, setFleetAvailability] = useState<Record<string, number>>({})
@@ -380,6 +381,7 @@ function App() {
     window.parent.postMessage({ type: 'voltride-widget-scroll-top' }, '*')
   }, [step])
   useEffect(() => { if (selectedAgency) loadVehicles() }, [selectedAgency])
+  useEffect(() => { if (selectedAgency) fetch(`${API_URL}/api/agencies/${selectedAgency}/closures`).then(r => r.json()).then(data => setClosures(data)).catch(() => setClosures([])) }, [selectedAgency])
   useEffect(() => { if (selectedAgency && startDate && endDate) loadFleetAvailability() }, [startDate, endDate])
   useEffect(() => {
     if (selectedAgency && startDate) {
@@ -478,6 +480,17 @@ function App() {
     return d.getDay() === 0
   }
   
+  const isClosedDate = (date: string): boolean => {
+    if (!date || closures.length === 0) return false
+    const d = new Date(date + "T12:00:00")
+    return closures.some(c => {
+      const start = new Date(c.startDate)
+      start.setHours(0,0,0,0)
+      const end = new Date(c.endDate)
+      end.setHours(23,59,59,999)
+      return d >= start && d <= end
+    })
+  }
   const calculateDays = (): number => {
     if (!startDate || !endDate) return 0
     const start = new Date(startDate)
@@ -760,8 +773,8 @@ function App() {
                   </select>
                 </div>
               </div>
-              {(isSundayBlocked(startDate) || isSundayBlocked(endDate)) && <p className="text-red-500 text-sm mb-2">{lang === "fr" ? "⚠️ Cette agence est fermée le dimanche. Veuillez choisir une autre date." : lang === "es" ? "⚠️ Esta agencia está cerrada los domingos. Por favor, elija otra fecha." : "⚠️ This agency is closed on Sundays. Please choose another date."}</p>}
-              <button onClick={() => setStep("vehicles")} disabled={!startDate || !endDate || isSundayBlocked(startDate) || isSundayBlocked(endDate)} className="w-full py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
+              {(isSundayBlocked(startDate) || isSundayBlocked(endDate) || isClosedDate(startDate) || isClosedDate(endDate)) && <p className="text-red-500 text-sm mb-2">{lang === "fr" ? "⚠️ L'agence est fermée aux dates sélectionnées. Veuillez choisir d'autres dates." : lang === "es" ? "⚠️ La agencia está cerrada en las fechas seleccionadas. Por favor, elija otras fechas." : "⚠️ The agency is closed on the selected dates. Please choose other dates."}</p>}
+              <button onClick={() => setStep("vehicles")} disabled={!startDate || !endDate || isSundayBlocked(startDate) || isSundayBlocked(endDate) || isClosedDate(startDate) || isClosedDate(endDate)} className="w-full py-3 bg-gradient-to-r from-[#abdee6] to-[#ffaf10] text-gray-800 font-bold rounded-xl hover:shadow-lg transition disabled:opacity-50">
                 {t.continue}
               </button>
             </div>

@@ -46,14 +46,14 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
   const [extraKmCharge, setExtraKmCharge] = useState(0)
   const [extraKmCount, setExtraKmCount] = useState(0)
   
-  // Documents manquants
+  // Documentos pendientes
   const [missingDocs, setMissingDocs] = useState<string[]>([])
   const [idCardUrl, setIdCardUrl] = useState('')
   const [idCardVersoUrl, setIdCardVersoUrl] = useState('')
   const [licenseUrl, setLicenseUrl] = useState('')
   const [licenseVersoUrl, setLicenseVersoUrl] = useState('')
   
-  // Caution Stripe
+  // Fianza Stripe
   const [depositStatus, setDepositStatus] = useState<string>(booking.depositStatus || "PENDING")
   const [processingDeposit, setProcessingDeposit] = useState(false)
   const [captureAmount, setCaptureAmount] = useState<number>(0)
@@ -296,7 +296,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
       })
       if (res.ok) {
         setDepositStatus('RELEASED')
-        alert('✅ Caution libérée avec succès')
+        alert('✅ Fianza liberada con éxito')
       } else {
         const err = await res.json()
         alert('Erreur: ' + (err.error || 'Échec de la libération'))
@@ -324,7 +324,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
       if (res.ok) {
         setDepositStatus('CAPTURED')
         setShowCaptureModal(false)
-        alert(`✅ ${captureAmount}€ capturés sur la caution`)
+        alert(`✅ ${captureAmount}€ capturados de la fianza`)
       } else {
         const err = await res.json()
         alert('Erreur: ' + (err.error || 'Échec de la capture'))
@@ -491,7 +491,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
                 <p className="text-sm text-gray-500 mb-2">
                   Photo {currentPhotoIndex + 1} / {checkInPhotos.length}
                 </p>
-                <p className="font-medium">Le véhicule est-il dans le même état qu'au départ ?</p>
+                <p className="font-medium">¿El vehículo está en el mismo estado que al inicio ?</p>
               </div>
 
               {checkInPhotos.length > 0 ? (
@@ -515,7 +515,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Aucune photo de check-in disponible</p>
+                  <p className="text-gray-500">No hay fotos de check-in disponibles</p>
                   <button onClick={() => setStep(isMotorRent ? 2 : 3)}
                     className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg">
                     Continuer
@@ -575,7 +575,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
               <div>
                 <p className="text-sm font-medium mb-2">Sélectionnez les pièces endommagées :</p>
                 {spareParts.length === 0 ? (
-                  <p className="text-gray-400 text-sm">Aucune pièce configurée pour ce véhicule</p>
+                  <p className="text-gray-400 text-sm">Ninguna pieza configurada para este vehículo</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 max-h-48 overflow-auto">
                     {spareParts.map(part => (
@@ -720,10 +720,10 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
                 <div className="p-4 bg-green-50 rounded-lg text-center text-green-700">✓ Aucun dommage</div>
               )}
 
-              {/* Documents manquants */}
+              {/* Documentos pendientes */}
               {missingDocs.length > 0 && (
                 <div className="p-4 bg-red-50 border-2 border-red-300 rounded-lg">
-                  <p className="font-medium text-red-700 mb-2">⚠️ Documents manquants - Caution bloquée</p>
+                  <p className="font-medium text-red-700 mb-2">⚠️ Documentos pendientes - Fianza bloqueada</p>
                   <div className="grid grid-cols-2 gap-2">
                     {missingDocs.includes('idCardRecto') && (
                       <label className="border-2 border-dashed border-red-300 rounded-lg h-20 cursor-pointer flex flex-col items-center justify-center text-red-400">
@@ -757,7 +757,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
               {/* Deposit calculation */}
               <div className="p-4 border-2 rounded-lg space-y-3">
                 <div className="flex justify-between">
-                  <span>Caution versée</span>
+                  <span>Fianza depositada</span>
                   <span className="font-medium">{depositAmount.toFixed(2)}€</span>
                 </div>
                 {totalDeductions > 0 && (
@@ -769,12 +769,12 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
                 <div className="flex justify-between pt-3 border-t text-lg">
                   {additionalCharge > 0 ? (
                     <>
-                      <span className="font-medium">Reste à payer par le client</span>
+                      <span className="font-medium">Pendiente de pago por el cliente</span>
                       <span className="font-bold text-red-600">{additionalCharge.toFixed(2)}€</span>
                     </>
                   ) : (
                     <>
-                      <span className="font-medium">Caution à rembourser</span>
+                      <span className="font-medium">Fianza a devolver</span>
                       <span className="font-bold text-green-600">{refundAmount.toFixed(2)}€</span>
                     </>
                   )}
@@ -784,16 +784,16 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
                   <span className="text-xl">{contract?.depositMethod === 'CASH' ? '💵' : '💳'}</span>
                   <div className="text-sm">
                     <p className="font-medium">Mode de remboursement: {paymentMethod}</p>
-                    <p className="text-gray-500">Identique au dépôt de caution</p>
+                    <p className="text-gray-500">Idéntico al depósito de fianza</p>
                   </div>
                 </div>
-{/* Caution Stripe */}
+{/* Fianza Stripe */}
                 {(depositStatus === 'AUTHORIZED' || depositStatus === 'CARD_SAVED') && (
                   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-xl">💳</span>
                       <div>
-                        <p className="font-medium text-blue-800">Caution pré-autorisée sur carte</p>
+                        <p className="font-medium text-blue-800">Fianza pre-autorizada en tarjeta</p>
                         <p className="text-sm text-blue-600">Montant bloqué: {booking.items?.reduce((sum: number, item: any) => sum + (item.vehicle?.deposit || 0) * item.quantity, 0) || depositAmount}€</p>
                       </div>
                     </div>
@@ -804,7 +804,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
                         disabled={processingDeposit}
                         className="w-full py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
                       >
-                        {processingDeposit ? '⏳ Traitement...' : '✅ Libérer la caution (aucun dommage)'}
+                        {processingDeposit ? '⏳ Procesando...' : '✅ Liberar la fianza (sin daños)'}
                       </button>
                     ) : (
                       <div className="space-y-2">
@@ -832,13 +832,13 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
 
                 {depositStatus === 'RELEASED' && (
                   <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-center">
-                    <span className="text-green-700 font-medium">✅ Caution libérée</span>
+                    <span className="text-green-700 font-medium">✅ Fianza liberada</span>
                   </div>
                 )}
 
                 {depositStatus === 'CAPTURED' && (
                   <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg text-center">
-                    <span className="text-orange-700 font-medium">💰 Caution capturée: {booking.depositCapturedAmount}€</span>
+                    <span className="text-orange-700 font-medium">💰 Fianza capturada: {booking.depositCapturedAmount}€</span>
                   </div>
                 )}              </div>
 
@@ -854,7 +854,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
             <div className="text-center py-8">
               <div className="text-6xl mb-4">✅</div>
               <h3 className="text-xl font-bold mb-2">Check-out terminé !</h3>
-              <p className="text-gray-600">Le véhicule est maintenant disponible.</p>
+              <p className="text-gray-600">El vehículo está ahora disponible.</p>
               <p className="text-sm text-gray-500 mt-4">Génération du rapport et de la facture...</p>
             </div>
           )}

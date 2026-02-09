@@ -140,7 +140,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
     }
     
     if (agencySchedule?.isClosed) {
-      setDateValidationError("L'agence est fermée ce jour-là")
+      setDateValidationError("La agencia está cerrada ese día")
       return
     }
   }
@@ -305,7 +305,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
       onComplete()
     } catch (e) {
       console.error(e)
-      alert('Erreur lors de la création: ' + e.message)
+      alert('Error al crear la reserva: ' + e.message)
     }
     setLoading(false)
   }
@@ -558,19 +558,19 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
               <div className="p-4 bg-blue-50 rounded-xl">
                 {isBookingToday() ? (
                   <div>
-                    <p className="font-bold text-blue-700">📅 Réservation para aujourd'hui</p>
+                    <p className="font-bold text-blue-700">📅 Reserva para hoy</p>
                     <p className="text-sm text-blue-600 mt-1">El cliente debe pagar el total ahora.</p>
                     <p className="text-2xl font-bold text-blue-800 mt-2">{calculatePaymentAmount()}€</p>
                   </div>
                 ) : (
                   <div>
-                    <p className="font-bold text-blue-700">📅 Réservation future</p>
-                    <p className="text-sm text-blue-600 mt-1">Acompte de {calculatedPrice + calculateOpcionesTotal() < 100 ? '50%' : '30%'} requis</p>
+                    <p className="font-bold text-blue-700">📅 Reserva futura</p>
+                    <p className="text-sm text-blue-600 mt-1">Anticipo del {calculatedPrice + calculateOpcionesTotal() < 100 ? '50%' : '30%'} requerido</p>
                     <p className="text-2xl font-bold text-blue-800 mt-2">{calculatePaymentAmount()}€</p>
-                    <p className="text-sm text-gray-600 mt-1">Reste à payer le jour de la location : {getRemainingAmount()}€</p>
+                    <p className="text-sm text-gray-600 mt-1">Pendiente de pago el día del alquiler : {getRemainingAmount()}€</p>
                     <label className="flex items-center gap-2 mt-4 cursor-pointer">
                       <input type="checkbox" checked={payFullAmount} onChange={e => setPayFullAmount(e.target.checked)} className="w-5 h-5 rounded" />
-                      <span className="text-sm">Le client souhaite payer la totalité maintenant</span>
+                      <span className="text-sm">El cliente desea pagar la totalidad ahora</span>
                     </label>
                   </div>
                 )}
@@ -620,7 +620,7 @@ export function NewBookingModal({ fleetVehicle, startDate, agencyId, brand, onCl
                 <div className="space-y-2">
                   <div className="flex justify-between"><span>Total reserva</span><span className="font-bold">{Math.round(calculatedPrice + calculateOpcionesTotal())}€</span></div>
                   <div className="flex justify-between text-green-600"><span>Pagado hoy ({paymentMethod === 'card' ? '💳 CB' : '💵 Efectivo'})</span><span className="font-bold">{calculatePaymentAmount()}€</span></div>
-                  {getRemainingAmount() > 0 && (<div className="flex justify-between text-orange-600"><span>Reste à payer</span><span className="font-bold">{getRemainingAmount()}€</span></div>)}
+                  {getRemainingAmount() > 0 && (<div className="flex justify-between text-orange-600"><span>Pendiente de pago</span><span className="font-bold">{getRemainingAmount()}€</span></div>)}
                   <div className="flex justify-between text-sm text-gray-600 pt-2 border-t"><span>Fianza (a cobrar en el check-in)</span><span>{depositAmount}€</span></div>
                 </div>
               </div>

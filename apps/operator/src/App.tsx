@@ -52,8 +52,8 @@ export default function App() {
       newUser: 'Nouvel utilisateur',
       save: 'Sauvegarder',
       cancel: 'Cancelar',
-      delete: 'Supprimer',
-      edit: 'Modifier',
+      delete: 'Eliminar',
+      edit: 'Modificar',
       create: 'Créer',
       permissions: 'Permissions par rôle',
       users: 'Utilisateurs',
@@ -88,11 +88,11 @@ export default function App() {
       enterText: 'Entrez le texte en',
       saveSettings: 'Sauvegarder les paramètres',
       reload: 'Recharger',
-      editUser: 'Modifier utilisateur',
+      editUser: 'Modificar usuario',
       newPassword: 'Nouveau mot de passe (laisser vide pour ne pas changer)',
       authorizedBrands: 'Marques autorisées',
       activeUser: 'Utilisateur actif',
-      confirmDelete: 'Supprimer cet utilisateur ?',
+      confirmDelete: '¿Eliminar este usuario?',
       module: 'Module',
       toDevelop: 'À développer',
       walkin: 'Walk-in',
@@ -114,8 +114,8 @@ export default function App() {
       viewContract: "Voir contrat",
       downloadPdf: "Télécharger PDF",
       downloadInvoice: "Télécharger facture",
-      noContracts: "Aucun contrat trouvé",
-      noInvoices: "Aucune facture trouvée",
+      noContracts: "Ningún contrato encontrado",
+      noInvoices: "Ninguna factura encontrada",
       totalHT: "Total HT",
       tva: "TVA",
       totalTTC: "Total TTC",
@@ -621,7 +621,7 @@ export default function App() {
     
     const agencyId = selectedAgency || agencies[0]?.id
     if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
+      alert('Por favor seleccione una agencia')
       return
     }
     
@@ -638,7 +638,7 @@ export default function App() {
       })
       pollWalkinSession(sessionId)
     } catch (e) {
-      alert('Erreur lors de l\'envoi')
+      alert('Error al enviar')
       setWalkinStatus(null)
     }
   }
@@ -688,7 +688,7 @@ export default function App() {
       setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
       loadData()
     } catch (e) {
-      alert('Erreur lors de la création')
+      alert('Error al crear')
     }
   }
 
@@ -783,7 +783,7 @@ export default function App() {
       alert(lang === 'fr' ? '✅ Paramètres sauvegardés avec succès !' : '✅ Ajustes guardados con éxito!')
     } catch (e) {
       console.error('Erreur sauvegarde:', e)
-      alert('❌ Erreur lors de la sauvegarde')
+      alert('❌ Error al guardar')
     }
   }
 
@@ -1075,7 +1075,7 @@ export default function App() {
         alert(lang === 'fr' ? '✅ Facture envoyée !' : '✅ ¡Factura enviada!')
       } else {
         const err = await res.json()
-        alert((lang === 'fr' ? 'Erreur: ' : 'Error: ') + (err.error || 'Échec'))
+        alert((lang === 'fr' ? 'Error: ' : 'Error: ') + (err.error || 'Échec'))
       }
     } catch (e) {
       alert(lang === 'fr' ? 'Erreur réseau' : 'Error de red')
@@ -1091,7 +1091,7 @@ export default function App() {
       setCancelBooking(null)
       setCancelReason('')
     } catch (e) {
-      alert('Erreur lors de l\'annulation')
+      alert('Error al cancelar')
     }
   }
 
@@ -1104,7 +1104,7 @@ export default function App() {
     
     const agencyId = selectedAgency || agencies[0]?.id
     if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
+      alert('Por favor seleccione una agencia')
       return
     }
     
@@ -1121,7 +1121,7 @@ export default function App() {
       })
       pollWalkinSession(sessionId)
     } catch (e) {
-      alert('Erreur lors de l\'envoi')
+      alert('Error al enviar')
       setWalkinStatus(null)
     }
   }
@@ -1171,7 +1171,7 @@ export default function App() {
       setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
       loadData()
     } catch (e) {
-      alert('Erreur lors de la création')
+      alert('Error al crear')
     }
   }
 
@@ -1328,7 +1328,7 @@ export default function App() {
                 <div className="max-h-72 overflow-y-auto">
                   {notifications.length === 0 ? (
                     <div className="p-6 text-center text-gray-400">
-                      Aucune notification
+                      Sin notificaciones
                     </div>
                   ) : (
                     notifications.map(notif => (
@@ -1403,7 +1403,7 @@ export default function App() {
     
     const agencyId = selectedAgency || agencies[0]?.id
     if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
+      alert('Por favor seleccione una agencia')
       return
     }
     
@@ -1420,7 +1420,7 @@ export default function App() {
       })
       pollWalkinSession(sessionId)
     } catch (e) {
-      alert('Erreur lors de l\'envoi')
+      alert('Error al enviar')
       setWalkinStatus(null)
     }
   }
@@ -1470,7 +1470,7 @@ export default function App() {
       setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
       loadData()
     } catch (e) {
-      alert('Erreur lors de la création')
+      alert('Error al crear')
     }
   }
 
@@ -1517,7 +1517,7 @@ export default function App() {
     
     const agencyId = selectedAgency || agencies[0]?.id
     if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
+      alert('Por favor seleccione una agencia')
       return
     }
     
@@ -1534,7 +1534,7 @@ export default function App() {
       })
       pollWalkinSession(sessionId)
     } catch (e) {
-      alert('Erreur lors de l\'envoi')
+      alert('Error al enviar')
       setWalkinStatus(null)
     }
   }
@@ -1584,7 +1584,7 @@ export default function App() {
       setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
       loadData()
     } catch (e) {
-      alert('Erreur lors de la création')
+      alert('Error al crear')
     }
   }
 
@@ -1652,7 +1652,7 @@ export default function App() {
     
     const agencyId = selectedAgency || agencies[0]?.id
     if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
+      alert('Por favor seleccione una agencia')
       return
     }
     
@@ -1669,7 +1669,7 @@ export default function App() {
       })
       pollWalkinSession(sessionId)
     } catch (e) {
-      alert('Erreur lors de l\'envoi')
+      alert('Error al enviar')
       setWalkinStatus(null)
     }
   }
@@ -1719,7 +1719,7 @@ export default function App() {
       setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
       loadData()
     } catch (e) {
-      alert('Erreur lors de la création')
+      alert('Error al crear')
     }
   }
 
@@ -1801,7 +1801,7 @@ export default function App() {
     
     const agencyId = selectedAgency || agencies[0]?.id
     if (!agencyId) {
-      alert('Veuillez sélectionner une agence')
+      alert('Por favor seleccione una agencia')
       return
     }
     
@@ -1818,7 +1818,7 @@ export default function App() {
       })
       pollWalkinSession(sessionId)
     } catch (e) {
-      alert('Erreur lors de l\'envoi')
+      alert('Error al enviar')
       setWalkinStatus(null)
     }
   }
@@ -1868,7 +1868,7 @@ export default function App() {
       setWalkinForm({ firstName: '', lastName: '', email: '', phone: '', phonePrefix: '+34', address: '', city: '', postalCode: '', country: 'ES' })
       loadData()
     } catch (e) {
-      alert('Erreur lors de la création')
+      alert('Error al crear')
     }
   }
 
@@ -2680,7 +2680,7 @@ export default function App() {
               setContextMenu(null) 
             }}
             className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2">
-            ✏️ Modifier
+            ✏️ Modificar
           </button>
           {!contextMenu.booking.checkedIn && (
             <button onClick={() => { setCancelBooking(contextMenu.booking); setShowCancelModal(true); setContextMenu(null) }}
@@ -2856,7 +2856,7 @@ export default function App() {
                   if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}))
                     console.error('API Error:', response.status, errorData)
-                    throw new Error(errorData.error || 'Erreur serveur ' + response.status)
+                    throw new Error(errorData.error || 'Error del servidor ' + response.status)
                   }
                   setShowEditModal(false)
                   setEditingBooking(null)
@@ -2865,7 +2865,7 @@ export default function App() {
                   alert('Reserva modificada con éxito !')
                 } catch (e: any) { 
                   console.error('Erreur modification:', e)
-                  alert('Error al modificar: ' + (e.message || 'Erreur inconnue'))
+                  alert('Error al modificar: ' + (e.message || 'Error desconocido'))
                 }
               }} className="flex-1 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
                 Guardar
@@ -3303,10 +3303,10 @@ export default function App() {
                     if (res.ok) {
                       alert('Email de confirmation renvoyé !')
                     } else {
-                      alert('Erreur lors de l\'envoi de l\'email')
+                      alert('Error al enviar el email')
                     }
                   } catch (e) {
-                    alert('Erreur: ' + e.message)
+                    alert('Error: ' + e.message)
                   }
                 }}
                   className="py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">

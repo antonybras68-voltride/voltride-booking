@@ -4322,11 +4322,11 @@ const emailTemplates = {
     documentsRegistered: [
       "Pièce d'identité ou passeport (le permis de conduire étranger ne fait pas office de pièce d'identité)",
       "Permis de conduire physique valide",
-      "Carte de crédit uniquement pour la caution (pas de carte de débit ni espèces)"
+      "Carte de crédit ou espèces (pas de carte de débit)"
     ],
     documentsNonRegistered: [
       "Pièce d'identité ou passeport (le permis de conduire étranger ne fait pas office de pièce d'identité)",
-      "Carte de crédit uniquement pour la caution (pas de carte de débit ni espèces)"
+      "Carte de crédit ou espèces (pas de carte de débit)"
     ],
     paymentTitle: 'Récapitulatif du paiement',
     paymentMethod: 'Mode de paiement',
@@ -4352,11 +4352,11 @@ const emailTemplates = {
     documentsRegistered: [
       "Documento de identidad o pasaporte (el permiso de conducir extranjero no sirve como documento de identidad)",
       "Permiso de conducir físico válido",
-      "Tarjeta de crédito únicamente para la fianza (no tarjeta de débito ni efectivo)"
+      "Tarjeta de crédito o efectivo (no tarjeta de débito)"
     ],
     documentsNonRegistered: [
       "Documento de identidad o pasaporte (el permiso de conducir extranjero no sirve como documento de identidad)",
-      "Tarjeta de crédito únicamente para la fianza (no tarjeta de débito ni efectivo)"
+      "Tarjeta de crédito o efectivo (no tarjeta de débito)"
     ],
     paymentTitle: 'Resumen del pago',
     paymentMethod: 'Método de pago',
@@ -4382,11 +4382,11 @@ const emailTemplates = {
     documentsRegistered: [
       "ID card or passport (foreign driving license does not serve as ID)",
       "Valid physical driving license",
-      "Credit card only for deposit (no debit card or cash)"
+      "Credit card or cash (no debit card)"
     ],
     documentsNonRegistered: [
       "ID card or passport (foreign driving license does not serve as ID)",
-      "Credit card only for deposit (no debit card or cash)"
+      "Credit card or cash (no debit card)"
     ],
     paymentTitle: 'Payment summary',
     paymentMethod: 'Payment method',

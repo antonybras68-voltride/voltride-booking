@@ -6,7 +6,7 @@ const API_URL = 'https://api-voltrideandmotorrent-production.up.railway.app'
 const BRAND = 'VOLTRIDE'
 
 interface Agency { id: string; code: string; name: { fr: string; es: string; en: string }; address: string; city: string; phone: string; email: string; closedOnSunday?: boolean; isActive?: boolean; showStockUrgency?: boolean }
-interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { id: string; name: { fr: string; es: string; en: string }; brand: string; bookingFee?: number; bookingFeePercentLow?: number; bookingFeePercentHigh?: number }; pricing: any[]; inventory: any[] }
+interface Vehicle { id: string; sku: string; name: { fr: string; es: string; en: string }; description: { fr: string; es: string; en: string }; deposit: number; hasPlate: boolean; licenseType?: { fr: string; es: string; en: string }; kmIncluded?: { fr: string; es: string; en: string }; imageUrl?: string; category: { id: string; name: { fr: string; es: string; en: string }; brand: string; bookingFee?: number; bookingFeePercentLow?: number; bookingFeePercentHigh?: number }; pricing: any[]; inventory: any[]; characteristics?: any[] }
 interface Option { id: string; code: string; name: { fr: string; es: string; en: string }; description?: { fr: string; es: string; en: string }; maxQuantity: number; imageUrl?: string; day1: number; day2: number; day3: number; day4: number; day5: number; day6: number; day7: number; day8: number; day9: number; day10: number; day11: number; day12: number; day13: number; day14: number; includedByDefault?: boolean; categories?: any[] }
 interface WidgetSettings { stripeEnabled: boolean; stripeMode: string; stripePublishableKey: string }
 
@@ -209,6 +209,7 @@ function App() {
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [startSchedule, setStartSchedule] = useState<{open: string, close: string} | null>(null)
   const [closures, setClosures] = useState<{startDate: string; endDate: string; reason: string}[]>([])
+  const [selectedChar, setSelectedChar] = useState<any>(null)
   const [endSchedule, setEndSchedule] = useState<{open: string, close: string} | null>(null)
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [fleetAvailability, setFleetAvailability] = useState<Record<string, number>>({})
@@ -809,8 +810,9 @@ function App() {
                           <p className="text-sm text-gray-400">{t.deposit}: {vehicle.deposit}€</p>
                           
                           <div className="flex flex-wrap gap-2 mt-1">
-                            {getName(vehicle.licenseType) && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">🪪 {getName(vehicle.licenseType)}</span>}
-                            {getName(vehicle.kmIncluded) && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">📍 {getName(vehicle.kmIncluded)}</span>}
+                            {vehicle.characteristics?.map((char: any) => (
+                              <button key={char.id} onClick={() => setSelectedChar(char)} className="text-xs px-2 py-0.5 rounded-full cursor-pointer hover:opacity-80 transition" style={{ backgroundColor: (char.color || "#3b82f6") + "20", color: char.color || "#3b82f6", border: "1px solid " + (char.color || "#3b82f6") }}>{char.icon ? char.icon + " " : ""}{char.shortLabel}</button>
+                            ))}
                           </div>
                           <div className="flex justify-between items-center mt-2">
                             <span className="font-bold text-[#ffaf10] text-lg">{price * (selectedVehicles[vehicle.id] || 1)}€ {(selectedVehicles[vehicle.id] || 0) > 1 && <span className="text-sm font-normal text-gray-500">({price}€ x {selectedVehicles[vehicle.id]})</span>}</span>
@@ -1090,6 +1092,16 @@ function App() {
             </div>
           )}
         </div>
+      {selectedChar && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedChar(null)}>
+        <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-between items-start mb-3">
+            <h3 className="font-bold text-lg">{selectedChar.icon ? selectedChar.icon + " " : ""}{getName(selectedChar.label)}</h3>
+            <button onClick={() => setSelectedChar(null)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+          </div>
+          <p className="text-gray-600 text-sm whitespace-pre-line">{getName(selectedChar.description)}</p>
+          <button onClick={() => setSelectedChar(null)} className="w-full mt-4 py-2 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200 transition">{lang === "fr" ? "Compris" : lang === "es" ? "Entendido" : "Got it"}</button>
+        </div>
+      </div>}
       </div>
     </div>
   )

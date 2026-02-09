@@ -89,6 +89,23 @@ model Vehicle {
   fleetVehicles         Fleet[]
   sparePartTemplates    VehicleSparePartTemplate[]
   rentalOptions         RentalOption[]
+  characteristics       VehicleCharacteristic[]
+}
+model VehicleCharacteristic {
+  id          String   @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  label       Json
+  shortLabel  String
+  description Json
+  icon        String?
+  color       String   @default("#3b82f6")
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([vehicleId])
 }
 
 model Pricing {

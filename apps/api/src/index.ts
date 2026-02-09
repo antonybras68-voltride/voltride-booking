@@ -130,7 +130,7 @@ app.delete('/api/categories/:id', async (req, res) => {
 // ============== VEHICLES ==============
 app.get('/api/vehicles', async (req, res) => {
   try {
-    const vehicles = await prisma.vehicle.findMany({ where: { isActive: true }, include: { category: true, pricing: true, inventory: true }, orderBy: { sku: 'asc' } })
+    const vehicles = await prisma.vehicle.findMany({ where: { isActive: true }, include: { category: true, pricing: true, inventory: true, characteristics: { where: { isActive: true }, orderBy: { order: "asc" } } }, orderBy: { sku: 'asc' } })
     res.json(vehicles)
   } catch (error) { res.status(500).json({ error: 'Failed to fetch vehicles' }) }
 })
@@ -139,7 +139,7 @@ app.post('/api/vehicles', async (req, res) => {
   try {
     const vehicle = await prisma.vehicle.create({
       data: { sku: req.body.sku, name: req.body.name, description: req.body.description || {}, deposit: req.body.deposit, hasPlate: req.body.hasPlate || false, licenseType: req.body.licenseType || '', kmIncluded: req.body.kmIncluded || '', helmetIncluded: req.body.helmetIncluded ?? true, kmIncludedPerDay: req.body.kmIncludedPerDay || 100, extraKmPrice: req.body.extraKmPrice || 0.15, imageUrl: req.body.imageUrl, categoryId: req.body.categoryId, isActive: req.body.isActive ?? true, pricing: { create: req.body.pricing || {} } },
-      include: { category: true, pricing: true }
+      include: { category: true, pricing: true, characteristics: { where: { isActive: true }, orderBy: { order: "asc" } } }
     })
     res.json(vehicle)
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to create vehicle' }) }
@@ -147,7 +147,7 @@ app.post('/api/vehicles', async (req, res) => {
 
 app.put('/api/vehicles/:id', async (req, res) => {
   try {
-    const vehicle = await prisma.vehicle.update({ where: { id: req.params.id }, data: { sku: req.body.sku, name: req.body.name, description: req.body.description, deposit: req.body.deposit, hasPlate: req.body.hasPlate, licenseType: req.body.licenseType, kmIncluded: req.body.kmIncluded, helmetIncluded: req.body.helmetIncluded, kmIncludedPerDay: req.body.kmIncludedPerDay, extraKmPrice: req.body.extraKmPrice, imageUrl: req.body.imageUrl, categoryId: req.body.categoryId, isActive: req.body.isActive }, include: { category: true, pricing: true } })
+    const vehicle = await prisma.vehicle.update({ where: { id: req.params.id }, data: { sku: req.body.sku, name: req.body.name, description: req.body.description, deposit: req.body.deposit, hasPlate: req.body.hasPlate, licenseType: req.body.licenseType, kmIncluded: req.body.kmIncluded, helmetIncluded: req.body.helmetIncluded, kmIncludedPerDay: req.body.kmIncludedPerDay, extraKmPrice: req.body.extraKmPrice, imageUrl: req.body.imageUrl, categoryId: req.body.categoryId, isActive: req.body.isActive }, include: { category: true, pricing: true, characteristics: { where: { isActive: true }, orderBy: { order: "asc" } } } })
     if (req.body.pricing) { await prisma.pricing.updateMany({ where: { vehicleId: req.params.id }, data: req.body.pricing }) }
     res.json(vehicle)
   } catch (error) { res.status(500).json({ error: 'Failed to update vehicle' }) }
@@ -156,6 +156,35 @@ app.put('/api/vehicles/:id', async (req, res) => {
 app.delete('/api/vehicles/:id', async (req, res) => {
   try { await prisma.vehicle.delete({ where: { id: req.params.id } }); res.json({ success: true }) }
   catch (error) { res.status(500).json({ error: 'Failed to delete vehicle' }) }
+
+// ============== VEHICLE CHARACTERISTICS ==============
+app.get("/api/vehicles/:vehicleId/characteristics", async (req, res) => {
+  try {
+    const characteristics = await prisma.vehicleCharacteristic.findMany({ where: { vehicleId: req.params.vehicleId }, orderBy: { order: "asc" } })
+    res.json(characteristics)
+  } catch (error) { res.status(500).json({ error: "Failed to fetch characteristics" }) }
+})
+
+app.post("/api/vehicles/:vehicleId/characteristics", async (req, res) => {
+  try {
+    const char = await prisma.vehicleCharacteristic.create({ data: { vehicleId: req.params.vehicleId, label: req.body.label, shortLabel: req.body.shortLabel, description: req.body.description, icon: req.body.icon || null, color: req.body.color || "#3b82f6", order: req.body.order || 0, isActive: req.body.isActive !== undefined ? req.body.isActive : true } })
+    res.json(char)
+  } catch (error) { console.error(error); res.status(500).json({ error: "Failed to create characteristic" }) }
+})
+
+app.put("/api/characteristics/:id", async (req, res) => {
+  try {
+    const char = await prisma.vehicleCharacteristic.update({ where: { id: req.params.id }, data: { label: req.body.label, shortLabel: req.body.shortLabel, description: req.body.description, icon: req.body.icon, color: req.body.color, order: req.body.order, isActive: req.body.isActive } })
+    res.json(char)
+  } catch (error) { res.status(500).json({ error: "Failed to update characteristic" }) }
+})
+
+app.delete("/api/characteristics/:id", async (req, res) => {
+  try {
+    await prisma.vehicleCharacteristic.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (error) { res.status(500).json({ error: "Failed to delete characteristic" }) }
+})
 })
 
 // ============== FLEET AVAILABILITY FOR WIDGET ==============

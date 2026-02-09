@@ -158,6 +158,7 @@ app.delete('/api/vehicles/:id', async (req, res) => {
   catch (error) { res.status(500).json({ error: 'Failed to delete vehicle' }) }
 
 // ============== VEHICLE CHARACTERISTICS ==============
+console.log("Vehicle characteristics routes loaded")
 app.get("/api/vehicles/:vehicleId/characteristics", async (req, res) => {
   try {
     const characteristics = await prisma.vehicleCharacteristic.findMany({ where: { vehicleId: req.params.vehicleId }, orderBy: { order: "asc" } })

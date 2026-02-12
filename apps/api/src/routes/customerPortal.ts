@@ -63,7 +63,7 @@ router.post('/login', async (req, res) => {
     res.json({ success: true, message: 'Code sent' })
   } catch (error: any) {
     console.error('[PORTAL] Login error:', error)
-    res.status(500).json({ error: 'Failed to send code' })
+    res.status(500).json({ error: 'Failed to send code', detail: error.message || String(error) })
   }
 })
 

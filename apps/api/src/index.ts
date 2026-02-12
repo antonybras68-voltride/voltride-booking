@@ -6,6 +6,7 @@ import Stripe from 'stripe'
 import { Resend } from 'resend'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import customerPortalRouter from './routes/customerPortal'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'voltride-secret-key-2024'
 import { generateContractPDF, generateInvoicePDF } from './pdfGenerator'
@@ -25,6 +26,7 @@ const app = express()
 const prisma = new PrismaClient()
 const resend = new Resend(process.env.RESEND_API_KEY)
 app.use(cors({ origin: true, credentials: true }))
+app.use('/api/customer-portal', customerPortalRouter)
 app.use((req, res, next) => { if (req.path === '/api/stripe-webhook') { next() } else { express.json()(req, res, next) } })
 
 app.get('/api/health', (req, res) => {

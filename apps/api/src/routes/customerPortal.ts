@@ -1,9 +1,11 @@
 import { Router } from 'express'
+import express from 'express'
 import { PrismaClient } from '@prisma/client'
 import { Resend } from 'resend'
 import crypto from 'crypto'
 
 const router = Router()
+router.use(express.json())
 const prisma = new PrismaClient()
 const resend = new Resend(process.env.RESEND_API_KEY)
 

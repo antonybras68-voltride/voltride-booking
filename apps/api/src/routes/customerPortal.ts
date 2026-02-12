@@ -493,14 +493,13 @@ router.post('/bookings/:id/extend/check', async (req, res) => {
     })
 
     const isAvailable = conflictingBookings.length === 0
-
-    // Calculer le prix
+    // Calculer le prix (dailyRate est TTC)
     const dailyRate = booking.contract ? Number(booking.contract.dailyRate) : booking.totalPrice / Math.ceil((booking.endDate.getTime() - booking.startDate.getTime()) / (1000 * 60 * 60 * 24))
     const additionalDays = Math.ceil((requestedEnd.getTime() - currentEndDate.getTime()) / (1000 * 60 * 60 * 24))
-    const subtotal = Math.round(additionalDays * dailyRate * 100) / 100
+    const totalAmount = Math.round(additionalDays * dailyRate * 100) / 100
     const taxRate = 21
-    const taxAmount = Math.round(subtotal * taxRate / 100 * 100) / 100
-    const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100
+    const taxAmount = Math.round(totalAmount * taxRate / (100 + taxRate) * 100) / 100
+    const subtotal = Math.round((totalAmount - taxAmount) * 100) / 100
 
     res.json({
       available: isAvailable,
@@ -543,10 +542,10 @@ router.post('/bookings/:id/extend/confirm', async (req, res) => {
     const requestedEnd = new Date(newEndDate)
     const additionalDays = Math.ceil((requestedEnd.getTime() - currentEndDate.getTime()) / (1000 * 60 * 60 * 24))
     const dailyRate = Number(booking.contract.dailyRate)
-    const subtotal = Math.round(additionalDays * dailyRate * 100) / 100
+    const totalAmount = Math.round(additionalDays * dailyRate * 100) / 100
     const taxRate = Number(booking.contract.taxRate) || 21
-    const taxAmount = Math.round(subtotal * taxRate / 100 * 100) / 100
-    const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100
+    const taxAmount = Math.round(totalAmount * taxRate / (100 + taxRate) * 100) / 100
+    const subtotal = Math.round((totalAmount - taxAmount) * 100) / 100
 
     // Générer le numéro d'extension
     const extCount = await prisma.contractExtension.count({ where: { contractId: booking.contract.id } })

@@ -59,6 +59,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
   const [captureAmount, setCaptureAmount] = useState<number>(0)
   const [showCaptureModal, setShowCaptureModal] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
+  const [pendingExtensions, setPendingExtensions] = useState<any[]>([])
   
   const isMotorRent = brand === 'MOTOR-RENT'
 
@@ -120,6 +121,18 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
         }
         setEndMileage(booking.startMileage || booking.fleetVehicle?.currentMileage || 0)
       }
+
+      // Load pending extensions (payment at agency)
+      try {
+        if (contractData?.id) {
+          const extensionsRes = await fetch(API_URL + "/api/contracts/" + contractData.id + "/extensions")
+          if (extensionsRes.ok) {
+            const extensions = await extensionsRes.json()
+            const pending = extensions.filter((ext: any) => ext.paymentStatus === 'PENDING' && ext.status !== 'CANCELLED')
+            setPendingExtensions(pending)
+          }
+        }
+      } catch (e) { console.error('Extensions load error:', e) }
 
       // Load spare parts
       if (booking.fleetVehicle?.id) {
@@ -279,6 +292,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
   }
 
   // Calculate totals
+  const extensionsPendingTotal = pendingExtensions.reduce((sum, ext) => sum + parseFloat(ext.totalAmount || 0), 0)
   const totalDeductions = deductions.reduce((sum, d) => sum + d.price, 0) + fuelCharge + extraKmCharge
   const depositAmount = booking.depositAmount || contract?.depositAmount || 0
   const refundAmount = Math.max(0, depositAmount - totalDeductions)
@@ -751,6 +765,36 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
                     )}
                   </div>
                   {uploadingDoc && <p className="text-blue-600 text-sm mt-2 text-center">⏳ Upload...</p>}
+                </div>
+              )}
+
+              {/* ⚠️ Extension pending payment at agency */}
+              {pendingExtensions.length > 0 && (
+                <div className="p-4 bg-red-100 border-2 border-red-500 rounded-lg animate-pulse">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-3xl">⚠️</span>
+                    <div>
+                      <p className="font-bold text-red-800 text-lg">PROLONGACIÓN - COBRO PENDIENTE</p>
+                      <p className="text-sm text-red-700">El cliente debe pagar la prolongación antes de devolver el vehículo</p>
+                    </div>
+                  </div>
+                  {pendingExtensions.map((ext: any) => (
+                    <div key={ext.id} className="bg-white rounded-lg p-3 mb-2 border border-red-300">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium text-gray-800">{ext.extensionNumber}</p>
+                          <p className="text-sm text-gray-600">+{ext.additionalDays} día(s)</p>
+                        </div>
+                        <p className="text-xl font-bold text-red-600">{parseFloat(ext.totalAmount).toFixed(2)}€</p>
+                      </div>
+                      <p className="text-xs text-red-600 mt-1 font-medium">💰 Cobrar al cliente (efectivo o tarjeta)</p>
+                    </div>
+                  ))}
+                  <div className="mt-2 p-3 bg-red-200 rounded-lg text-center">
+                    <p className="font-bold text-red-900 text-lg">
+                      TOTAL A COBRAR: {pendingExtensions.reduce((sum: number, ext: any) => sum + parseFloat(ext.totalAmount), 0).toFixed(2)}€
+                    </p>
+                  </div>
                 </div>
               )}
 

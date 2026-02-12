@@ -819,6 +819,10 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
               </div>
               
               <p style="text-align: center; color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f0f9ff; border-radius: 8px;">
+          <p style="color: #555; margin-bottom: 15px;">${t.portalDescription}</p>
+          <a href="${t.portalUrl}" style="display: inline-block; padding: 14px 30px; background-color: ${brandColor}; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">${t.portalButton}</a>
+        </div>
                 ${t.footer}<br/>
                 <strong>${t.team} ${brandName}</strong>
               </p>
@@ -4334,6 +4338,9 @@ const emailTemplates = {
     paymentMethod: 'Mode de paiement',
     card: 'Carte bancaire',
     cash: 'Espèces',
+    portalUrl: 'https://voltride.es/espace-client',
+    portalButton: 'Accéder à mon espace client',
+    portalDescription: 'Suivez, modifiez ou prolongez votre réservation depuis votre espace client :',
     footer: "Merci pour votre confiance. À bientôt !",
     team: "L'équipe"
   },
@@ -4364,6 +4371,9 @@ const emailTemplates = {
     paymentMethod: 'Método de pago',
     card: 'Tarjeta bancaria',
     cash: 'Efectivo',
+    portalUrl: 'https://voltride.es/mi-cuenta',
+    portalButton: 'Acceder a mi espacio cliente',
+    portalDescription: 'Consulte, modifique o prolongue su reserva desde su espacio cliente :',
     footer: "Gracias por su confianza. ¡Hasta pronto!",
     team: "El equipo"
   },
@@ -4394,6 +4404,9 @@ const emailTemplates = {
     paymentMethod: 'Payment method',
     card: 'Credit card',
     cash: 'Cash',
+    portalUrl: 'https://voltride.es/my-account',
+    portalButton: 'Access my customer portal',
+    portalDescription: 'Track, modify or extend your booking from your customer portal :',
     footer: "Thank you for your trust. See you soon!",
     team: "The team"
   }
@@ -4458,6 +4471,10 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
             ${remainingAmount > 0 ? '<tr><td style="padding: 8px 0;">' + t.remainingLabel + '</td><td style="text-align: right; padding: 8px 0; color: orange;"><strong>' + remainingAmount + '€</strong></td></tr>' : ''}
             <tr style="border-top: 2px solid #ccc;"><td style="padding: 12px 0; font-weight: bold;">${t.depositLabel}</td><td style="text-align: right; padding: 12px 0;"><strong>${req.body.depositAmount || 100}€</strong></td></tr>
           </table>
+        </div>
+        <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f0f9ff; border-radius: 8px;">
+          <p style="color: #555; margin-bottom: 15px;">${t.portalDescription}</p>
+          <a href="${t.portalUrl}" style="display: inline-block; padding: 14px 30px; background-color: ${brandColor}; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">${t.portalButton}</a>
         </div>
         
         <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffc107;">

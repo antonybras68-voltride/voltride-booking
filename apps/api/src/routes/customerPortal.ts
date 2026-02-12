@@ -474,6 +474,9 @@ router.post('/bookings/:id/extend/check', async (req, res) => {
     if (booking.status === 'CANCELLED' || booking.status === 'COMPLETED') {
       return res.status(400).json({ error: 'Cannot extend this booking' })
     }
+    if (!booking.checkedIn) {
+      return res.status(400).json({ error: "Cannot extend: vehicle not checked in yet. You can modify dates instead." })
+    }
     if (!booking.fleetVehicleId) {
       return res.status(400).json({ error: 'No vehicle assigned' })
     }

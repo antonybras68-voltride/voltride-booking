@@ -69,11 +69,13 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
 
   const loadData = async () => {
     try {
+    let loadedContractId: string | null = null
       // Load contract
       const contractRes = await fetch(API_URL + "/api/contracts/booking/" + booking.id)
       if (contractRes.ok) {
         const contractData = await contractRes.json()
         setContract(contractData)
+        loadedContractId = contractData.id
         setEndMileage(contractData.startMileage || booking.startMileage || booking.fleetVehicle?.currentMileage || 0)
         
         // Get check-in photos from contract OR booking
@@ -124,8 +126,8 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
 
       // Load pending extensions (payment at agency)
       try {
-        if (contractData?.id) {
-          const extensionsRes = await fetch(API_URL + "/api/contracts/" + contractData.id + "/extensions")
+        if (loadedContractId) {
+          const extensionsRes = await fetch(API_URL + "/api/contracts/" + loadedContractId + "/extensions")
           if (extensionsRes.ok) {
             const extensions = await extensionsRes.json()
             const pending = extensions.filter((ext: any) => ext.paymentStatus === 'PENDING' && ext.status !== 'CANCELLED')

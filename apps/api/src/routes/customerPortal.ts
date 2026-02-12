@@ -677,4 +677,191 @@ router.post('/bookings/:id/extend/confirm', async (req, res) => {
   }
 })
 
+// ============== CUSTOMER PROFILE ==============
+
+// 9. Récupérer le profil client
+router.get('/profile/:customerId', async (req, res) => {
+  try {
+    const customer = await prisma.customer.findUnique({
+      where: { id: req.params.customerId }
+    })
+    if (!customer) return res.status(404).json({ error: 'Customer not found' })
+
+    // Dernière location terminée
+    const lastBooking = await prisma.booking.findFirst({
+      where: { customerId: customer.id, status: 'COMPLETED' },
+      orderBy: { endDate: 'desc' }
+    })
+
+    // Réservations actives ou futures
+    const activeBookings = await prisma.booking.count({
+      where: {
+        customerId: customer.id,
+        status: { notIn: ['CANCELLED', 'COMPLETED'] }
+      }
+    })
+
+    res.json({
+      id: customer.id,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      email: customer.email,
+      phone: customer.phone,
+      address: customer.address,
+      postalCode: customer.postalCode,
+      city: customer.city,
+      country: customer.country,
+      language: customer.language,
+      lastBookingEndDate: lastBooking?.endDate?.toISOString().split('T')[0] || null,
+      activeBookingsCount: activeBookings,
+      canRequestDeletion: activeBookings === 0
+    })
+  } catch (error: any) {
+    console.error('[PORTAL] Profile error:', error)
+    res.status(500).json({ error: 'Failed to fetch profile', detail: error.message })
+  }
+})
+
+// 10. Modifier le profil client
+router.put('/profile/:customerId', async (req, res) => {
+  try {
+    const { firstName, lastName, phone, address, postalCode, city, country, language } = req.body
+
+    const updated = await prisma.customer.update({
+      where: { id: req.params.customerId },
+      data: {
+        ...(firstName && { firstName }),
+        ...(lastName && { lastName }),
+        ...(phone && { phone }),
+        ...(address !== undefined && { address }),
+        ...(postalCode !== undefined && { postalCode }),
+        ...(city !== undefined && { city }),
+        ...(country && { country }),
+        ...(language && { language })
+      }
+    })
+
+    res.json({
+      success: true,
+      customer: {
+        id: updated.id,
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        email: updated.email,
+        phone: updated.phone,
+        address: updated.address,
+        postalCode: updated.postalCode,
+        city: updated.city,
+        country: updated.country,
+        language: updated.language
+      }
+    })
+  } catch (error: any) {
+    console.error('[PORTAL] Profile update error:', error)
+    res.status(500).json({ error: 'Failed to update profile', detail: error.message })
+  }
+})
+
+// 11. Demande de suppression des données
+router.post('/profile/:customerId/delete-request', async (req, res) => {
+  try {
+    const customer = await prisma.customer.findUnique({
+      where: { id: req.params.customerId }
+    })
+    if (!customer) return res.status(404).json({ error: 'Customer not found' })
+
+    // Vérifier pas de réservation active
+    const activeBookings = await prisma.booking.count({
+      where: {
+        customerId: customer.id,
+        status: { notIn: ['CANCELLED', 'COMPLETED'] }
+      }
+    })
+    if (activeBookings > 0) {
+      return res.status(400).json({ error: 'Cannot delete: active bookings exist' })
+    }
+
+    // Dernière location terminée
+    const lastBooking = await prisma.booking.findFirst({
+      where: { customerId: customer.id, status: 'COMPLETED' },
+      orderBy: { endDate: 'desc' }
+    })
+
+    // Calculer la date de suppression (6 mois après dernière location)
+    let deletionDate: Date
+    if (lastBooking) {
+      deletionDate = new Date(lastBooking.endDate)
+      deletionDate.setMonth(deletionDate.getMonth() + 6)
+    } else {
+      deletionDate = new Date() // Suppression immédiate si jamais loué
+    }
+
+    const isImmediate = !lastBooking || deletionDate <= new Date()
+
+    // Notifier les admins
+    try {
+      await prisma.notification.create({
+        data: {
+          title: `Demande suppression données - ${customer.firstName} ${customer.lastName}`,
+          body: isImmediate
+            ? `Le client ${customer.email} demande la suppression de ses données. Aucune location récente, suppression possible immédiatement.`
+            : `Le client ${customer.email} demande la suppression de ses données. Dernière location le ${lastBooking!.endDate.toISOString().split('T')[0]}. Données conservées jusqu'au ${deletionDate.toISOString().split('T')[0]} (6 mois obligation légale).`,
+          data: {
+            customerId: customer.id,
+            type: 'DATA_DELETION_REQUEST',
+            deletionDate: deletionDate.toISOString()
+          }
+        }
+      })
+    } catch (notifError) {
+      console.error('[PORTAL] Notification error:', notifError)
+    }
+
+    // Envoyer un email de confirmation au client
+    const lang = customer.language || 'es'
+    const subjects: Record<string, string> = {
+      es: 'Solicitud de eliminación de datos recibida',
+      fr: 'Demande de suppression des données reçue',
+      en: 'Data deletion request received'
+    }
+    const messages: Record<string, string> = {
+      es: isImmediate
+        ? 'Su solicitud ha sido registrada. Sus datos serán eliminados en breve.'
+        : `Su solicitud ha sido registrada. Conforme a la normativa, sus datos serán conservados hasta el ${deletionDate.toLocaleDateString('es-ES')} (6 meses después de su última reserva) para poder responder a eventuales multas de tráfico. Pasada esta fecha, sus datos serán eliminados automáticamente.`,
+      fr: isImmediate
+        ? 'Votre demande a été enregistrée. Vos données seront supprimées sous peu.'
+        : `Votre demande a été enregistrée. Conformément à la réglementation, vos données seront conservées jusqu'au ${deletionDate.toLocaleDateString('fr-FR')} (6 mois après votre dernière location) afin de pouvoir répondre à d'éventuelles amendes de circulation. Passé ce délai, vos données seront automatiquement supprimées.`,
+      en: isImmediate
+        ? 'Your request has been registered. Your data will be deleted shortly.'
+        : `Your request has been registered. In accordance with regulations, your data will be retained until ${deletionDate.toLocaleDateString('en-GB')} (6 months after your last rental) to respond to any traffic fines. After this date, your data will be automatically deleted.`
+    }
+
+    try {
+      await resend.emails.send({
+        from: 'Voltride <noreply@voltride.es>',
+        to: customer.email,
+        subject: subjects[lang] || subjects.es,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+            <h2>${subjects[lang] || subjects.es}</h2>
+            <p>${messages[lang] || messages.es}</p>
+          </div>
+        `
+      })
+    } catch (emailError) {
+      console.error('[PORTAL] Email error:', emailError)
+    }
+
+    res.json({
+      success: true,
+      immediate: isImmediate,
+      deletionDate: deletionDate.toISOString().split('T')[0],
+      message: messages[lang] || messages.es
+    })
+  } catch (error: any) {
+    console.error('[PORTAL] Delete request error:', error)
+    res.status(500).json({ error: 'Failed to process deletion request', detail: error.message })
+  }
+})
+
 export default router

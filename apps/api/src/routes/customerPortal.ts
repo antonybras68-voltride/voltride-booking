@@ -512,6 +512,12 @@ router.post('/bookings/:id/extend/check', async (req, res) => {
     const taxAmount = Math.round(totalAmount * taxRate / (100 + taxRate) * 100) / 100
     const subtotal = Math.round((totalAmount - taxAmount) * 100) / 100
 
+    // Calculer jours agence déjà utilisés
+    const existingAgencyExtensions = await prisma.contractExtension.findMany({
+      where: { contractId: booking.contract?.id, notes: "Pago en agencia al devolver", status: { not: "CANCELLED" } }
+    })
+    const agencyDaysUsed = existingAgencyExtensions.reduce((sum: number, ext: any) => sum + ext.additionalDays, 0)
+    const agencyPaymentAvailable = agencyDaysUsed + additionalDays <= 2
     res.json({
       available: isAvailable,
       conflictingBookings: conflictingBookings.length,
@@ -524,7 +530,9 @@ router.post('/bookings/:id/extend/check', async (req, res) => {
         totalAmount
       },
       currentEndDate: currentEndDate.toISOString().split('T')[0],
-      requestedEndDate: newEndDate
+      requestedEndDate: newEndDate,
+      agencyPaymentAvailable,
+      agencyDaysUsed
     })
   } catch (error: any) {
     console.error('[PORTAL] Extend check error:', error)
@@ -552,6 +560,16 @@ router.post('/bookings/:id/extend/confirm', async (req, res) => {
     const currentEndDate = booking.contract.currentEndDate
     const requestedEnd = new Date(newEndDate)
     const additionalDays = Math.ceil((requestedEnd.getTime() - currentEndDate.getTime()) / (1000 * 60 * 60 * 24))
+    // Vérifier limite paiement agence (2 jours max cumulés)
+    if (paymentMethod === "agency") {
+      const existingAgencyExtensions = await prisma.contractExtension.findMany({
+        where: { contractId: booking.contract.id, notes: "Pago en agencia al devolver", status: { not: "CANCELLED" } }
+      })
+      const totalAgencyDays = existingAgencyExtensions.reduce((sum: number, ext: any) => sum + ext.additionalDays, 0)
+      if (totalAgencyDays + additionalDays > 2) {
+        return res.status(400).json({ error: "AGENCY_LIMIT_EXCEEDED", maxDays: 2, usedDays: totalAgencyDays, requestedDays: additionalDays })
+      }
+    }
     const dailyRate = Number(booking.contract.dailyRate)
     const totalAmount = Math.round(additionalDays * dailyRate * 100) / 100
     const taxRate = Number(booking.contract.taxRate) || 21
@@ -594,7 +612,7 @@ router.post('/bookings/:id/extend/confirm', async (req, res) => {
       const brand = booking.agency?.brand || "VOLTRIDE"
       const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
       const lang = booking.language || "es"
-      const pdfBuffer = await generateExtensionPDF(extension, booking.contract, brandSettings, lang)
+      const pdfBuffer = await generateExtensionPDF(extension, booking.contract, brandSettings, "es")
       extensionPdfBuffer = pdfBuffer
       const uploadResult = await new Promise<any>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(

@@ -567,24 +567,6 @@ export async function generateExtensionPDF(extension: any, contract: any, brandS
       doc.fill(statusColor).text(extension.paymentStatus === 'PAID' ? pt.paid : pt.pending, 40, y);
       doc.fill('#333');
 
-      // Signature
-      y = 680;
-      doc.fontSize(10).font('Helvetica-Bold').text(t.signature, 40, y);
-      doc.rect(40, y + 15, 200, 60).stroke();
-      
-      if (extension.customerSignature) {
-        try {
-          const sigData = extension.customerSignature.split(',')[1];
-          if (sigData) {
-            const sigBuffer = Buffer.from(sigData, 'base64');
-            doc.image(sigBuffer, 45, y + 20, { width: 190, height: 50 });
-          }
-        } catch (e) { console.error('Extension signature error:', e); }
-      }
-
-      const signDate = extension.customerSignedAt ? formatDate(extension.customerSignedAt, lang) : formatDate(new Date(), lang);
-      doc.font('Helvetica').text(t.date + ': ' + signDate, 280, y + 40);
-
       doc.end();
     } catch (e) {
       reject(e);

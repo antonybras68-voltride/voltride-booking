@@ -411,3 +411,183 @@ export async function generateInvoicePDF(contract: any, brandSettings: any, lang
     }
   });
 }
+
+export async function generateExtensionPDF(extension: any, contract: any, brandSettings: any, lang: string = 'fr'): Promise<Buffer> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const t = translations[lang] || translations.fr;
+      const doc = new PDFDocument({ size: 'A4', margin: 40 });
+      const chunks: Buffer[] = [];
+      
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const brand = contract.fleetVehicle?.vehicle?.category?.brand || 'VOLTRIDE';
+      const logoUrl = LOGOS[brand] || LOGOS['VOLTRIDE'];
+      const logoBuffer = await fetchImageBuffer(logoUrl);
+
+      // Header
+      if (logoBuffer) {
+        doc.image(logoBuffer, 40, 30, { width: 120 });
+      }
+
+      const titleTexts: Record<string, string> = {
+        fr: 'AVENANT AU CONTRAT DE LOCATION',
+        es: 'ANEXO AL CONTRATO DE ALQUILER',
+        en: 'RENTAL CONTRACT AMENDMENT'
+      };
+      
+      doc.fontSize(16).font('Helvetica-Bold');
+      doc.text(titleTexts[lang] || titleTexts.fr, 200, 50, { align: 'right' });
+      
+      doc.fontSize(10).font('Helvetica');
+      doc.text(extension.extensionNumber, 200, 75, { align: 'right' });
+      doc.text(t.date + ': ' + formatDate(extension.createdAt || new Date(), lang), 200, 90, { align: 'right' });
+
+      doc.moveTo(40, 115).lineTo(555, 115).stroke();
+
+      // Reference contrat original
+      let y = 130;
+      const refTexts: Record<string, string> = {
+        fr: 'Référence du contrat original',
+        es: 'Referencia del contrato original',
+        en: 'Original contract reference'
+      };
+      doc.fontSize(12).font('Helvetica-Bold').text(refTexts[lang] || refTexts.fr, 40, y);
+      y += 18;
+      doc.fontSize(10).font('Helvetica');
+      doc.text(t.contractNumber + ': ' + contract.contractNumber, 40, y);
+      y += 14;
+
+      // Client
+      y += 10;
+      doc.fontSize(12).font('Helvetica-Bold').text(t.customer, 40, y);
+      doc.fontSize(12).font('Helvetica-Bold').text(t.vehicle, 300, y);
+      y += 18;
+      doc.fontSize(10).font('Helvetica');
+      doc.text((contract.customer?.firstName || '') + ' ' + (contract.customer?.lastName || ''), 40, y);
+      const vehicleName = contract.fleetVehicle?.vehicle?.name;
+      const vName = typeof vehicleName === 'object' ? (vehicleName[lang] || vehicleName.fr || '') : (vehicleName || '');
+      doc.text(vName, 300, y);
+      y += 14;
+      if (contract.customer?.email) doc.text(contract.customer.email, 40, y);
+      doc.text('N: ' + (contract.fleetVehicle?.vehicleNumber || ''), 300, y);
+      y += 14;
+      if (contract.customer?.phone) doc.text(contract.customer.phone, 40, y);
+
+      // Modification des dates
+      y += 30;
+      doc.moveTo(40, y).lineTo(555, y).stroke();
+      y += 15;
+      
+      const modifTexts: Record<string, Record<string, string>> = {
+        fr: {
+          title: 'Modification de la période de location',
+          previousEnd: 'Date de fin précédente',
+          newEnd: 'Nouvelle date de fin',
+          additional: 'Jours supplémentaires',
+        },
+        es: {
+          title: 'Modificación del período de alquiler',
+          previousEnd: 'Fecha de fin anterior',
+          newEnd: 'Nueva fecha de fin',
+          additional: 'Días adicionales',
+        },
+        en: {
+          title: 'Rental period modification',
+          previousEnd: 'Previous end date',
+          newEnd: 'New end date',
+          additional: 'Additional days',
+        }
+      };
+      const mt = modifTexts[lang] || modifTexts.fr;
+      
+      doc.fontSize(12).font('Helvetica-Bold').text(mt.title, 40, y);
+      y += 25;
+      
+      // Tableau dates
+      doc.fontSize(10).font('Helvetica');
+      doc.rect(40, y, 515, 25).fill('#f5f5f5').stroke('#ddd');
+      doc.fill('#333');
+      doc.text(mt.previousEnd, 50, y + 7);
+      doc.text(formatDate(extension.previousEndDate, lang), 350, y + 7, { align: 'right', width: 195 });
+      y += 25;
+      
+      doc.rect(40, y, 515, 25).stroke('#ddd');
+      doc.text(mt.newEnd, 50, y + 7);
+      doc.font('Helvetica-Bold').text(formatDate(extension.requestedEndDate, lang), 350, y + 7, { align: 'right', width: 195 });
+      y += 25;
+      
+      doc.font('Helvetica');
+      doc.rect(40, y, 515, 25).fill('#f5f5f5').stroke('#ddd');
+      doc.fill('#333');
+      doc.text(mt.additional, 50, y + 7);
+      doc.font('Helvetica-Bold').text('+' + extension.additionalDays + ' ' + t.days, 350, y + 7, { align: 'right', width: 195 });
+
+      // Tarification
+      y += 45;
+      const priceTitleTexts: Record<string, string> = {
+        fr: 'Tarification de la prolongation',
+        es: 'Tarificación de la prolongación',
+        en: 'Extension pricing'
+      };
+      doc.fontSize(12).font('Helvetica-Bold').text(priceTitleTexts[lang] || priceTitleTexts.fr, 40, y);
+      y += 25;
+      
+      doc.fontSize(10).font('Helvetica');
+      doc.text(t.dailyRate, 40, y); doc.text(formatMoney(extension.dailyRate), 450, y, { align: 'right', width: 105 }); y += 18;
+      doc.text(extension.additionalDays + ' ' + t.days + ' x ' + formatMoney(extension.dailyRate), 40, y);
+      y += 18;
+      
+      doc.moveTo(40, y).lineTo(555, y).stroke();
+      y += 10;
+      
+      doc.text(t.htAmount || t.subtotal, 40, y); doc.text(formatMoney(extension.subtotal), 450, y, { align: 'right', width: 105 }); y += 18;
+      doc.text(t.taxRate + ' (' + extension.taxRate + '%)', 40, y); doc.text(formatMoney(extension.taxAmount), 450, y, { align: 'right', width: 105 }); y += 18;
+      doc.font('Helvetica-Bold').fontSize(12);
+      doc.text(t.total, 40, y); doc.text(formatMoney(extension.totalAmount), 450, y, { align: 'right', width: 105 });
+
+      // Mode de paiement
+      y += 35;
+      const payTexts: Record<string, Record<string, string>> = {
+        fr: { title: 'Mode de paiement', agency: 'Paiement en agence au retour', stripe: 'Paiement en ligne (carte bancaire)', pending: 'En attente', paid: 'Payé' },
+        es: { title: 'Método de pago', agency: 'Pago en agencia al devolver', stripe: 'Pago en línea (tarjeta)', pending: 'Pendiente', paid: 'Pagado' },
+        en: { title: 'Payment method', agency: 'Payment at agency upon return', stripe: 'Online payment (credit card)', pending: 'Pending', paid: 'Paid' }
+      };
+      const pt = payTexts[lang] || payTexts.fr;
+      
+      doc.fontSize(10).font('Helvetica-Bold').text(pt.title, 40, y);
+      y += 18;
+      doc.font('Helvetica');
+      const isAgency = extension.notes?.includes('agencia') || extension.paymentStatus === 'PENDING';
+      doc.text(isAgency ? pt.agency : pt.stripe, 40, y);
+      y += 14;
+      const statusColor = extension.paymentStatus === 'PAID' ? '#16a34a' : '#ea580c';
+      doc.fill(statusColor).text(extension.paymentStatus === 'PAID' ? pt.paid : pt.pending, 40, y);
+      doc.fill('#333');
+
+      // Signature
+      y = 680;
+      doc.fontSize(10).font('Helvetica-Bold').text(t.signature, 40, y);
+      doc.rect(40, y + 15, 200, 60).stroke();
+      
+      if (extension.customerSignature) {
+        try {
+          const sigData = extension.customerSignature.split(',')[1];
+          if (sigData) {
+            const sigBuffer = Buffer.from(sigData, 'base64');
+            doc.image(sigBuffer, 45, y + 20, { width: 190, height: 50 });
+          }
+        } catch (e) { console.error('Extension signature error:', e); }
+      }
+
+      const signDate = extension.customerSignedAt ? formatDate(extension.customerSignedAt, lang) : formatDate(new Date(), lang);
+      doc.font('Helvetica').text(t.date + ': ' + signDate, 280, y + 40);
+
+      doc.end();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}

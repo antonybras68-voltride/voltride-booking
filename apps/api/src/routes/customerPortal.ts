@@ -3,10 +3,18 @@ import express from 'express'
 import { PrismaClient } from '@prisma/client'
 import { Resend } from 'resend'
 import crypto from 'crypto'
+import { v2 as cloudinary } from "cloudinary"
+import { generateExtensionPDF } from "../pdfGenerator"
 
 const router = Router()
 router.use(express.json())
 const prisma = new PrismaClient()
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+})
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 // Stockage temporaire des codes (en prod → Redis)
@@ -579,6 +587,29 @@ router.post('/bookings/:id/extend/confirm', async (req, res) => {
       }
     })
 
+    // Générer le PDF avenant et uploader sur Cloudinary
+    let amendmentPdfUrl: string | null = null
+    try {
+      const brand = booking.agency?.brand || "VOLTRIDE"
+      const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
+      const lang = booking.language || "es"
+      const pdfBuffer = await generateExtensionPDF(extension, booking.contract, brandSettings, lang)
+      const uploadResult = await new Promise<any>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { resource_type: "raw", folder: "contracts/extensions", public_id: extension.extensionNumber, format: "pdf" },
+          (error: any, result: any) => { if (error) reject(error); else resolve(result); }
+        )
+        stream.end(pdfBuffer)
+      })
+      amendmentPdfUrl = uploadResult.secure_url
+      await prisma.contractExtension.update({
+        where: { id: extension.id },
+        data: { amendmentPdfUrl }
+      })
+      console.log("[PORTAL] Extension PDF uploaded:", amendmentPdfUrl)
+    } catch (pdfError) {
+      console.error("[PORTAL] PDF generation error (non-blocking):", pdfError)
+    }
     // Mettre à jour le contrat et la réservation
     await prisma.rentalContract.update({
       where: { id: booking.contract.id },
@@ -618,6 +649,7 @@ router.post('/bookings/:id/extend/confirm', async (req, res) => {
       }
     }
 
+    if (paymentMethod === "agency") {
     try {
       const formatDateEmail = (d: Date) => d.toLocaleDateString(lang === 'en' ? 'en-GB' : lang === 'es' ? 'es-ES' : 'fr-FR')
 
@@ -637,10 +669,13 @@ router.post('/bookings/:id/extend/confirm', async (req, res) => {
             <p>Contrato: <strong>${extensionNumber}</strong></p>
           </div>
         `
+        ,
+        attachments: amendmentPdfUrl ? [{ filename: extensionNumber + ".pdf", path: amendmentPdfUrl }] : []
       })
     } catch (emailError) {
       console.error('[PORTAL] Email error (non-blocking):', emailError)
     }
+    } // fin if paymentMethod === agency
 
     // Notifier les admins/opérateurs
     try {

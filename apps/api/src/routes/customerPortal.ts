@@ -589,14 +589,16 @@ router.post('/bookings/:id/extend/confirm', async (req, res) => {
 
     // Générer le PDF avenant et uploader sur Cloudinary
     let amendmentPdfUrl: string | null = null
+    let extensionPdfBuffer: Buffer | null = null
     try {
       const brand = booking.agency?.brand || "VOLTRIDE"
       const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
       const lang = booking.language || "es"
       const pdfBuffer = await generateExtensionPDF(extension, booking.contract, brandSettings, lang)
+      extensionPdfBuffer = pdfBuffer
       const uploadResult = await new Promise<any>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { resource_type: "raw", folder: "contracts/extensions", public_id: extension.extensionNumber, format: "pdf" },
+          { resource_type: "raw", folder: "contracts/extensions", public_id: extension.extensionNumber, format: "pdf", access_mode: "public" },
           (error: any, result: any) => { if (error) reject(error); else resolve(result); }
         )
         stream.end(pdfBuffer)
@@ -670,7 +672,7 @@ router.post('/bookings/:id/extend/confirm', async (req, res) => {
           </div>
         `
         ,
-        attachments: amendmentPdfUrl ? [{ filename: extensionNumber + ".pdf", path: amendmentPdfUrl }] : []
+        attachments: extensionPdfBuffer ? [{ filename: extensionNumber + ".pdf", content: extensionPdfBuffer }] : []
       })
     } catch (emailError) {
       console.error('[PORTAL] Email error (non-blocking):', emailError)

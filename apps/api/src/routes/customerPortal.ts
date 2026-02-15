@@ -612,7 +612,7 @@ router.post('/bookings/:id/extend/confirm', async (req, res) => {
       const brand = booking.agency?.brand || "VOLTRIDE"
       const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
       const lang = booking.language || "es"
-      const pdfBuffer = await generateExtensionPDF(extension, booking.contract, brandSettings, "es")
+      const pdfBuffer = await generateExtensionPDF(extension, booking, brandSettings, "es")
       extensionPdfBuffer = pdfBuffer
       const uploadResult = await new Promise<any>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(

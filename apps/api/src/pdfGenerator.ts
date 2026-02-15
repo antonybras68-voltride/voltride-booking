@@ -412,10 +412,11 @@ export async function generateInvoicePDF(contract: any, brandSettings: any, lang
   });
 }
 
-export async function generateExtensionPDF(extension: any, contract: any, brandSettings: any, lang: string = 'fr'): Promise<Buffer> {
+export async function generateExtensionPDF(extension: any, booking: any, brandSettings: any, lang: string = 'fr'): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
       const t = translations[lang] || translations.fr;
+      const contract = booking.contract || booking;
       const doc = new PDFDocument({ size: 'A4', margin: 40 });
       const chunks: Buffer[] = [];
       
@@ -423,7 +424,7 @@ export async function generateExtensionPDF(extension: any, contract: any, brandS
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      const brand = contract.fleetVehicle?.vehicle?.category?.brand || 'VOLTRIDE';
+      const brand = booking.agency?.brand || 'VOLTRIDE';
       const logoUrl = LOGOS[brand] || LOGOS['VOLTRIDE'];
       const logoBuffer = await fetchImageBuffer(logoUrl);
 
@@ -466,15 +467,15 @@ export async function generateExtensionPDF(extension: any, contract: any, brandS
       doc.fontSize(12).font('Helvetica-Bold').text(t.vehicle, 300, y);
       y += 18;
       doc.fontSize(10).font('Helvetica');
-      doc.text((contract.customer?.firstName || '') + ' ' + (contract.customer?.lastName || ''), 40, y);
-      const vehicleName = contract.fleetVehicle?.vehicle?.name;
+      doc.text((booking.customer?.firstName || '') + ' ' + (booking.customer?.lastName || ''), 40, y);
+      const vehicleName = booking.fleetVehicle?.vehicle?.name;
       const vName = typeof vehicleName === 'object' ? (vehicleName[lang] || vehicleName.fr || '') : (vehicleName || '');
       doc.text(vName, 300, y);
       y += 14;
-      if (contract.customer?.email) doc.text(contract.customer.email, 40, y);
-      doc.text('N: ' + (contract.fleetVehicle?.vehicleNumber || ''), 300, y);
+      if (booking.customer?.email) doc.text(booking.customer.email, 40, y);
+      doc.text('N: ' + (booking.fleetVehicle?.vehicleNumber || ''), 300, y);
       y += 14;
-      if (contract.customer?.phone) doc.text(contract.customer.phone, 40, y);
+      if (booking.customer?.phone) doc.text(booking.customer.phone, 40, y);
 
       // Modification des dates
       y += 30;

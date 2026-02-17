@@ -120,10 +120,12 @@ const translations: Record<string, Record<string, string>> = {
   }
 };
 
-export async function generateContractPDF(contract: any, brandSettings: any, lang: string = 'fr'): Promise<Buffer> {
+export async function generateContractPDF(contract: any, brandSettings: any, clientLang: string = 'fr'): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
-      const t = translations[lang] || translations.fr;
+      const contractLang = 'es';
+      const t = translations[contractLang] || translations.es;
+      const tClient = translations[clientLang] || translations.fr;
       const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
       const chunks: Buffer[] = [];
       
@@ -135,7 +137,7 @@ export async function generateContractPDF(contract: any, brandSettings: any, lan
       const logoUrl = LOGOS[brand] || LOGOS['VOLTRIDE'];
       const logoBuffer = await fetchImageBuffer(logoUrl);
 
-      // PAGE 1 - RECTO
+      // PAGE 1 - CONTRAT (espagnol)
       if (logoBuffer) {
         doc.image(logoBuffer, 40, 30, { width: 120 });
       }
@@ -145,7 +147,7 @@ export async function generateContractPDF(contract: any, brandSettings: any, lan
       
       doc.fontSize(10).font('Helvetica');
       doc.text(t.contractNumber + ': ' + contract.contractNumber, 200, 75, { align: 'right' });
-      doc.text(t.date + ': ' + formatDate(contract.createdAt || new Date(), lang), 200, 90, { align: 'right' });
+      doc.text(t.date + ': ' + formatDate(contract.createdAt || new Date(), contractLang), 200, 90, { align: 'right' });
 
       doc.moveTo(40, 120).lineTo(555, 120).stroke();
 
@@ -167,25 +169,27 @@ export async function generateContractPDF(contract: any, brandSettings: any, lan
       doc.fontSize(10).font('Helvetica');
       y += 18;
       const vehicleName = contract.fleetVehicle?.vehicle?.name;
-      const vName = typeof vehicleName === 'object' ? (vehicleName[lang] || vehicleName.fr || '') : (vehicleName || '');
+      const vName = typeof vehicleName === 'object' ? (vehicleName[contractLang] || vehicleName.fr || '') : (vehicleName || '');
       doc.text(vName, 300, y);
       y += 14;
       doc.text('N: ' + (contract.fleetVehicle?.vehicleNumber || ''), 300, y);
       y += 14;
       if (contract.fleetVehicle?.licensePlate) { doc.text('Plaque: ' + contract.fleetVehicle.licensePlate, 300, y); }
 
-      // Period
+      // Period with hours
       y = 280;
       doc.fontSize(12).font('Helvetica-Bold').text(t.period, 40, y);
       y += 18;
       doc.fontSize(10).font('Helvetica');
-      doc.text(t.from + ': ' + formatDate(contract.currentStartDate, lang), 40, y);
-      doc.text(t.to + ': ' + formatDate(contract.currentEndDate, lang), 200, y);
-      doc.text(contract.totalDays + ' ' + t.days, 400, y);
+      const startTime = contract.booking?.startTime || '';
+      const endTime = contract.booking?.endTime || '';
+      doc.text(t.from + ': ' + formatDate(contract.currentStartDate, contractLang) + (startTime ? ' ' + startTime : ''), 40, y);
+      doc.text(t.to + ': ' + formatDate(contract.currentEndDate, contractLang) + (endTime ? ' ' + endTime : ''), 250, y);
+      doc.text(contract.totalDays + ' ' + t.days, 470, y);
 
       // Prices
       y = 340;
-      doc.fontSize(12).font('Helvetica-Bold').text('Details', 40, y);
+      doc.fontSize(12).font('Helvetica-Bold').text('Detalles', 40, y);
       y += 20;
       
       doc.fontSize(10).font('Helvetica');
@@ -210,12 +214,12 @@ export async function generateContractPDF(contract: any, brandSettings: any, lan
       y += 10;
       doc.text(t.deposit, 40, y); doc.text(formatMoney(contract.depositAmount), 450, y, { align: 'right', width: 105 });
 
-      // CGV Resume
+      // CGV Resume (espagnol sur page 1)
       y = 520;
       doc.fontSize(10).font('Helvetica-Bold').text(t.cgv, 40, y);
       y += 15;
       doc.fontSize(7).font('Helvetica');
-      const cgvResume = brandSettings?.cgvResume?.[lang] || brandSettings?.cgvResume?.fr || '';
+      const cgvResume = brandSettings?.cgvResume?.es || brandSettings?.cgvResume?.fr || '';
       if (cgvResume) {
         doc.text(cgvResume, 40, y, { width: 515, align: 'justify' });
       }
@@ -235,29 +239,53 @@ export async function generateContractPDF(contract: any, brandSettings: any, lan
         } catch (e) { console.error('Signature error:', e); }
       }
 
-      const signDate = contract.customerSignedAt ? formatDate(contract.customerSignedAt, lang) : '_______________';
+      const signDate = contract.customerSignedAt ? formatDate(contract.customerSignedAt, contractLang) : '_______________';
       doc.font('Helvetica').text(t.date + ': ' + signDate, 280, y + 40);
 
-      // PAGE 2 - VERSO
+      // PAGE 2 - CGV (langue du client)
       doc.addPage();
-
       y = 40;
-      doc.fontSize(12).font('Helvetica-Bold').text(t.cgv, 40, y);
-      y += 20;
+      doc.fontSize(14).font('Helvetica-Bold').text(tClient.cgv, 40, y);
+      y += 25;
       doc.fontSize(7).font('Helvetica');
-      const cgvComplete = brandSettings?.cgvComplete?.[lang] || brandSettings?.cgvComplete?.fr || '';
+      const cgvComplete = brandSettings?.cgvComplete?.[clientLang] || brandSettings?.cgvComplete?.fr || '';
       if (cgvComplete) {
         doc.text(cgvComplete, 40, y, { width: 515, align: 'justify' });
-        y = doc.y + 20;
       }
 
-      if (y < 600) {
-        doc.fontSize(12).font('Helvetica-Bold').text(t.rgpd, 40, y);
-        y += 20;
-        doc.fontSize(7).font('Helvetica');
-        const rgpd = brandSettings?.rgpd?.[lang] || brandSettings?.rgpd?.fr || '';
-        if (rgpd) {
-          doc.text(rgpd, 40, y, { width: 515, align: 'justify' });
+      // PAGE 3 - RGPD (langue du client)
+      doc.addPage();
+      y = 40;
+      doc.fontSize(14).font('Helvetica-Bold').text(tClient.rgpd, 40, y);
+      y += 25;
+      doc.fontSize(7).font('Helvetica');
+      const rgpd = brandSettings?.rgpd?.[clientLang] || brandSettings?.rgpd?.fr || '';
+      if (rgpd) {
+        doc.text(rgpd, 40, y, { width: 515, align: 'justify' });
+      }
+
+      // PAGES SUIVANTES - Documents vehicule (sendToCustomer = true)
+      const vehicleDocs = contract.fleetVehicle?.documents || [];
+      for (const vDoc of vehicleDocs) {
+        if (vDoc.fileUrl) {
+          try {
+            const docBuffer = await fetchImageBuffer(vDoc.fileUrl);
+            if (docBuffer) {
+              doc.addPage();
+              y = 40;
+              doc.fontSize(12).font('Helvetica-Bold').text(vDoc.name || vDoc.type, 40, y);
+              y += 25;
+              if (vDoc.description) {
+                doc.fontSize(9).font('Helvetica').text(vDoc.description, 40, y);
+                y += 20;
+              }
+              if (vDoc.fileType && (vDoc.fileType.includes('image') || vDoc.fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i))) {
+                doc.image(docBuffer, 40, y, { width: 515, fit: [515, 700] });
+              }
+            }
+          } catch (e) {
+            console.error('Error adding vehicle document:', e);
+          }
         }
       }
 

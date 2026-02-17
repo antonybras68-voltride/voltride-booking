@@ -2212,7 +2212,8 @@ app.get('/api/contracts/:id/pdf', async (req, res) => {
       where: { id: req.params.id },
       include: {
         customer: true,
-        fleetVehicle: { include: { vehicle: { include: { category: true } } } },
+        booking: true,
+        fleetVehicle: { include: { vehicle: { include: { category: true } }, documents: { where: { sendToCustomer: true } } } },
         agency: true
       }
     })
@@ -2220,9 +2221,9 @@ app.get('/api/contracts/:id/pdf', async (req, res) => {
     
     const brand = contract.fleetVehicle?.vehicle?.category?.brand || 'VOLTRIDE'
     const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
-    const lang = (req.query.lang as string) || 'fr'
+    const clientLang = (contract as any).termsLanguage || (req.query.lang as string) || "fr"
     
-    const pdfBuffer = await generateContractPDF(contract, brandSettings, lang)
+    const pdfBuffer = await generateContractPDF(contract, brandSettings, clientLang)
     
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', `inline; filename="contrat-${contract.contractNumber}.pdf"`)
@@ -2238,15 +2239,15 @@ app.post("/api/contracts/:id/send", async (req, res) => {
   try {
     const contract = await prisma.rentalContract.findUnique({
       where: { id: req.params.id },
-      include: { customer: true, fleetVehicle: { include: { vehicle: { include: { category: true } } } }, agency: true }
+      include: { customer: true, booking: true, fleetVehicle: { include: { vehicle: { include: { category: true } }, documents: { where: { sendToCustomer: true } } } }, agency: true }
     })
     if (!contract) return res.status(404).json({ error: "Contract not found" })
     const email = req.body.email || contract.customer?.email
     if (!email) return res.status(400).json({ error: "No email provided" })
     const brand = contract.fleetVehicle?.vehicle?.category?.brand || "VOLTRIDE"
     const brandSettings = await prisma.brandSettings.findUnique({ where: { brand } })
-    const lang = "es"
-    const pdfBuffer = await generateContractPDF(contract, brandSettings, lang)
+    const clientLang = (contract as any).termsLanguage || "fr"
+    const pdfBuffer = await generateContractPDF(contract, brandSettings, clientLang)
     const vehicleName = contract.fleetVehicle?.vehicle?.name || "Vehículo"
     const parsed = typeof vehicleName === "string" ? (() => { try { return JSON.parse(vehicleName) } catch { return { es: vehicleName } } })() : vehicleName
     const vName = (parsed as any)?.es || "Vehículo"

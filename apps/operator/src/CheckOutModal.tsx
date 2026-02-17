@@ -99,7 +99,7 @@ export function CheckOutModal({ booking, brand, onClose, onComplete }: CheckOutM
         const missing: string[] = []
         const needsLicense = booking.fleetVehicle?.vehicle?.hasPlate
         if (!contractData.customerIdCardUrl) missing.push('idCardRecto')
-        if (!contractData.idCardVersoUrl) missing.push("idCardVerso")
+        if (!contractData.customerIdCardVersoUrl) missing.push("idCardVerso")
         if (needsLicense && !contractData.customerLicenseUrl) missing.push('licenseRecto')
         if (needsLicense && !contractData.customerLicenseVersoUrl) missing.push('licenseVerso')
         setMissingDocs(missing)

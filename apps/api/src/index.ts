@@ -1601,7 +1601,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
         damageSchema: req.body.damageSchema,
         equipmentChecklist: req.body.equipmentChecklist,
         customerIdCardUrl: req.body.customerIdCardUrl,
-        idCardVersoUrl: req.body.idCardReversoUrl || undefined,
+        customerIdCardVersoUrl: req.body.idCardReversoUrl || undefined,
         customerLicenseUrl: req.body.customerLicenseUrl,
         customerSignature: req.body.customerSignature,
         customerSignedAt: req.body.customerSignature ? new Date() : null,
@@ -1653,7 +1653,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
             damageSchema: req.body.damageSchema,
             equipmentChecklist: req.body.equipmentChecklist,
             customerIdCardUrl: req.body.customerIdCardUrl,
-        idCardVersoUrl: req.body.idCardReversoUrl || undefined,
+        customerIdCardVersoUrl: req.body.idCardReversoUrl || undefined,
             customerLicenseUrl: req.body.customerLicenseUrl,
             customerSignature: req.body.customerSignature,
             customerSignedAt: req.body.customerSignature ? new Date() : null,
@@ -3669,7 +3669,7 @@ app.put('/api/bookings/:id', async (req, res) => {
     if (req.body.depositMethod) updateData.depositMethod = req.body.depositMethod
     if (req.body.paidAmount !== undefined) updateData.paidAmount = req.body.paidAmount
     if (req.body.idCardUrl) updateData.idCardUrl = req.body.idCardUrl
-    if (req.body.idCardReversoUrl) updateData.idCardVersoUrl = req.body.idCardReversoUrl
+    if (req.body.idCardReversoUrl) updateData.customerIdCardVersoUrl = req.body.idCardReversoUrl
     if (req.body.licenseUrl) updateData.licenseUrl = req.body.licenseUrl
     if (req.body.licenseReversoUrl) updateData.licenseVersoUrl = req.body.licenseReversoUrl
     if (req.body.signatureUrl) updateData.signatureUrl = req.body.signatureUrl
@@ -3778,7 +3778,7 @@ app.put('/api/bookings/:id', async (req, res) => {
           where: { id: existingContract.id },
           data: {
             ...(req.body.idCardUrl && { customerIdCardUrl: req.body.idCardUrl }),
-            ...(req.body.idCardReversoUrl && { idCardVersoUrl: req.body.idCardReversoUrl })
+            ...(req.body.idCardReversoUrl && { customerIdCardVersoUrl: req.body.idCardReversoUrl })
           }
         })
       }

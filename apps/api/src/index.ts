@@ -3667,7 +3667,7 @@ app.put('/api/bookings/:id', async (req, res) => {
     if (req.body.depositMethod) updateData.depositMethod = req.body.depositMethod
     if (req.body.paidAmount !== undefined) updateData.paidAmount = req.body.paidAmount
     if (req.body.idCardUrl) updateData.idCardUrl = req.body.idCardUrl
-    if (req.body.idCardReversoUrl) updateData.customerIdCardVersoUrl = req.body.idCardReversoUrl
+    if (req.body.idCardReversoUrl) updateData.idCardVersoUrl = req.body.idCardReversoUrl
     if (req.body.licenseUrl) updateData.licenseUrl = req.body.licenseUrl
     if (req.body.licenseReversoUrl) updateData.licenseVersoUrl = req.body.licenseReversoUrl
     if (req.body.signatureUrl) updateData.signatureUrl = req.body.signatureUrl

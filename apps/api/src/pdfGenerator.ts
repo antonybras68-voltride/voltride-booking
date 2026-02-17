@@ -137,6 +137,23 @@ export async function generateContractPDF(contract: any, brandSettings: any, cli
       const logoUrl = LOGOS[brand] || LOGOS['VOLTRIDE'];
       const logoBuffer = await fetchImageBuffer(logoUrl);
 
+      // Helper: draw signature block
+      const drawSignature = (yPos: number) => {
+        doc.fontSize(10).font('Helvetica-Bold').text(t.signature, 40, yPos);
+        doc.rect(40, yPos + 15, 200, 60).stroke();
+        if (contract.customerSignature) {
+          try {
+            const sigData = contract.customerSignature.split(',')[1];
+            if (sigData) {
+              const sigBuffer = Buffer.from(sigData, 'base64');
+              doc.image(sigBuffer, 45, yPos + 20, { width: 190, height: 50 });
+            }
+          } catch (e) { console.error('Signature error:', e); }
+        }
+        const signDate = contract.customerSignedAt ? formatDate(contract.customerSignedAt, contractLang) : '_______________';
+        doc.font('Helvetica').fontSize(10).text(t.date + ': ' + signDate, 280, yPos + 40);
+      };
+
       // PAGE 1 - CONTRAT (espagnol)
       if (logoBuffer) {
         doc.image(logoBuffer, 40, 30, { width: 120 });
@@ -214,57 +231,39 @@ export async function generateContractPDF(contract: any, brandSettings: any, cli
       y += 10;
       doc.text(t.deposit, 40, y); doc.text(formatMoney(contract.depositAmount), 450, y, { align: 'right', width: 105 });
 
-      // CGV Resume (espagnol sur page 1)
-      y = 520;
-      doc.fontSize(10).font('Helvetica-Bold').text(t.cgv, 40, y);
-      y += 15;
-      doc.fontSize(7).font('Helvetica');
-      const cgvResume = brandSettings?.cgvResume?.es || brandSettings?.cgvResume?.fr || '';
-      if (cgvResume) {
-        doc.text(cgvResume, 40, y, { width: 515, align: 'justify' });
-      }
+      // Signature on page 1
+      drawSignature(700);
 
-      // Signature
-      y = 720;
-      doc.fontSize(10).font('Helvetica-Bold').text(t.signature, 40, y);
-      doc.rect(40, y + 15, 200, 60).stroke();
-      
-      if (contract.customerSignature) {
-        try {
-          const sigData = contract.customerSignature.split(',')[1];
-          if (sigData) {
-            const sigBuffer = Buffer.from(sigData, 'base64');
-            doc.image(sigBuffer, 45, y + 20, { width: 190, height: 50 });
-          }
-        } catch (e) { console.error('Signature error:', e); }
-      }
-
-      const signDate = contract.customerSignedAt ? formatDate(contract.customerSignedAt, contractLang) : '_______________';
-      doc.font('Helvetica').text(t.date + ': ' + signDate, 280, y + 40);
-
-      // PAGE 2 - CGV (langue du client)
-      doc.addPage();
-      y = 40;
-      doc.fontSize(14).font('Helvetica-Bold').text(tClient.cgv, 40, y);
-      y += 25;
-      doc.fontSize(7).font('Helvetica');
+      // PAGE 2+ - CGV completes (langue du client)
       const cgvComplete = brandSettings?.cgvComplete?.[clientLang] || brandSettings?.cgvComplete?.fr || '';
       if (cgvComplete) {
+        doc.addPage();
+        y = 40;
+        if (logoBuffer) { doc.image(logoBuffer, 40, 30, { width: 80 }); }
+        doc.fontSize(14).font('Helvetica-Bold').text(tClient.cgv, 160, 45);
+        y = 90;
+        doc.fontSize(7).font('Helvetica');
         doc.text(cgvComplete, 40, y, { width: 515, align: 'justify' });
+        y = doc.y + 20;
+        if (y > 700) { doc.addPage(); y = 40; }
+        drawSignature(y);
       }
 
-      // PAGE 3 - RGPD (langue du client)
-      doc.addPage();
-      y = 40;
-      doc.fontSize(14).font('Helvetica-Bold').text(tClient.rgpd, 40, y);
-      y += 25;
-      doc.fontSize(7).font('Helvetica');
+      // PAGE - RGPD (langue du client)
       const rgpd = brandSettings?.rgpd?.[clientLang] || brandSettings?.rgpd?.fr || '';
       if (rgpd) {
+        doc.addPage();
+        y = 40;
+        if (logoBuffer) { doc.image(logoBuffer, 40, 30, { width: 80 }); }
+        doc.fontSize(14).font('Helvetica-Bold').text(tClient.rgpd, 160, 45);
+        y = 90;
+        doc.fontSize(7).font('Helvetica');
         doc.text(rgpd, 40, y, { width: 515, align: 'justify' });
+        y = doc.y + 20;
+        if (y > 700) { doc.addPage(); y = 40; }
+        drawSignature(y);
       }
-
-      // PAGES SUIVANTES - Documents vehicule (sendToCustomer = true)
+      // PAGES - Documents vehicule (sendToCustomer = true)
       const vehicleDocs = contract.fleetVehicle?.documents || [];
       for (const vDoc of vehicleDocs) {
         if (vDoc.fileUrl) {

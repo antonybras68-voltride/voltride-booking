@@ -1553,3 +1553,4 @@ model Expense {
   @@index([date])
   @@index([status])
 }
+

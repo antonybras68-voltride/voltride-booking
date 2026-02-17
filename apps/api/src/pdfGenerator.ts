@@ -288,6 +288,35 @@ export async function generateContractPDF(contract: any, brandSettings: any, cli
         }
       }
 
+      // PAGES - Photos check-in du vehicule
+      const checkInPhotos = [
+        { label: 'Avant / Frente', url: contract.photoFront },
+        { label: 'Gauche / Izquierda', url: contract.photoLeft },
+        { label: 'Droite / Derecha', url: contract.photoRight },
+        { label: 'Arriere / Trasera', url: contract.photoRear },
+        { label: 'Compteur / Contador', url: contract.photoCounter }
+      ].filter(p => p.url);
+      
+      if (checkInPhotos.length > 0) {
+        doc.addPage();
+        y = 40;
+        doc.fontSize(14).font('Helvetica-Bold').text('Fotos del vehiculo - Check-in', 40, y);
+        y += 30;
+        
+        for (let pi = 0; pi < checkInPhotos.length; pi++) {
+          try {
+            const photoBuffer = await fetchImageBuffer(checkInPhotos[pi].url);
+            if (photoBuffer) {
+              if (y > 500) { doc.addPage(); y = 40; }
+              doc.fontSize(9).font('Helvetica-Bold').text(checkInPhotos[pi].label, 40, y);
+              y += 15;
+              doc.image(photoBuffer, 40, y, { fit: [250, 200] });
+              y += 210;
+            }
+          } catch (e) { console.error('Error adding check-in photo:', e); }
+        }
+      }
+
       // Page numbering removed to prevent blank pages
 
       doc.end();

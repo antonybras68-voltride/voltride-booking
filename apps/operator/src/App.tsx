@@ -787,7 +787,7 @@ export default function App() {
     }
   }
 
-  const formatDate = (d) => d.toISOString().split('T')[0]
+  const formatDate = (d: Date) => { const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0'); const day = String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+day; }
   const today = formatDate(new Date())
   const todayDepartures = bookings.filter(b => b.startDate?.split('T')[0] === today && !b.checkedIn)
   const todayReturns = bookings.filter(b => b.endDate?.split('T')[0] === today && b.checkedIn && !b.checkedOut)

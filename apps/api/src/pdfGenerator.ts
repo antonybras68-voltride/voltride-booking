@@ -235,7 +235,7 @@ export async function generateContractPDF(contract: any, brandSettings: any, cli
       drawSignature(700);
 
       // PAGE 2+ - CGV completes (langue du client)
-      const cgvComplete = brandSettings?.cgvComplete?.[clientLang] || brandSettings?.cgvComplete?.fr || '';
+      const cgvComplete = brandSettings?.cgvResume?.[clientLang] || brandSettings?.cgvResume?.fr || '';
       if (cgvComplete) {
         doc.addPage();
         y = 40;
@@ -292,7 +292,7 @@ export async function generateContractPDF(contract: any, brandSettings: any, cli
       const pages = doc.bufferedPageRange();
       for (let i = 0; i < pages.count; i++) {
         doc.switchToPage(i);
-        doc.fontSize(8).text(t.page + ' ' + (i + 1) + ' ' + t.of + ' ' + pages.count, 40, 800, { align: 'center', width: 515 });
+        doc.fontSize(8).text(t.page + ' ' + (i + 1) + ' ' + t.of + ' ' + pages.count, 40, 810, { align: 'center', width: 515, lineBreak: false });
       }
 
       doc.end();

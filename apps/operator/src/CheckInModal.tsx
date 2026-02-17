@@ -238,7 +238,8 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
         checkInPhotos: photos,
         depositMethod,
         paidAmount: booking.totalPrice,
-        status: 'CHECKED_IN'
+        status: 'CHECKED_IN',
+        termsLanguage: termsLang
       })
       
       // Mettre à jour le kilométrage du véhicule
@@ -278,7 +279,8 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
             photoLeft: photos.left,
             photoRight: photos.right,
             photoRear: photos.rear,
-            photoCounter: photos.counter
+            photoCounter: photos.counter,
+            termsLanguage: termsLang
           })
         })
         if (contractRes.ok) {

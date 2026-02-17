@@ -3770,6 +3770,19 @@ app.put('/api/bookings/:id', async (req, res) => {
       }
     })
     
+    // Mettre à jour le contrat avec les docs CNI
+    if (req.body.idCardReversoUrl || req.body.idCardUrl) {
+      const existingContract = await prisma.rentalContract.findUnique({ where: { bookingId: id } })
+      if (existingContract) {
+        await prisma.rentalContract.update({
+          where: { id: existingContract.id },
+          data: {
+            ...(req.body.idCardUrl && { customerIdCardUrl: req.body.idCardUrl }),
+            ...(req.body.idCardReversoUrl && { customerIdCardVersoUrl: req.body.idCardReversoUrl })
+          }
+        })
+      }
+    }
     res.json(booking)
   } catch (e: any) {
     console.error(e)

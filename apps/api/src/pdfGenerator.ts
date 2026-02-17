@@ -126,7 +126,7 @@ export async function generateContractPDF(contract: any, brandSettings: any, cli
       const contractLang = 'es';
       const t = translations[contractLang] || translations.es;
       const tClient = translations[clientLang] || translations.fr;
-      const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
+      const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: false });
       const chunks: Buffer[] = [];
       
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -288,12 +288,7 @@ export async function generateContractPDF(contract: any, brandSettings: any, cli
         }
       }
 
-      // Page numbers
-      const pages = doc.bufferedPageRange();
-      for (let i = 0; i < pages.count; i++) {
-        doc.switchToPage(i);
-        doc.fontSize(8).text(t.page + ' ' + (i + 1) + ' ' + t.of + ' ' + pages.count, 40, 810, { align: 'center', width: 515, lineBreak: false });
-      }
+      // Page numbering removed to prevent blank pages
 
       doc.end();
     } catch (e) {

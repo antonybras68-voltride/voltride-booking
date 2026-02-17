@@ -1601,7 +1601,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
         damageSchema: req.body.damageSchema,
         equipmentChecklist: req.body.equipmentChecklist,
         customerIdCardUrl: req.body.customerIdCardUrl,
-        customerIdCardVersoUrl: req.body.customerIdCardVersoUrl || req.body.idCardReversoUrl,
+        idCardVersoUrl: req.body.idCardReversoUrl || undefined,
         customerLicenseUrl: req.body.customerLicenseUrl,
         customerSignature: req.body.customerSignature,
         customerSignedAt: req.body.customerSignature ? new Date() : null,
@@ -1653,7 +1653,7 @@ app.post('/api/bookings/:id/check-out', async (req, res) => {
             damageSchema: req.body.damageSchema,
             equipmentChecklist: req.body.equipmentChecklist,
             customerIdCardUrl: req.body.customerIdCardUrl,
-        customerIdCardVersoUrl: req.body.customerIdCardVersoUrl || req.body.idCardReversoUrl,
+        idCardVersoUrl: req.body.idCardReversoUrl || undefined,
             customerLicenseUrl: req.body.customerLicenseUrl,
             customerSignature: req.body.customerSignature,
             customerSignedAt: req.body.customerSignature ? new Date() : null,
@@ -3778,7 +3778,7 @@ app.put('/api/bookings/:id', async (req, res) => {
           where: { id: existingContract.id },
           data: {
             ...(req.body.idCardUrl && { customerIdCardUrl: req.body.idCardUrl }),
-            ...(req.body.idCardReversoUrl && { customerIdCardVersoUrl: req.body.idCardReversoUrl })
+            ...(req.body.idCardReversoUrl && { idCardVersoUrl: req.body.idCardReversoUrl })
           }
         })
       }

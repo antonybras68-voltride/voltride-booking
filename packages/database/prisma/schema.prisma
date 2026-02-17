@@ -737,6 +737,7 @@ model RentalContract {
   damageSchema         Json?
   equipmentChecklist   Json?
   customerIdCardUrl    String?
+  customerIdCardVersoUrl String?
   customerLicenseUrl   String?
   termsAcceptedAt      DateTime?
   termsLanguage        String?

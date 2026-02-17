@@ -927,7 +927,7 @@ export default function App() {
   // Double click = quick check-in (uniquement si la location commence aujourd'hui)
   const handleDoubleClick = (booking) => {
     if (!booking.checkedIn) {
-      const today = new Date().toISOString().split('T')[0]
+      const today = formatDate(new Date())
       const startDate = booking.startDate?.split('T')[0]
       
       if (startDate !== today) {
@@ -2106,8 +2106,8 @@ export default function App() {
                       )}
                       {b.fleetVehicleId && b.status === 'CONFIRMED' && !b.checkedIn && (
                         <button onClick={() => { 
-                          const today = new Date().toISOString().split('T')[0];
-                          const startDate = new Date(b.startDate).toISOString().split('T')[0];
+                          const today = formatDate(new Date());
+                          const startDate = formatDate(new Date(b.startDate));
                           if (startDate !== today) {
                             alert('⚠️ Le check-in ne peut être effectué que le jour du départ de la location.');
                             return;
@@ -2642,8 +2642,8 @@ export default function App() {
         <div className="fixed bg-white rounded-lg shadow-xl border py-2 z-50" style={{ left: contextMenu.x, top: contextMenu.y }}>
           {!contextMenu.booking.checkedIn && (
             <button onClick={() => { 
-              const today = new Date().toISOString().split('T')[0];
-              const startDate = new Date(contextMenu.booking.startDate).toISOString().split('T')[0];
+              const today = formatDate(new Date());
+              const startDate = formatDate(new Date(contextMenu.booking.startDate));
               if (startDate !== today) {
                 alert('⚠️ Le check-in ne peut être effectué que le jour du départ de la location.');
                 setContextMenu(null);
@@ -3261,8 +3261,8 @@ export default function App() {
               )}
               {!selectedBookingDetail.checkedIn && selectedBookingDetail.fleetVehicleId && (
                 <button onClick={() => { 
-                  const today = new Date().toISOString().split('T')[0];
-                  const startDate = new Date(selectedBookingDetail.startDate).toISOString().split('T')[0];
+                  const today = formatDate(new Date());
+                  const startDate = formatDate(new Date(selectedBookingDetail.startDate));
                   if (startDate !== today) {
                     alert('⚠️ Le check-in ne peut être effectué que le jour du départ de la location.');
                     return;

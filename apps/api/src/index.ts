@@ -4516,21 +4516,34 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
     const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 300, margin: 1 })
     let qrImageUrl = qrDataUrl
     try {
+      const timestamp = Math.round(Date.now() / 1000)
+      const folder = 'qrcodes/bookings'
+      const publicId = 'qr-' + bookingId
+      const crypto = require('crypto')
+      const apiSecret = process.env.CLOUDINARY_API_SECRET || ''
+      const signStr = 'folder=' + folder + '&public_id=' + publicId + '&timestamp=' + timestamp + apiSecret
+      const signature = crypto.createHash('sha1').update(signStr).digest('hex')
+      
+      const formData = new URLSearchParams()
+      formData.append('file', qrDataUrl)
+      formData.append('folder', folder)
+      formData.append('public_id', publicId)
+      formData.append('timestamp', String(timestamp))
+      formData.append('api_key', process.env.CLOUDINARY_API_KEY || '485395684484158')
+      formData.append('signature', signature)
+      
       const cloudRes = await fetch('https://api.cloudinary.com/v1_1/dis5pcnfr/image/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          file: qrDataUrl,
-          upload_preset: 'ml_default',
-          folder: 'qrcodes/bookings',
-          public_id: 'qr-' + bookingId
-        })
+        body: formData
       })
-      if (cloudRes.ok) {
-        const cloudData: any = await cloudRes.json()
+      const cloudData: any = await cloudRes.json()
+      if (cloudData.secure_url) {
         qrImageUrl = cloudData.secure_url
+        console.log('[QR] Uploaded to Cloudinary:', qrImageUrl)
+      } else {
+        console.error('[QR] Cloudinary error:', cloudData)
       }
-    } catch (e) { console.error('QR upload error:', e) }
+    } catch (e) { console.error('[QR] Upload error:', e) }
 
     const html = `
     <!DOCTYPE html>

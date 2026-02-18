@@ -4351,6 +4351,35 @@ app.get('/api/fleet/:id/active-booking', async (req, res) => {
   }
 })
 
+
+// Generate QR codes for all fleet vehicles of an agency (for printing labels)
+app.get('/api/fleet/qr-labels/:agencyId', async (req, res) => {
+  try {
+    const vehicles = await prisma.fleet.findMany({
+      where: { agencyId: req.params.agencyId, status: { not: 'OUT_OF_SERVICE' } },
+      include: { vehicle: true },
+      orderBy: { vehicleNumber: 'asc' }
+    })
+    const brand = vehicles[0]?.vehicle?.category?.brand || 'VOLTRIDE'
+    const operatorUrl = brand === 'VOLTRIDE' ? 'https://operator-production-188c.up.railway.app' : 'https://motor-rent-operator-production.up.railway.app'
+    
+    const labels = await Promise.all(vehicles.map(async (v: any) => {
+      const qrUrl = operatorUrl + '?vehicle=' + v.id
+      const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 300, margin: 1 })
+      return {
+        vehicleNumber: v.vehicleNumber,
+        vehicleName: v.vehicle?.name,
+        qrDataUrl,
+        qrUrl
+      }
+    }))
+    res.json(labels)
+  } catch (e: any) {
+    console.error('QR labels error:', e)
+    res.status(500).json({ error: 'Failed to generate QR labels' })
+  }
+})
+
 // ============== EMAIL CONFIRMATION ==============
 
 const emailTemplates = {
@@ -4481,10 +4510,27 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
       const d = new Date(date)
       return d.toLocaleDateString(language === 'en' ? 'en-GB' : language === 'es' ? 'es-ES' : 'fr-FR')
     }
-    // Generate QR code for booking
+    // Generate QR code for booking and upload to Cloudinary
     const operatorUrl = brand === 'VOLTRIDE' ? 'https://operator-production-188c.up.railway.app' : 'https://motor-rent-operator-production.up.railway.app'
     const qrUrl = operatorUrl + '?scan=' + bookingId
-    const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 200, margin: 1 })
+    const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 300, margin: 1 })
+    let qrImageUrl = qrDataUrl
+    try {
+      const cloudRes = await fetch('https://api.cloudinary.com/v1_1/dis5pcnfr/image/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file: qrDataUrl,
+          upload_preset: 'ml_default',
+          folder: 'qrcodes/bookings',
+          public_id: 'qr-' + bookingId
+        })
+      })
+      if (cloudRes.ok) {
+        const cloudData = await cloudRes.json()
+        qrImageUrl = cloudData.secure_url
+      }
+    } catch (e) { console.error('QR upload error:', e) }
 
     const html = `
     <!DOCTYPE html>
@@ -4533,7 +4579,7 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
         
         <div style="text-align: center; margin: 25px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #ddd;">
           <p style="font-weight: bold; color: #333; margin-bottom: 10px;">📱 QR Code - Check-in</p>
-          <img src="${qrDataUrl}" alt="QR Code" style="width: 180px; height: 180px;" />
+          <img src="${qrImageUrl}" alt="QR Code" style="width: 180px; height: 180px;" />
           <p style="font-size: 12px; color: #888; margin-top: 8px;">${vehicleNumber}</p>
         </div>
 

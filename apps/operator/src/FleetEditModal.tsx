@@ -151,7 +151,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
     try {
       const url = await api.uploadImage(file, `fleet/${fleet.id}/docs`)
       if (url) {
-        const res = await fetch(`${API_URL}/api/fleet/${fleet.id}/documents`, {
+        const res = await fetch(`${API_URL}/api/fleet/${fleet.id}/documents`), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: newDocType, name: file.name, fileUrl: url, fileType: file.type.startsWith('video') ? 'video' : 'image' })
@@ -165,7 +165,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
 
   const toggleDocSendToCustomer = async (doc) => {
     try {
-      await fetch(`${API_URL}/api/fleet/documents/${doc.id}`, {
+      await fetch(`${API_URL}/api/fleet/documents/${doc.id}`), {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sendToCustomer: !doc.sendToCustomer })
       })
@@ -176,7 +176,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
   const deleteDocument = async (id) => {
     if (!confirm('Supprimer ce document ?')) return
     try {
-      await fetch(`${API_URL}/api/fleet/documents/${id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/api/fleet/documents/${id}`), { method: 'DELETE' })
       setDocuments(prev => prev.filter(d => d.id !== id))
     } catch (e) { console.error(e) }
   }
@@ -184,7 +184,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
   const addEquipment = async () => {
     if (!newEquipment.name || !newEquipment.price) return
     try {
-      const res = await fetch(`${API_URL}/api/fleet/${fleet.id}/equipment`, {
+      const res = await fetch(`${API_URL}/api/fleet/${fleet.id}/equipment`), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newEquipment)
       })
@@ -196,7 +196,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
 
   const deleteEquipment = async (id) => {
     try {
-      await fetch(`${API_URL}/api/fleet/equipment/${id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/api/fleet/equipment/${id}`), { method: 'DELETE' })
       setEquipment(prev => prev.filter(e => e.id !== id))
     } catch (e) { console.error(e) }
   }
@@ -204,7 +204,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
   const addSparePart = async () => {
     if (!newPart.name || !newPart.price) return
     try {
-      const res = await fetch(`${API_URL}/api/fleet/${fleet.id}/spare-parts`, {
+      const res = await fetch(`${API_URL}/api/fleet/${fleet.id}/spare-parts`), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newPart, category: 'OTHER', location: 'OTHER' })
       })
@@ -216,7 +216,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
 
   const deleteSparePart = async (id) => {
     try {
-      await fetch(`${API_URL}/api/fleet/spare-parts/${id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/api/fleet/spare-parts/${id}`), { method: "DELETE" })
       setSpareParts(prev => prev.filter(p => p.id !== id))
     } catch (e) { console.error(e) }
   }
@@ -224,7 +224,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
   const addMaintenance = async () => {
     if (!newMaintenance.scheduledDate || !newMaintenance.description) return
     try {
-      const res = await fetch(`${API_URL}/api/fleet/${fleet.id}/maintenance`, {
+      const res = await fetch(`${API_URL}/api/fleet/${fleet.id}/maintenance`), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newMaintenance, mileageAtService: form.currentMileage })
       })
@@ -237,7 +237,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
   const deleteMaintenance = async (id) => {
     if (!confirm('Supprimer cette intervention ?')) return
     try {
-      await fetch(`${API_URL}/api/fleet/maintenance/${id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/api/fleet/maintenance/${id}`), { method: 'DELETE' })
       setMaintenance(prev => prev.filter(m => m.id !== id))
     } catch (e) { console.error(e) }
   }
@@ -245,7 +245,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
   const handleSave = async () => {
     setSaving(true)
     try {
-      await fetch(`${API_URL}/api/fleet/${fleet.id}`, {
+      await fetch(`${API_URL}/api/fleet/${fleet.id}`), {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
@@ -256,7 +256,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
           vehicleId: selectedVehicleId || undefined
         })
       })
-      await fetch(`${API_URL}/api/fleet/${fleet.id}/contract-fields/batch`, {
+      await fetch(`${API_URL}/api/fleet/${fleet.id}/contract-fields/batch`), {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: contractFields.map(f => ({ fieldName: f.id, displayOrder: f.displayOrder, showInContract: f.showInContract })) })
       })
@@ -269,7 +269,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
     if (!confirm('Supprimer définitivement ce véhicule ? Cette action est irréversible.')) return
     setDeleting(true)
     try {
-      await fetch(`${API_URL}/api/fleet/${fleet.id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/api/fleet/${fleet.id}`), { method: 'DELETE' })
       onDelete?.()
     } catch (e) { console.error(e); alert('Erreur lors de la suppression') }
     setDeleting(false)

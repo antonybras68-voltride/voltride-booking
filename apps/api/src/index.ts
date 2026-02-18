@@ -4153,13 +4153,15 @@ app.post('/api/commissions/report', async (req, res) => {
       },
       include: {
         fleetVehicle: { include: { vehicle: true } },
-        customer: true
+        customer: true,
+        deductions: { include: { sparePart: true, equipment: true } }
       },
       orderBy: { currentStartDate: 'asc' }
     })
     
     // Calculer les totaux
     const totalHT = contracts.reduce((sum, c) => sum + (Number(c.subtotal || 0) + Number(c.optionsTotal || 0) - Number(c.discountAmount || 0)), 0)
+    const totalDeductions = contracts.reduce((sum, c) => sum + (c as any).deductions.reduce((s: number, d: any) => s + Number(d.totalPrice || 0), 0), 0)
     const totalCommission = contracts.reduce((sum, c) => sum + (Number(c.commissionAmount) || 0), 0)
     
     const report = {
@@ -4178,12 +4180,22 @@ app.post('/api/commissions/report', async (req, res) => {
         startDate: c.currentStartDate,
         endDate: c.currentEndDate,
         totalHT: Number(c.subtotal || 0) + Number(c.optionsTotal || 0) - Number(c.discountAmount || 0),
+        deductions: (c as any).deductions.map((d: any) => ({
+          type: d.type,
+          description: d.description,
+          quantity: d.quantity,
+          unitPrice: Number(d.unitPrice),
+          totalPrice: Number(d.totalPrice),
+          partName: d.sparePart?.name || d.equipment?.name || null
+        })),
+        deductionsTotal: (c as any).deductions.reduce((s: number, d: any) => s + Number(d.totalPrice || 0), 0),
         commissionRate: c.commissionRate,
         commissionAmount: c.commissionAmount
       })),
       totals: {
         contractsCount: contracts.length,
         totalHT: Math.round(totalHT * 100) / 100,
+        totalDeductions: Math.round(totalDeductions * 100) / 100,
         totalCommission: Math.round(totalCommission * 100) / 100
       }
     }

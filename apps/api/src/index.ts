@@ -4326,6 +4326,103 @@ app.put('/api/settings/:key', async (req, res) => {
 
 console.log('App settings routes loaded')
 
+
+// Generate and save QR code for a single fleet vehicle
+app.post('/api/fleet/:id/generate-qr', async (req, res) => {
+  try {
+    const fleet = await prisma.fleet.findUnique({
+      where: { id: req.params.id },
+      include: { vehicle: { include: { category: true } }, agency: true }
+    })
+    if (!fleet) return res.status(404).json({ error: 'Vehicle not found' })
+    
+    const brand = (fleet.vehicle as any)?.category?.brand || 'VOLTRIDE'
+    const operatorUrl = brand === 'VOLTRIDE' ? 'https://operator-production-188c.up.railway.app' : 'https://motor-rent-operator-production.up.railway.app'
+    const qrUrl = operatorUrl + '?vehicle=' + fleet.id
+    const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 400, margin: 1 })
+    
+    // Upload to Cloudinary
+    const crypto = require('crypto')
+    const timestamp = Math.round(Date.now() / 1000)
+    const folder = 'qrcodes/vehicles'
+    const publicId = 'qr-' + fleet.vehicleNumber
+    const apiSecret = process.env.CLOUDINARY_API_SECRET || ''
+    const signStr = 'folder=' + folder + '&public_id=' + publicId + '&timestamp=' + timestamp + apiSecret
+    const signature = crypto.createHash('sha1').update(signStr).digest('hex')
+    
+    const formData = new URLSearchParams()
+    formData.append('file', qrDataUrl)
+    formData.append('folder', folder)
+    formData.append('public_id', publicId)
+    formData.append('timestamp', String(timestamp))
+    formData.append('api_key', process.env.CLOUDINARY_API_KEY || '485395684484158')
+    formData.append('signature', signature)
+    
+    const cloudRes = await fetch('https://api.cloudinary.com/v1_1/dis5pcnfr/image/upload', { method: 'POST', body: formData })
+    const cloudData: any = await cloudRes.json()
+    
+    if (!cloudData.secure_url) return res.status(500).json({ error: 'Cloudinary upload failed', details: cloudData })
+    
+    await prisma.fleet.update({
+      where: { id: req.params.id },
+      data: { qrCodeUrl: cloudData.secure_url }
+    })
+    
+    res.json({ success: true, qrCodeUrl: cloudData.secure_url, vehicleNumber: fleet.vehicleNumber })
+  } catch (e: any) {
+    console.error('Generate QR error:', e)
+    res.status(500).json({ error: 'Failed to generate QR', details: e.message })
+  }
+})
+
+// Generate QR codes for all vehicles of an agency
+app.post('/api/fleet/generate-qr-all/:agencyId', async (req, res) => {
+  try {
+    const vehicles = await prisma.fleet.findMany({
+      where: { agencyId: req.params.agencyId, isActive: true },
+      include: { vehicle: { include: { category: true } } },
+      orderBy: { vehicleNumber: 'asc' }
+    })
+    
+    const results: any[] = []
+    for (const fleet of vehicles) {
+      const brand = (fleet.vehicle as any)?.category?.brand || 'VOLTRIDE'
+      const operatorUrl = brand === 'VOLTRIDE' ? 'https://operator-production-188c.up.railway.app' : 'https://motor-rent-operator-production.up.railway.app'
+      const qrUrl = operatorUrl + '?vehicle=' + fleet.id
+      const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 400, margin: 1 })
+      
+      const crypto = require('crypto')
+      const timestamp = Math.round(Date.now() / 1000)
+      const folder = 'qrcodes/vehicles'
+      const publicId = 'qr-' + fleet.vehicleNumber
+      const apiSecret = process.env.CLOUDINARY_API_SECRET || ''
+      const signStr = 'folder=' + folder + '&public_id=' + publicId + '&timestamp=' + timestamp + apiSecret
+      const signature = crypto.createHash('sha1').update(signStr).digest('hex')
+      
+      const formData = new URLSearchParams()
+      formData.append('file', qrDataUrl)
+      formData.append('folder', folder)
+      formData.append('public_id', publicId)
+      formData.append('timestamp', String(timestamp))
+      formData.append('api_key', process.env.CLOUDINARY_API_KEY || '485395684484158')
+      formData.append('signature', signature)
+      
+      const cloudRes = await fetch('https://api.cloudinary.com/v1_1/dis5pcnfr/image/upload', { method: 'POST', body: formData })
+      const cloudData: any = await cloudRes.json()
+      
+      if (cloudData.secure_url) {
+        await prisma.fleet.update({ where: { id: fleet.id }, data: { qrCodeUrl: cloudData.secure_url } })
+        results.push({ vehicleNumber: fleet.vehicleNumber, qrCodeUrl: cloudData.secure_url })
+      }
+    }
+    
+    res.json({ success: true, count: results.length, vehicles: results })
+  } catch (e: any) {
+    console.error('Generate all QR error:', e)
+    res.status(500).json({ error: 'Failed to generate QR codes', details: e.message })
+  }
+})
+
 // ============== QR CODE - ACTIVE BOOKING BY VEHICLE ==============
 app.get('/api/fleet/:id/active-booking', async (req, res) => {
   try {

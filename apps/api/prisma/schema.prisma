@@ -347,6 +347,8 @@ model Fleet {
   condition               VehicleCondition @default(GOOD)
   notes                   String?
   isActive                Boolean   @default(true)
+  qrCodeUrl               String?
+  maintenanceNotes        String?   @db.Text
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
   documents               FleetDocument[]

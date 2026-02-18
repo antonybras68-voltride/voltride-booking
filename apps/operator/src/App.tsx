@@ -3360,28 +3360,29 @@ export default function App() {
       )}
 
       {/* Check-in Modal */}
-      {showCheckIn && checkInBooking && (
-        {/* QR Code Print Modal */}
-        {qrModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setQrModal(null)}>
-            <div className="bg-white rounded-xl p-8 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
-              <h3 className="text-xl font-bold mb-2">{qrModal.vehicleNumber}</h3>
-              <p className="text-gray-500 text-sm mb-4">{typeof qrModal.vehicle?.name === 'object' ? qrModal.vehicle.name.es || qrModal.vehicle.name.fr : qrModal.vehicle?.name}</p>
-              <img src={qrModal.qrCodeUrl} alt="QR Code" className="mx-auto w-48 h-48 mb-4" />
-              <p className="text-xs text-gray-400 mb-6">Escanear para check-out</p>
-              <div className="flex gap-3 justify-center">
-                <button onClick={() => { const w = window.open('', '_blank'); w?.document.write('<html><body style="text-align:center;font-family:Arial"><h2>' + qrModal.vehicleNumber + '</h2><img src="' + qrModal.qrCodeUrl + '" style="width:300px" /><p>Escanear para check-out</p><script>setTimeout(()=>window.print(),500)</script></body></html>'); }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  Imprimir
-                </button>
-                <button onClick={() => setQrModal(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-                  Cerrar
-                </button>
-              </div>
+      {/* QR Code Print Modal */}
+      {qrModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setQrModal(null)}>
+          <div className="bg-white rounded-xl p-8 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-2">{qrModal.vehicleNumber}</h3>
+            <p className="text-gray-500 text-sm mb-4">{typeof qrModal.vehicle?.name === 'object' ? qrModal.vehicle.name.es || qrModal.vehicle.name.fr : qrModal.vehicle?.name}</p>
+            <img src={qrModal.qrCodeUrl} alt="QR Code" className="mx-auto w-48 h-48 mb-4" />
+            <p className="text-xs text-gray-400 mb-6">Escanear para check-out</p>
+            <div className="flex gap-3 justify-center">
+              <button onClick={() => { const w = window.open('', '_blank'); w?.document.write('<html><body style="text-align:center;font-family:Arial"><h2>' + qrModal.vehicleNumber + '</h2><img src="' + qrModal.qrCodeUrl + '" style="width:300px" /><p>Escanear para check-out</p><script>setTimeout(()=>window.print(),500)</script></body></html>'); }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Imprimir
+              </button>
+              <button onClick={() => setQrModal(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                Cerrar
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
+      {/* Check-in Modal */}
+      {showCheckIn && checkInBooking && (
         <CheckInModal
           booking={checkInBooking}
           fleetVehicle={fleet.find(f => f.id === checkInBooking.fleetVehicleId)}

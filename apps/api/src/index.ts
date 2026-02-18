@@ -2285,7 +2285,8 @@ app.get('/api/contracts/:id/invoice-pdf', async (req, res) => {
       include: {
         customer: true,
         fleetVehicle: { include: { vehicle: { include: { category: true } } } },
-        agency: true
+        agency: true,
+        deductions: { include: { sparePart: true, equipment: true } }
       }
     })
     if (!contract) return res.status(404).json({ error: 'Contract not found' })

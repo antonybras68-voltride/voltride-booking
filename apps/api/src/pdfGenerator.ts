@@ -414,6 +414,24 @@ export async function generateInvoicePDF(contract: any, brandSettings: any, lang
         y += 18;
       }
 
+      // Deductions (damaged parts, missing items, etc.)
+      if (contract.deductions && contract.deductions.length > 0) {
+        y += 5;
+        doc.moveTo(40, y).lineTo(555, y).stroke();
+        y += 15;
+        doc.fontSize(10).font('Helvetica-Bold').text('Deducciones / Retenciones', 40, y);
+        y += 18;
+        doc.fontSize(9).font('Helvetica');
+        for (const ded of contract.deductions) {
+          const partName = ded.sparePart?.name || ded.equipment?.name || ded.description || '';
+          doc.text(partName, 40, y);
+          doc.text(String(ded.quantity || 1), 300, y);
+          doc.text(formatMoney(ded.unitPrice), 350, y);
+          doc.text(formatMoney(ded.totalPrice), 480, y, { align: 'right', width: 75 });
+          y += 16;
+        }
+      }
+
       y += 5;
       doc.moveTo(40, y).lineTo(555, y).stroke();
       y += 15;

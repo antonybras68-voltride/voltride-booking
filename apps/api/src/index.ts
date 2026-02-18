@@ -4423,6 +4423,63 @@ app.post('/api/fleet/generate-qr-all/:agencyId', async (req, res) => {
   }
 })
 
+
+// ============== CANCEL CHECK-IN ==============
+app.post('/api/bookings/:id/cancel-checkin', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { reason, switchToMaintenance, maintenanceNote } = req.body
+    
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      include: { fleetVehicle: true }
+    })
+    
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    if (!booking.checkedIn) return res.status(400).json({ error: 'Booking is not checked in' })
+    if (booking.checkedOut) return res.status(400).json({ error: 'Booking is already checked out' })
+    
+    // 1. Cancel the booking
+    await prisma.booking.update({
+      where: { id },
+      data: {
+        status: 'CANCELLED',
+        checkedOut: true,
+        checkedOutAt: new Date(),
+        notes: (booking.notes || '') + '\n[CANCELLED] ' + (reason || 'Check-in cancelled')
+      }
+    })
+    
+    // 2. Update vehicle status
+    if (booking.fleetVehicleId) {
+      await prisma.fleet.update({
+        where: { id: booking.fleetVehicleId },
+        data: {
+          status: switchToMaintenance ? 'MAINTENANCE' : 'AVAILABLE',
+          ...(switchToMaintenance && maintenanceNote ? { maintenanceNotes: maintenanceNote } : {})
+        }
+      })
+    }
+    
+    // 3. Cancel the contract if exists
+    const contract = await prisma.rentalContract.findFirst({ where: { bookingId: id } })
+    if (contract) {
+      await prisma.rentalContract.update({
+        where: { id: contract.id },
+        data: {
+          status: 'CANCELLED',
+          paymentStatus: 'CANCELLED'
+        }
+      })
+    }
+    
+    res.json({ success: true, message: 'Check-in cancelled', switchedToMaintenance: switchToMaintenance || false })
+  } catch (e: any) {
+    console.error('Cancel check-in error:', e)
+    res.status(500).json({ error: 'Failed to cancel check-in', details: e.message })
+  }
+})
+
 // ============== QR CODE - ACTIVE BOOKING BY VEHICLE ==============
 app.get('/api/fleet/:id/active-booking', async (req, res) => {
   try {

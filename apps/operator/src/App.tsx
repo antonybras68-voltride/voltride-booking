@@ -311,6 +311,10 @@ export default function App() {
   const [showFleetEdit, setShowFleetEdit] = useState(false)
   const [selectedFleetForEdit, setSelectedFleetForEdit] = useState(null)
   const [qrModal, setQrModal] = useState<any>(null)
+  const [showCancelCheckin, setShowCancelCheckin] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelMaintenance, setCancelMaintenance] = useState(false)
+  const [cancelMaintenanceNote, setCancelMaintenanceNote] = useState('')
   const [fleetModalMode, setFleetModalMode] = useState<'view' | 'edit'>('view')
   const [showNewFleet, setShowNewFleet] = useState(false)
   const [assigningBooking, setAssigningBooking] = useState<any>(null)
@@ -3310,6 +3314,12 @@ export default function App() {
                   ✅ Check-in
                 </button>
               )}
+              {selectedBookingDetail.checkedIn && !selectedBookingDetail.checkedOut && (
+                <button onClick={() => setShowCancelCheckin(true)}
+                  className="py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
+                  ❌ Anular check-in
+                </button>
+              )}
 {!selectedBookingDetail.checkedIn && (
                 <button onClick={async () => {
                   try {
@@ -3360,6 +3370,77 @@ export default function App() {
       )}
 
       {/* Check-in Modal */}
+      {/* Cancel Check-in Modal */}
+      {showCancelCheckin && selectedBookingDetail && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-red-600 mb-4">❌ Anular Check-in</h3>
+            <p className="text-gray-600 mb-4">¿Está seguro de anular el check-in de <strong>{selectedBookingDetail.customer?.firstName} {selectedBookingDetail.customer?.lastName}</strong> ({selectedBookingDetail.fleetVehicle?.vehicleNumber})?</p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Motivo de anulación *</label>
+              <select value={cancelReason} onChange={e => setCancelReason(e.target.value)}
+                className="w-full border rounded-lg p-2">
+                <option value="">Seleccionar motivo...</option>
+                <option value="Defecto del vehículo">Defecto del vehículo</option>
+                <option value="Solicitud del cliente">Solicitud del cliente</option>
+                <option value="Error de asignación">Error de asignación</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            
+            {cancelReason === 'Defecto del vehículo' && (
+              <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={cancelMaintenance} onChange={e => setCancelMaintenance(e.target.checked)}
+                    className="w-4 h-4" />
+                  <span className="font-medium text-orange-700">Pasar vehículo a mantenimiento</span>
+                </label>
+                {cancelMaintenance && (
+                  <textarea value={cancelMaintenanceNote} onChange={e => setCancelMaintenanceNote(e.target.value)}
+                    placeholder="Descripción del problema (obligatorio)..."
+                    className="w-full border rounded-lg p-2 mt-2 text-sm" rows={3} />
+                )}
+              </div>
+            )}
+            
+            <div className="flex gap-3 justify-end mt-6">
+              <button onClick={() => { setShowCancelCheckin(false); setCancelReason(''); setCancelMaintenance(false); setCancelMaintenanceNote('') }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                Cancelar
+              </button>
+              <button onClick={async () => {
+                if (!cancelReason) { alert('Seleccione un motivo'); return }
+                if (cancelMaintenance && !cancelMaintenanceNote) { alert('Describa el problema del vehículo'); return }
+                try {
+                  const res = await fetch(API_URL + '/api/bookings/' + selectedBookingDetail.id + '/cancel-checkin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      reason: cancelReason,
+                      switchToMaintenance: cancelMaintenance,
+                      maintenanceNote: cancelMaintenanceNote
+                    })
+                  })
+                  if (res.ok) {
+                    alert('✅ Check-in anulado correctamente' + (cancelMaintenance ? '\nVehículo pasado a mantenimiento' : ''))
+                    setShowCancelCheckin(false); setShowBookingDetail(false)
+                    setCancelReason(''); setCancelMaintenance(false); setCancelMaintenanceNote('')
+                    loadData()
+                  } else {
+                    const err = await res.json()
+                    alert('Error: ' + (err.error || 'Error desconocido'))
+                  }
+                } catch (e) { alert('Error de conexión') }
+              }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
+                Confirmar anulación
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* QR Code Print Modal */}
       {qrModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setQrModal(null)}>

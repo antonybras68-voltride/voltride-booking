@@ -10,6 +10,7 @@ import customerPortalRouter from './routes/customerPortal'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'voltride-secret-key-2024'
 import { generateContractPDF, generateInvoicePDF } from './pdfGenerator'
+import QRCode from 'qrcode'
 
 const stripeVoltride = process.env.STRIPE_SECRET_KEY_VOLTRIDE ? new Stripe(process.env.STRIPE_SECRET_KEY_VOLTRIDE, { apiVersion: '2024-12-18.acacia' as any }) : null
 const stripeMotorrent = process.env.STRIPE_SECRET_KEY_MOTORRENT ? new Stripe(process.env.STRIPE_SECRET_KEY_MOTORRENT, { apiVersion: '2024-12-18.acacia' as any }) : null
@@ -4324,6 +4325,32 @@ app.put('/api/settings/:key', async (req, res) => {
 })
 
 console.log('App settings routes loaded')
+
+// ============== QR CODE - ACTIVE BOOKING BY VEHICLE ==============
+app.get('/api/fleet/:id/active-booking', async (req, res) => {
+  try {
+    const booking = await prisma.booking.findFirst({
+      where: {
+        fleetVehicleId: req.params.id,
+        checkedIn: true,
+        checkedOut: false,
+        status: { in: ['CHECKED_IN', 'CONFIRMED'] }
+      },
+      include: {
+        customer: true,
+        fleetVehicle: { include: { vehicle: true } },
+        agency: true
+      },
+      orderBy: { checkedInAt: 'desc' }
+    })
+    if (!booking) return res.status(404).json({ error: 'No active booking for this vehicle' })
+    res.json(booking)
+  } catch (e: any) {
+    console.error('Active booking error:', e)
+    res.status(500).json({ error: 'Failed to find active booking' })
+  }
+})
+
 // ============== EMAIL CONFIRMATION ==============
 
 const emailTemplates = {
@@ -4454,6 +4481,10 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
       const d = new Date(date)
       return d.toLocaleDateString(language === 'en' ? 'en-GB' : language === 'es' ? 'es-ES' : 'fr-FR')
     }
+    // Generate QR code for booking
+    const operatorUrl = brand === 'VOLTRIDE' ? 'https://operator-production-188c.up.railway.app' : 'https://motor-rent-operator-production.up.railway.app'
+    const qrUrl = operatorUrl + '?scan=' + bookingId
+    const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 200, margin: 1 })
 
     const html = `
     <!DOCTYPE html>
@@ -4500,6 +4531,12 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
           </ul>
         </div>
         
+        <div style="text-align: center; margin: 25px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #ddd;">
+          <p style="font-weight: bold; color: #333; margin-bottom: 10px;">📱 QR Code - Check-in</p>
+          <img src="${qrDataUrl}" alt="QR Code" style="width: 180px; height: 180px;" />
+          <p style="font-size: 12px; color: #888; margin-top: 8px;">${vehicleNumber}</p>
+        </div>
+
         <p style="text-align: center; color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
           ${t.footer}<br/>
           <strong>${t.team} ${brandName}</strong>

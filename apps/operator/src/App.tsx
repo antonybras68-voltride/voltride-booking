@@ -397,6 +397,38 @@ export default function App() {
 
   useEffect(() => { loadData() }, [selectedAgency, brand, user])
   
+  // QR Code detection - scan booking or vehicle
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const scanBookingId = urlParams.get('scan')
+    const vehicleId = urlParams.get('vehicle')
+    
+    if (scanBookingId && bookings.length > 0) {
+      const booking = bookings.find((b: any) => b.id === scanBookingId)
+      if (booking) {
+        if (booking.checkedIn && !booking.checkedOut) {
+          setSelectedCheckoutBooking(booking); setShowCheckoutModal(true)
+        } else if (!booking.checkedIn) {
+          setCheckInBooking(booking); setShowCheckIn(true)
+        }
+      }
+      window.history.replaceState({}, '' , window.location.pathname)
+    }
+    
+    if (vehicleId && bookings.length > 0) {
+      fetch(API_URL + '/api/fleet/' + vehicleId + '/active-booking')
+        .then(res => res.ok ? res.json() : null)
+        .then(booking => {
+          if (booking) {
+            setSelectedCheckoutBooking(booking); setShowCheckoutModal(true)
+          } else {
+            alert('Aucune location active pour ce véhicule')
+          }
+        })
+        .catch(() => alert('Erreur lors de la recherche de la location'  ))
+      window.history.replaceState({}, '' , window.location.pathname)
+    }
+  }, [bookings])
   // Auto-sélectionner l'agence pour COLLABORATOR/FRANCHISEE
   useEffect(() => {
     if (user && (user.role === 'COLLABORATOR' || user.role === 'FRANCHISEE') && user.agencyIds?.length > 0 && !selectedAgency) {

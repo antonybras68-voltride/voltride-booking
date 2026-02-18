@@ -310,6 +310,7 @@ export default function App() {
   const [showNewBooking, setShowNewBooking] = useState(false)
   const [showFleetEdit, setShowFleetEdit] = useState(false)
   const [selectedFleetForEdit, setSelectedFleetForEdit] = useState(null)
+  const [qrModal, setQrModal] = useState<any>(null)
   const [fleetModalMode, setFleetModalMode] = useState<'view' | 'edit'>('view')
   const [showNewFleet, setShowNewFleet] = useState(false)
   const [assigningBooking, setAssigningBooking] = useState<any>(null)
@@ -406,11 +407,7 @@ export default function App() {
     if (scanBookingId && bookings.length > 0) {
       const booking = bookings.find((b: any) => b.id === scanBookingId)
       if (booking) {
-        if (booking.checkedIn && !booking.checkedOut) {
-          setSelectedCheckoutBooking(booking); setShowCheckoutModal(true)
-        } else if (!booking.checkedIn) {
-          setCheckInBooking(booking); setShowCheckIn(true)
-        }
+        setSelectedBookingDetail(booking); setShowBookingDetail(true)
       }
       window.history.replaceState({}, '' , window.location.pathname)
     }
@@ -2231,10 +2228,18 @@ export default function App() {
                           {f.status === 'AVAILABLE' ? 'Disponible' : f.status === 'RENTED' ? 'En alquiler' : 'Mantenimiento'}
                         </div>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); handleFleetClick(f, 'edit') }} 
-                        className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
-                        Editar
-                      </button>
+                      <div className="flex gap-2">
+                        {f.qrCodeUrl && (
+                          <button onClick={(e) => { e.stopPropagation(); setQrModal(f) }} 
+                            className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm">
+                            QR
+                          </button>
+                        )}
+                        <button onClick={(e) => { e.stopPropagation(); handleFleetClick(f, 'edit') }} 
+                          className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
+                          Editar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -3356,6 +3361,27 @@ export default function App() {
 
       {/* Check-in Modal */}
       {showCheckIn && checkInBooking && (
+        {/* QR Code Print Modal */}
+        {qrModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setQrModal(null)}>
+            <div className="bg-white rounded-xl p-8 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
+              <h3 className="text-xl font-bold mb-2">{qrModal.vehicleNumber}</h3>
+              <p className="text-gray-500 text-sm mb-4">{typeof qrModal.vehicle?.name === 'object' ? qrModal.vehicle.name.es || qrModal.vehicle.name.fr : qrModal.vehicle?.name}</p>
+              <img src={qrModal.qrCodeUrl} alt="QR Code" className="mx-auto w-48 h-48 mb-4" />
+              <p className="text-xs text-gray-400 mb-6">Escanear para check-out</p>
+              <div className="flex gap-3 justify-center">
+                <button onClick={() => { const w = window.open('', '_blank'); w?.document.write('<html><body style="text-align:center;font-family:Arial"><h2>' + qrModal.vehicleNumber + '</h2><img src="' + qrModal.qrCodeUrl + '" style="width:300px" /><p>Escanear para check-out</p><script>setTimeout(()=>window.print(),500)</script></body></html>'); }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  Imprimir
+                </button>
+                <button onClick={() => setQrModal(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <CheckInModal
           booking={checkInBooking}
           fleetVehicle={fleet.find(f => f.id === checkInBooking.fleetVehicleId)}

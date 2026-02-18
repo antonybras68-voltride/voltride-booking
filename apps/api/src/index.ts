@@ -4446,7 +4446,7 @@ app.post('/api/bookings/:id/cancel-checkin', async (req, res) => {
         status: 'CANCELLED',
         checkedOut: true,
         checkedOutAt: new Date(),
-        notes: (booking.notes || '') + '\n[CANCELLED] ' + (reason || 'Check-in cancelled')
+        depositCaptureReason: reason || 'Check-in cancelled'
       }
     })
     
@@ -4468,7 +4468,7 @@ app.post('/api/bookings/:id/cancel-checkin', async (req, res) => {
         where: { id: contract.id },
         data: {
           status: 'CANCELLED',
-          paymentStatus: 'CANCELLED'
+          paymentStatus: 'REFUNDED'
         }
       })
     }

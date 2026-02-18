@@ -312,7 +312,8 @@ export default function App() {
   const [selectedFleetForEdit, setSelectedFleetForEdit] = useState(null)
   const [qrModal, setQrModal] = useState<any>(null)
   const [showCancelCheckin, setShowCancelCheckin] = useState(false)
-  const [cancelReason, setCancelReason] = useState('')
+  const [checkinCancelReason, setCheckinCancelReason] = useState('')
+  
   const [cancelMaintenance, setCancelMaintenance] = useState(false)
   const [cancelMaintenanceNote, setCancelMaintenanceNote] = useState('')
   const [fleetModalMode, setFleetModalMode] = useState<'view' | 'edit'>('view')
@@ -343,7 +344,7 @@ export default function App() {
   const [showBookingDetail, setShowBookingDetail] = useState(false)
   const [selectedBookingDetail, setSelectedBookingDetail] = useState(null)
   const [cancelBooking, setCancelBooking] = useState(null)
-  const [cancelReason, setCancelReason] = useState('')
+  
   const [contextMenu, setContextMenu] = useState(null)
   const [showWalkinModal, setShowWalkinModal] = useState(false)
   const [walkinSessionId, setWalkinSessionId] = useState(null)
@@ -3379,7 +3380,7 @@ export default function App() {
             
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1">Motivo de anulación *</label>
-              <select value={cancelReason} onChange={e => setCancelReason(e.target.value)}
+              <select value={checkinCancelReason} onChange={e => setCheckinCancelReason(e.target.value)}
                 className="w-full border rounded-lg p-2">
                 <option value="">Seleccionar motivo...</option>
                 <option value="Defecto del vehículo">Defecto del vehículo</option>
@@ -3389,7 +3390,7 @@ export default function App() {
               </select>
             </div>
             
-            {cancelReason === 'Defecto del vehículo' && (
+            {checkinCancelReason === 'Defecto del vehículo' && (
               <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={cancelMaintenance} onChange={e => setCancelMaintenance(e.target.checked)}
@@ -3405,19 +3406,19 @@ export default function App() {
             )}
             
             <div className="flex gap-3 justify-end mt-6">
-              <button onClick={() => { setShowCancelCheckin(false); setCancelReason(''); setCancelMaintenance(false); setCancelMaintenanceNote('') }}
+              <button onClick={() => { setShowCancelCheckin(false); setCheckinCancelReason(''); setCancelMaintenance(false); setCancelMaintenanceNote('') }}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
                 Cancelar
               </button>
               <button onClick={async () => {
-                if (!cancelReason) { alert('Seleccione un motivo'); return }
+                if (!checkinCancelReason) { alert('Seleccione un motivo'); return }
                 if (cancelMaintenance && !cancelMaintenanceNote) { alert('Describa el problema del vehículo'); return }
                 try {
                   const res = await fetch(API_URL + '/api/bookings/' + selectedBookingDetail.id + '/cancel-checkin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                      reason: cancelReason,
+                      reason: checkinCancelReason,
                       switchToMaintenance: cancelMaintenance,
                       maintenanceNote: cancelMaintenanceNote
                     })
@@ -3425,7 +3426,7 @@ export default function App() {
                   if (res.ok) {
                     alert('✅ Check-in anulado correctamente' + (cancelMaintenance ? '\nVehículo pasado a mantenimiento' : ''))
                     setShowCancelCheckin(false); setShowBookingDetail(false)
-                    setCancelReason(''); setCancelMaintenance(false); setCancelMaintenanceNote('')
+                    setCheckinCancelReason(''); setCancelMaintenance(false); setCancelMaintenanceNote('')
                     loadData()
                   } else {
                     const err = await res.json()

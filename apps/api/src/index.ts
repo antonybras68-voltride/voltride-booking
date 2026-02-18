@@ -4357,7 +4357,7 @@ app.get('/api/fleet/qr-labels/:agencyId', async (req, res) => {
   try {
     const vehicles = await prisma.fleet.findMany({
       where: { agencyId: req.params.agencyId, status: { not: 'OUT_OF_SERVICE' } },
-      include: { vehicle: true },
+      include: { vehicle: { include: { category: true } } },
       orderBy: { vehicleNumber: 'asc' }
     })
     const brand = vehicles[0]?.vehicle?.category?.brand || 'VOLTRIDE'
@@ -4527,7 +4527,7 @@ app.post('/api/send-booking-confirmation', async (req, res) => {
         })
       })
       if (cloudRes.ok) {
-        const cloudData = await cloudRes.json()
+        const cloudData: any = await cloudRes.json()
         qrImageUrl = cloudData.secure_url
       }
     } catch (e) { console.error('QR upload error:', e) }

@@ -4554,6 +4554,41 @@ app.get('/api/stock/alerts/low-stock', async (req, res) => {
   } catch (e: any) { res.status(500).json({ error: e.message }) }
 })
 
+
+// ============== DOCS TECHNIQUES ==============
+app.get('/api/technical-docs', async (req, res) => {
+  try {
+    const { category } = req.query
+    const where: any = {}
+    if (category) where.vehicleCategory = category
+    const docs = await prisma.technicalDoc.findMany({ where, orderBy: { createdAt: 'desc' } })
+    res.json(docs)
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
+app.post('/api/technical-docs', async (req, res) => {
+  try {
+    const doc = await prisma.technicalDoc.create({
+      data: {
+        title: req.body.title,
+        vehicleCategory: req.body.vehicleCategory,
+        docType: req.body.docType || 'OTHER',
+        fileUrl: req.body.fileUrl,
+        fileType: req.body.fileType || null,
+        description: req.body.description || null
+      }
+    })
+    res.json(doc)
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
+app.delete('/api/technical-docs/:id', async (req, res) => {
+  try {
+    await prisma.technicalDoc.delete({ where: { id: req.params.id } })
+    res.json({ success: true })
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
 // ============== CANCEL CHECK-IN ==============
 app.post('/api/bookings/:id/cancel-checkin', async (req, res) => {
   try {

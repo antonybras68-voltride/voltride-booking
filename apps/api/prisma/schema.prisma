@@ -1621,3 +1621,18 @@ enum MovementType {
   ADJUSTMENT
   RETURN
 }
+
+// ============== DOCS TECHNIQUES ==============
+model TechnicalDoc {
+  id              String    @id @default(cuid())
+  title           String
+  vehicleCategory String    // CITY_BIKE, E_BIKE, E_MOTOCROSS
+  docType         String    // MANUAL, EXPLODED_VIEW, WIRING, SPECS, OTHER
+  fileUrl         String
+  fileType        String?   // pdf, image, video
+  description     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  @@index([vehicleCategory])
+  @@index([docType])
+}

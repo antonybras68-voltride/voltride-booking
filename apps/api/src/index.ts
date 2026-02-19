@@ -319,7 +319,7 @@ app.delete('/api/options/:id', async (req, res) => {
 })
 
 // ============== INVENTORY ==============
-app.get('/api/stock', async (req, res) => {
+app.get('/api/vehicle-inventory', async (req, res) => {
   try {
     const inventory = await prisma.inventory.findMany({ include: { vehicle: { include: { category: true, pricing: true } }, agency: true } })
     res.json(inventory)

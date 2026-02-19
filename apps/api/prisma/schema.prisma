@@ -1636,3 +1636,20 @@ model TechnicalDoc {
   @@index([vehicleCategory])
   @@index([docType])
 }
+
+// ============== CHECK-IN KEY POINTS ==============
+model CheckinKeyPoint {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  title           Json      // { es, fr, en, ru }
+  description     Json      // { es, fr, en, ru }
+  imageUrl        String?   // Alternative to text description
+  icon            String?   // Emoji or icon
+  sortOrder       Int       @default(0)
+  brand           String    @default("VOLTRIDE")
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  @@index([brand])
+  @@index([sortOrder])
+}

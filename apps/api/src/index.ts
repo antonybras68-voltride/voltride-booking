@@ -4779,6 +4779,52 @@ app.post('/api/bookings/:id/extend/confirm', async (req, res) => {
   } catch (e: any) { console.error(e); res.status(500).json({ error: e.message }) }
 })
 
+
+// ============== CHECK-IN KEY POINTS ==============
+app.get('/api/checkin-keypoints', async (req, res) => {
+  try {
+    const { brand } = req.query
+    const where: any = { isActive: true }
+    if (brand) where.brand = brand
+    const keypoints = await prisma.checkinKeyPoint.findMany({ where, orderBy: { sortOrder: 'asc' } })
+    res.json(keypoints)
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
+app.post('/api/checkin-keypoints', async (req, res) => {
+  try {
+    const kp = await prisma.checkinKeyPoint.create({
+      data: {
+        code: req.body.code,
+        title: req.body.title,
+        description: req.body.description,
+        imageUrl: req.body.imageUrl || null,
+        icon: req.body.icon || null,
+        sortOrder: req.body.sortOrder || 0,
+        brand: req.body.brand || 'VOLTRIDE'
+      }
+    })
+    res.json(kp)
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
+app.put('/api/checkin-keypoints/:id', async (req, res) => {
+  try {
+    const kp = await prisma.checkinKeyPoint.update({
+      where: { id: req.params.id },
+      data: req.body
+    })
+    res.json(kp)
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
+app.delete('/api/checkin-keypoints/:id', async (req, res) => {
+  try {
+    await prisma.checkinKeyPoint.update({ where: { id: req.params.id }, data: { isActive: false } })
+    res.json({ success: true })
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
 // ============== CANCEL CHECK-IN ==============
 app.post('/api/bookings/:id/cancel-checkin', async (req, res) => {
   try {

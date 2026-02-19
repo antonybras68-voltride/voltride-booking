@@ -1375,7 +1375,6 @@ app.post('/api/fleet/:fleetId/maintenance', async (req, res) => {
         performedBy: req.body.providerName,
         invoiceNumber: req.body.invoiceNumber,
         notes: req.body.notes,
-        maintenanceNotes: req.body.maintenanceNotes !== undefined ? req.body.maintenanceNotes : undefined,
       }
     })
     res.json(record)
@@ -2877,7 +2876,6 @@ app.put('/api/maintenance/:id', async (req, res) => {
         partsReplaced: req.body.partsReplaced,
         technicianNotes: req.body.technicianNotes,
         notes: req.body.notes,
-        maintenanceNotes: req.body.maintenanceNotes !== undefined ? req.body.maintenanceNotes : undefined,
       },
       include: { fleet: true }
     })

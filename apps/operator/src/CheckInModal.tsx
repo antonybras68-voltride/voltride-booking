@@ -21,6 +21,9 @@ interface CheckInModalProps {
 
 export function CheckInModal({ booking, fleetVehicle, settings, onClose, onComplete }: CheckInModalProps) {
   const [step, setStep] = useState(1)
+  const [keypoints, setKeypoints] = useState<any[]>([])
+  const [expandedKP, setExpandedKP] = useState<string | null>(null)
+  const [clientLang, setClientLang] = useState('es')
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   
@@ -79,13 +82,13 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   const [fuelLevel, setFuelLevel] = useState('FULL')
   const [photos, setPhotos] = useState<Record<string, string>>({ front: '', left: '', right: '', rear: '', counter: '' })
 
-  const totalSteps = 6
+  const totalSteps = 7
   const lang = termsLang
   
   // Étapes avec noms
   const stepNames = isMotorRent 
-    ? ['Vehículo', 'Documentos', 'Equipamiento', 'Firma', 'Pago', 'Inspección']
-    : ['Vehículo', 'Documentos', 'Equipamiento', 'Firma', 'Pago', 'Inspección']
+    ? ['Vehículo', 'Documentos', 'Equipamiento', 'Firma', 'Pago', 'Inspección', 'Explicaciones']
+    : ['Vehículo', 'Documentos', 'Equipamiento', 'Firma', 'Pago', 'Inspección', 'Explicaciones']
   
   // Photos requises selon la marque
   const getRequiredPhotos = () => {
@@ -138,6 +141,10 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   
   // Canvas signature
   useEffect(() => {
+    if (step === 7 && keypoints.length === 0) {
+      fetch(API_URL + '/api/checkin-keypoints?brand=' + (isMotorRent ? 'MOTOR-RENT' : 'VOLTRIDE'))
+        .then(r => r.json()).then(data => setKeypoints(data)).catch(console.error)
+    }
     if (step === 4 && canvasRef.current) {
       const canvas = canvasRef.current
       const ctx = canvas.getContext('2d')
@@ -197,6 +204,7 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
   // Validation par étape
   const canProceed = () => {
     switch (step) {
+      case 7: return true
       case 1: return true // Véhicule - juste affichage
       case 2: // Documents
         if (isMotorRent) {
@@ -854,10 +862,50 @@ export function CheckInModal({ booking, fleetVehicle, settings, onClose, onCompl
           )}
           
           {/* STEP 6: Inspection (À LA FIN) */}
+          {step === 7 && (
+            <div className="space-y-4">
+              <div className="p-3 bg-blue-50 rounded-xl text-blue-700 text-sm">
+                📋 Explicaciones al cliente - Seleccione el idioma y repase cada punto.
+              </div>
+              
+              <div className="flex gap-2 mb-2">
+                {['es', 'fr', 'en', 'ru'].map(l => (
+                  <button key={l} onClick={() => setClientLang(l)}
+                    className={'px-3 py-1.5 rounded-lg text-sm font-medium ' + (clientLang === l ? 'bg-[#ffaf10] text-white' : 'bg-gray-100 text-gray-600')}>
+                    {l === 'es' ? '🇪🇸 ES' : l === 'fr' ? '🇫🇷 FR' : l === 'en' ? '🇬🇧 EN' : '🇷🇺 RU'}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                {keypoints.map((kp: any) => (
+                  <div key={kp.id} className="border-2 rounded-xl overflow-hidden transition-all">
+                    <button onClick={() => setExpandedKP(expandedKP === kp.id ? null : kp.id)}
+                      className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50">
+                      <span className="text-2xl">{kp.icon || 'ℹ️'}</span>
+                      <span className="flex-1 font-semibold">{kp.title?.[clientLang] || kp.title?.es || kp.code}</span>
+                      <span className="text-gray-400">{expandedKP === kp.id ? '▲' : '▼'}</span>
+                    </button>
+                    {expandedKP === kp.id && (
+                      <div className="px-4 pb-4 border-t bg-blue-50">
+                        {kp.imageUrl ? (
+                          <img src={kp.imageUrl} className="mt-3 rounded-lg max-h-48 mx-auto" />
+                        ) : (
+                          <p className="mt-3 text-sm text-gray-700 whitespace-pre-wrap">{kp.description?.[clientLang] || kp.description?.es || ''}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {keypoints.length === 0 && <div className="text-center py-8 text-gray-400">No hay puntos clave configurados</div>}
+              </div>
+            </div>
+          )}
+
           {step === 6 && (
             <div className="space-y-4">
               <div className="p-3 bg-green-50 rounded-xl text-green-700 text-sm">
-                ✅ ¡Último paso! Tome las fotos del vehículo y registre el kilometraje.
+                ✅ Tome las fotos del vehículo y registre el kilometraje.
               </div>
               
               {/* Photos */}

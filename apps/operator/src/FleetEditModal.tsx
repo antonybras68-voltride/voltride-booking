@@ -226,7 +226,7 @@ export function FleetEditModal({ fleet, mode: initialMode, userRole, onClose, on
     try {
       const res = await fetch(`${API_URL}/api/fleet/${fleet.id}/maintenance`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newMaintenance, mileageAtService: form.currentMileage })
+        body: JSON.stringify({ ...newMaintenance, mileageAtService: form.currentMileage, status: 'SCHEDULED', priority: 'NORMAL' })
       })
       const record = await res.json()
       setMaintenance(prev => [record, ...prev])

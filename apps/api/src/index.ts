@@ -4437,6 +4437,122 @@ app.post('/api/fleet/generate-qr-all/:agencyId', async (req, res) => {
 })
 
 
+
+// ============== STOCK CENTRAL ==============
+app.get('/api/inventory', async (req, res) => {
+  try {
+    const { category, vehicleType, search } = req.query
+    const where: any = { isActive: true }
+    if (category) where.category = category
+    if (vehicleType) where.vehicleType = vehicleType
+    if (search) where.OR = [
+      { name: { contains: search as string, mode: 'insensitive' } },
+      { sku: { contains: search as string, mode: 'insensitive' } },
+      { barcode: { contains: search as string, mode: 'insensitive' } }
+    ]
+    const parts = await prisma.inventoryPart.findMany({
+      where,
+      include: { _count: { select: { movements: true } } },
+      orderBy: { name: 'asc' }
+    })
+    res.json(parts)
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
+app.post('/api/inventory', async (req, res) => {
+  try {
+    const part = await prisma.inventoryPart.create({
+      data: {
+        name: req.body.name,
+        sku: req.body.sku || null,
+        barcode: req.body.barcode || null,
+        category: req.body.category || 'GENERAL',
+        vehicleType: req.body.vehicleType || 'ALL',
+        imageUrl: req.body.imageUrl || null,
+        price: req.body.price || 0,
+        laborCost: req.body.laborCost || null,
+        quantityInStock: req.body.quantityInStock || 0,
+        minimumStock: req.body.minimumStock || 1,
+        supplierName: req.body.supplierName || null,
+        supplierRef: req.body.supplierRef || null,
+        supplierContact: req.body.supplierContact || null,
+        location: req.body.location || null
+      }
+    })
+    res.json(part)
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
+app.put('/api/inventory/:id', async (req, res) => {
+  try {
+    const part = await prisma.inventoryPart.update({
+      where: { id: req.params.id },
+      data: req.body
+    })
+    res.json(part)
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
+app.delete('/api/inventory/:id', async (req, res) => {
+  try {
+    await prisma.inventoryPart.update({ where: { id: req.params.id }, data: { isActive: false } })
+    res.json({ success: true })
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
+// Stock movements
+app.get('/api/inventory/:id/movements', async (req, res) => {
+  try {
+    const movements = await prisma.stockMovement.findMany({
+      where: { partId: req.params.id },
+      include: { fleetVehicle: true },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(movements)
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
+app.post('/api/inventory/:id/movement', async (req, res) => {
+  try {
+    const { type, quantity, fleetVehicleId, note, cost, createdBy } = req.body
+    const movement = await prisma.stockMovement.create({
+      data: {
+        partId: req.params.id,
+        type,
+        quantity,
+        fleetVehicleId: fleetVehicleId || null,
+        note: note || null,
+        cost: cost || null,
+        createdBy: createdBy || null
+      }
+    })
+    // Update stock quantity
+    const delta = type === 'IN' || type === 'RETURN' ? quantity : -quantity
+    await prisma.inventoryPart.update({
+      where: { id: req.params.id },
+      data: { quantityInStock: { increment: delta } }
+    })
+    const updated = await prisma.inventoryPart.findUnique({ where: { id: req.params.id } })
+    res.json({ movement, currentStock: updated?.quantityInStock })
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
+// Low stock alert
+app.get('/api/inventory/alerts/low-stock', async (req, res) => {
+  try {
+    const parts = await prisma.inventoryPart.findMany({
+      where: {
+        isActive: true,
+        quantityInStock: { lte: prisma.inventoryPart.fields.minimumStock }
+      }
+    })
+    // Fallback: filter manually since Prisma doesn't support field comparison easily
+    const allParts = await prisma.inventoryPart.findMany({ where: { isActive: true } })
+    const lowStock = allParts.filter(p => p.quantityInStock <= p.minimumStock)
+    res.json(lowStock)
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
 // ============== CANCEL CHECK-IN ==============
 app.post('/api/bookings/:id/cancel-checkin', async (req, res) => {
   try {

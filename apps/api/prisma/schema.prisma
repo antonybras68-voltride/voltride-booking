@@ -370,6 +370,7 @@ model Fleet {
   
   // Relations to new models
   equipment                FleetEquipment[]
+  stockMovements           StockMovement[]
   contractFields           FleetContractField[]
   
   @@index([vehicleId])
@@ -1554,4 +1555,68 @@ model Expense {
   @@index([category])
   @@index([date])
   @@index([status])
+}
+
+// ============== STOCK CENTRAL ==============
+model InventoryPart {
+  id                String    @id @default(cuid())
+  name              String
+  sku               String?   @unique
+  barcode           String?   @unique
+  category          StockCategory @default(GENERAL)
+  vehicleType       String?   // CB, EB, EM, ALL
+  imageUrl          String?
+  price             Decimal   @db.Decimal(10, 2)
+  laborCost         Decimal?  @db.Decimal(10, 2)
+  quantityInStock   Int       @default(0)
+  minimumStock      Int       @default(1)
+  supplierName      String?
+  supplierRef       String?
+  supplierContact   String?
+  location          String?   // Emplacement physique dans l'atelier
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  movements         StockMovement[]
+  @@index([category])
+  @@index([vehicleType])
+  @@index([barcode])
+}
+
+model StockMovement {
+  id              String    @id @default(cuid())
+  partId          String
+  part            InventoryPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+  type            MovementType
+  quantity        Int
+  fleetVehicleId  String?
+  fleetVehicle    Fleet?    @relation(fields: [fleetVehicleId], references: [id])
+  note            String?
+  cost            Decimal?  @db.Decimal(10, 2)
+  createdBy       String?
+  createdAt       DateTime  @default(now())
+  @@index([partId])
+  @@index([fleetVehicleId])
+  @@index([type])
+}
+
+enum StockCategory {
+  BODY
+  WHEEL
+  BRAKE
+  CHAIN
+  LIGHT
+  BATTERY
+  SEAT
+  HANDLEBAR
+  ACCESSORY
+  CONSUMABLE
+  GENERAL
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  RETURN
 }

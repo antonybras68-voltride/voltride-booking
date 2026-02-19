@@ -4589,6 +4589,196 @@ app.delete('/api/technical-docs/:id', async (req, res) => {
   } catch (e: any) { res.status(500).json({ error: e.message }) }
 })
 
+
+// ============== CUSTOMER PORTAL EXTENSIONS ==============
+// Check availability for extension
+app.post('/api/bookings/:id/extend/check', async (req, res) => {
+  try {
+    const { newEndDate, newEndTime } = req.body
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.id },
+      include: { 
+        contract: { include: { extensions: true } },
+        fleetVehicle: { include: { vehicle: { include: { category: true, pricing: true } } } },
+        agency: true
+      }
+    })
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    
+    const contract = booking.contract
+    const currentEndDate = contract?.currentEndDate || booking.endDate
+    const requestedEnd = new Date(newEndDate)
+    const additionalDays = Math.ceil((requestedEnd.getTime() - new Date(currentEndDate).getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (additionalDays <= 0) return res.status(400).json({ error: 'New end date must be after current end date' })
+    
+    // Check if vehicle is available for the extension period
+    const conflictingBookings = await prisma.booking.findMany({
+      where: {
+        fleetVehicleId: booking.fleetVehicleId,
+        id: { not: booking.id },
+        status: { in: ['CONFIRMED', 'CHECKED_IN'] },
+        startDate: { lte: requestedEnd },
+        endDate: { gte: new Date(currentEndDate) }
+      }
+    })
+    
+    const available = conflictingBookings.length === 0
+    
+    // Calculate pricing
+    const pricing = booking.fleetVehicle?.vehicle?.pricing?.[0]
+    const dailyRate = pricing?.extraDayPrice || Number(contract?.dailyRate || 0)
+    const subtotal = dailyRate * additionalDays
+    const taxRate = Number(contract?.taxRate || 21)
+    const taxAmount = subtotal * (taxRate / 100)
+    const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100
+    
+    // Check cumulated extension days
+    const existingExtensions = contract?.extensions?.filter((e: any) => 
+      ['APPROVED', 'PAYMENT_LINK_SENT', 'PENDING_PAYMENT'].includes(e.status)
+    ) || []
+    const cumulatedDays = existingExtensions.reduce((sum: number, ext: any) => sum + ext.additionalDays, 0) + additionalDays
+    const agencyPaymentAvailable = cumulatedDays <= 2
+    
+    res.json({
+      available,
+      pricing: {
+        additionalDays,
+        dailyRate,
+        subtotal,
+        taxRate,
+        taxAmount,
+        totalAmount
+      },
+      agencyPaymentAvailable,
+      cumulatedDays
+    })
+  } catch (e: any) { console.error(e); res.status(500).json({ error: e.message }) }
+})
+
+// Confirm extension
+app.post('/api/bookings/:id/extend/confirm', async (req, res) => {
+  try {
+    const { newEndDate, newEndTime, paymentMethod } = req.body
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.id },
+      include: { 
+        contract: { include: { extensions: true } },
+        fleetVehicle: { include: { vehicle: { include: { category: true, pricing: true } } } },
+        agency: true,
+        customer: true
+      }
+    })
+    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    if (!booking.contract) return res.status(400).json({ error: 'No contract found' })
+    
+    const contract = booking.contract
+    const currentEndDate = contract.currentEndDate || booking.endDate
+    const requestedEnd = new Date(newEndDate)
+    const additionalDays = Math.ceil((requestedEnd.getTime() - new Date(currentEndDate).getTime()) / (1000 * 60 * 60 * 24))
+    
+    // Check cumulated days
+    const existingExtensions = contract.extensions?.filter((e: any) => 
+      ['APPROVED', 'PAYMENT_LINK_SENT', 'PENDING_PAYMENT'].includes(e.status)
+    ) || []
+    const cumulatedDays = existingExtensions.reduce((sum: number, ext: any) => sum + ext.additionalDays, 0) + additionalDays
+    
+    // Block agency payment if > 2 cumulated days
+    if (paymentMethod === 'agency' && cumulatedDays > 2) {
+      return res.status(400).json({ error: 'Online payment required for extensions over 2 days' })
+    }
+    
+    // Calculate pricing
+    const pricing = booking.fleetVehicle?.vehicle?.pricing?.[0]
+    const dailyRate = pricing?.extraDayPrice || Number(contract.dailyRate)
+    const subtotal = dailyRate * additionalDays
+    const taxRate = Number(contract.taxRate || 21)
+    const taxAmount = subtotal * (taxRate / 100)
+    const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100
+    
+    // Generate extension number
+    const prefix = contract.contractNumber + '-EXT'
+    const lastExtension = await prisma.contractExtension.findFirst({
+      where: { extensionNumber: { startsWith: prefix } },
+      orderBy: { extensionNumber: 'desc' }
+    })
+    const nextNum = lastExtension ? parseInt(lastExtension.extensionNumber.replace(prefix, '')) + 1 : 1
+    const extensionNumber = prefix + String(nextNum).padStart(2, '0')
+    
+    // Create extension
+    const extension = await prisma.contractExtension.create({
+      data: {
+        extensionNumber,
+        contractId: contract.id,
+        previousEndDate: new Date(currentEndDate),
+        requestedEndDate: requestedEnd,
+        additionalDays,
+        requestSource: 'CUSTOMER_PORTAL',
+        requestedBy: booking.customer?.firstName + ' ' + booking.customer?.lastName,
+        availabilityStatus: 'AVAILABLE',
+        currentVehicleAvailable: true,
+        dailyRate,
+        subtotal,
+        taxRate,
+        taxAmount,
+        totalAmount,
+        status: paymentMethod === 'agency' ? 'APPROVED' : 'PENDING_PAYMENT'
+      }
+    })
+    
+    // Update contract end date
+    await prisma.rentalContract.update({
+      where: { id: contract.id },
+      data: { currentEndDate: requestedEnd }
+    })
+    
+    // Update booking end date
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: { endDate: requestedEnd, ...(newEndTime ? { endTime: newEndTime } : {}) }
+    })
+    
+    // If Stripe payment required
+    if (paymentMethod === 'stripe') {
+      const brand = booking.fleetVehicle?.vehicle?.category?.brand || 'VOLTRIDE'
+      const stripe = getStripeInstance(brand)
+      
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        customer_email: booking.customer?.email,
+        line_items: [{
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: 'Extension ' + additionalDays + ' jour(s)',
+              description: 'Contrat ' + contract.contractNumber + ' - ' + booking.fleetVehicle?.vehicleNumber
+            },
+            unit_amount: Math.round(totalAmount * 100)
+          },
+          quantity: 1
+        }],
+        mode: 'payment',
+        success_url: req.body.successUrl || (req.headers.origin + '/reservas/' + booking.id + '?extended=true'),
+        cancel_url: req.body.cancelUrl || (req.headers.origin + '/reservas/' + booking.id),
+        metadata: {
+          extensionId: extension.id,
+          contractId: contract.id,
+          type: 'CONTRACT_EXTENSION'
+        }
+      })
+      
+      await prisma.contractExtension.update({
+        where: { id: extension.id },
+        data: { stripeSessionId: session.id, stripePaymentLinkUrl: session.url, status: 'PAYMENT_LINK_SENT' }
+      })
+      
+      return res.json({ extension, stripeUrl: session.url })
+    }
+    
+    res.json({ extension })
+  } catch (e: any) { console.error(e); res.status(500).json({ error: e.message }) }
+})
+
 // ============== CANCEL CHECK-IN ==============
 app.post('/api/bookings/:id/cancel-checkin', async (req, res) => {
   try {

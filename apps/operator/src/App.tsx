@@ -449,16 +449,23 @@ export default function App() {
     }
     
     if (vehicleId && bookings.length > 0) {
-      fetch(API_URL + '/api/fleet/' + vehicleId + '/active-booking')
+      fetch(API_URL + '/api/qr-scan/' + vehicleId)
         .then(res => res.ok ? res.json() : null)
-        .then(booking => {
-          if (booking) {
-            setSelectedCheckoutBooking(booking); setShowCheckoutModal(true)
-          } else {
-            alert('Aucune location active pour ce véhicule')
+        .then(data => {
+          if (!data) { alert('Véhicule non trouvé'); return }
+          if (data.action === 'checkout') {
+            // Véhicule en location -> ouvrir checkout
+            setSelectedCheckoutBooking(data.booking); setShowCheckoutModal(true)
+          } else if (data.action === 'maintenance') {
+            // Pas en location -> rediriger vers maintenance
+            const alertMsg = data.alerts && data.alerts.length > 0
+              ? '⚠️ Alertes maintenance:\n' + data.alerts.join('\n') + '\n\nRedirection vers Maintenance...'
+              : 'Véhicule disponible. Redirection vers Maintenance...'
+            alert(alertMsg)
+            window.location.href = 'https://compassionate-dream-production.up.railway.app?vehicle=' + vehicleId
           }
         })
-        .catch(() => alert('Erreur lors de la recherche de la location'  ))
+        .catch(() => alert('Erreur lors du scan QR'))
       window.history.replaceState({}, '' , window.location.pathname)
     }
   }, [bookings])

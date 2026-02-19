@@ -1574,6 +1574,7 @@ model InventoryPart {
   supplierRef       String?
   supplierContact   String?
   location          String?   // Emplacement physique dans l'atelier
+  compatibleFleetIds Json?     // Array of fleet vehicle IDs this part is compatible with
   isActive          Boolean   @default(true)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

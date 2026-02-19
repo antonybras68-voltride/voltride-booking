@@ -4476,7 +4476,8 @@ app.post('/api/inventory', async (req, res) => {
         supplierName: req.body.supplierName || null,
         supplierRef: req.body.supplierRef || null,
         supplierContact: req.body.supplierContact || null,
-        location: req.body.location || null
+        location: req.body.location || null,
+        compatibleFleetIds: req.body.compatibleFleetIds || null
       }
     })
     res.json(part)

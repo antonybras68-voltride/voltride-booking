@@ -2640,7 +2640,7 @@ app.get('/api/fleet', async (req, res) => {
     
     const fleet = await prisma.fleet.findMany({
       where,
-      include: { vehicle: { include: { category: true, pricing: true } }, agency: true, documents: true, damages: { where: { isResolved: false } } },
+      include: { vehicle: { include: { category: true, pricing: true } }, agency: true, documents: true, damages: { where: { isResolved: false } }, maintenanceRecords: { where: { status: 'SCHEDULED' }, orderBy: { createdAt: 'desc' } } },
       orderBy: { vehicleNumber: 'asc' }
     })
     res.json(fleet)

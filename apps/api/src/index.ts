@@ -2883,10 +2883,24 @@ app.put('/api/maintenance/:id', async (req, res) => {
     if (req.body.status === 'IN_PROGRESS') {
       await prisma.fleet.update({ where: { id: record.fleetId }, data: { status: 'MAINTENANCE' } })
     } else if (req.body.status === 'COMPLETED') {
+      // Récupérer les intervalles du véhicule
+      const fleet = await prisma.fleet.findUnique({ where: { id: record.fleetId } })
+      const nextKm = fleet?.maintenanceIntervalKm ? record.mileage + fleet.maintenanceIntervalKm : undefined
+      const nextDate = fleet?.maintenanceIntervalDays
+        ? new Date(Date.now() + fleet.maintenanceIntervalDays * 24 * 60 * 60 * 1000)
+        : undefined
+
       await prisma.fleet.update({
         where: { id: record.fleetId },
-        data: { status: 'AVAILABLE', lastMaintenanceDate: new Date(), lastMaintenanceMileage: record.mileage }
+        data: {
+          status: 'AVAILABLE',
+          lastMaintenanceDate: new Date(),
+          lastMaintenanceMileage: record.mileage,
+          nextMaintenanceMileage: nextKm,
+          nextMaintenanceDate: nextDate
+        }
       })
+      console.log('Maintenance COMPLETED for', fleet?.vehicleNumber, '- Next km:', nextKm, '- Next date:', nextDate)
     }
     
     res.json(record)

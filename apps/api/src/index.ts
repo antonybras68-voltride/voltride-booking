@@ -1375,6 +1375,7 @@ app.post('/api/fleet/:fleetId/maintenance', async (req, res) => {
         performedBy: req.body.providerName,
         invoiceNumber: req.body.invoiceNumber,
         notes: req.body.notes,
+        priority: req.body.priority || 'NORMAL',
       }
     })
     res.json(record)
@@ -1426,6 +1427,7 @@ app.put('/api/fleet/:id', async (req, res) => {
         maintenanceIntervalKm: req.body.maintenanceIntervalKm,
         maintenanceIntervalDays: req.body.maintenanceIntervalDays,
         notes: req.body.notes,
+        priority: req.body.priority || 'NORMAL',
         maintenanceNotes: req.body.maintenanceNotes !== undefined ? req.body.maintenanceNotes : undefined,
         vehicleId: req.body.vehicleId,
       },
@@ -2876,6 +2878,7 @@ app.put('/api/maintenance/:id', async (req, res) => {
         partsReplaced: req.body.partsReplaced,
         technicianNotes: req.body.technicianNotes,
         notes: req.body.notes,
+        priority: req.body.priority || 'NORMAL',
       },
       include: { fleet: true }
     })

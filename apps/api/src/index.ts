@@ -3228,7 +3228,7 @@ app.post('/api/contracts/:id/check-in', async (req, res) => {
     })
     
     // Update fleet
-    await prisma.fleet.update({
+    const updatedFleet = await prisma.fleet.update({
       where: { id: contract.fleetVehicleId },
       data: {
         status: 'AVAILABLE',
@@ -3238,7 +3238,39 @@ app.post('/api/contracts/:id/check-in', async (req, res) => {
       }
     })
     
-    res.json({ contract, inspection })
+
+    // ===== AUTO-CHECK MAINTENANCE =====
+    const maintenanceAlerts: string[] = []
+    if (updatedFleet.maintenanceIntervalKm && updatedFleet.nextMaintenanceMileage) {
+      if (req.body.mileage >= updatedFleet.nextMaintenanceMileage) {
+        maintenanceAlerts.push("KM dépassés: " + req.body.mileage + "/" + updatedFleet.nextMaintenanceMileage + " km")
+      }
+    }
+    if (updatedFleet.maintenanceIntervalDays && updatedFleet.nextMaintenanceDate) {
+      if (new Date() >= new Date(updatedFleet.nextMaintenanceDate)) {
+        maintenanceAlerts.push("Date maintenance dépassée")
+      }
+    }
+    if (maintenanceAlerts.length > 0) {
+      const existingScheduled = await prisma.maintenanceRecord.findFirst({
+        where: { fleetId: contract.fleetVehicleId, status: "SCHEDULED" }
+      })
+      if (!existingScheduled) {
+        await prisma.maintenanceRecord.create({
+          data: {
+            fleetId: contract.fleetVehicleId,
+            type: "SCHEDULED",
+            description: "Maintenance auto après retour: " + maintenanceAlerts.join(" | "),
+            mileage: req.body.mileage,
+            status: "SCHEDULED",
+            priority: "HIGH",
+            scheduledDate: new Date()
+          }
+        })
+        console.log("Auto-maintenance created for " + updatedFleet.vehicleNumber)
+      }
+    }
+    res.json({ contract, inspection, maintenanceAlerts })
   } catch (error) { console.error(error); res.status(500).json({ error: 'Failed to check-in' }) }
 })
 
@@ -4929,6 +4961,100 @@ app.get('/api/fleet/:id/active-booking', async (req, res) => {
   } catch (e: any) {
     console.error('Active booking error:', e)
     res.status(500).json({ error: 'Failed to find active booking' })
+  }
+})
+
+// ============== QR CODE INTELLIGENT ==============
+app.get("/api/qr-scan/:fleetId", async (req, res) => {
+  try {
+    const fleet = await prisma.fleet.findUnique({
+      where: { id: req.params.fleetId },
+      include: {
+        vehicle: { include: { category: true } },
+        agency: true,
+        maintenanceRecords: { orderBy: { createdAt: "desc" }, take: 10 }
+      }
+    })
+    if (!fleet) return res.status(404).json({ error: "Vehicle not found" })
+
+    // 1. Vérifier si en location
+    const activeBooking = await prisma.booking.findFirst({
+      where: {
+        fleetVehicleId: fleet.id,
+        checkedIn: true,
+        checkedOut: false,
+        status: { in: ["CHECKED_IN", "CONFIRMED"] }
+      },
+      include: { customer: true, agency: true },
+      orderBy: { checkedInAt: "desc" }
+    })
+
+    if (activeBooking) {
+      return res.json({
+        action: "checkout",
+        booking: activeBooking,
+        fleet: { id: fleet.id, vehicleNumber: fleet.vehicleNumber, status: fleet.status }
+      })
+    }
+
+    // 2. Pas en location -> maintenance
+    // Vérifier alertes maintenance
+    const alerts: string[] = []
+    const now = new Date()
+
+    // Alerte km
+    if (fleet.maintenanceIntervalKm && fleet.nextMaintenanceMileage) {
+      if (fleet.currentMileage >= fleet.nextMaintenanceMileage) {
+        alerts.push("KM dépassés: " + fleet.currentMileage + "/" + fleet.nextMaintenanceMileage + " km")
+      }
+    }
+
+    // Alerte jours
+    if (fleet.maintenanceIntervalDays && fleet.nextMaintenanceDate) {
+      if (now >= new Date(fleet.nextMaintenanceDate)) {
+        alerts.push("Date maintenance dépassée: " + new Date(fleet.nextMaintenanceDate).toLocaleDateString())
+      }
+    }
+
+    // Alerte ITV
+    if (fleet.itvExpiryDate && now >= new Date(fleet.itvExpiryDate)) {
+      alerts.push("ITV expirée: " + new Date(fleet.itvExpiryDate).toLocaleDateString())
+    }
+
+    // Alerte assurance
+    if (fleet.insuranceExpiryDate && now >= new Date(fleet.insuranceExpiryDate)) {
+      alerts.push("Assurance expirée: " + new Date(fleet.insuranceExpiryDate).toLocaleDateString())
+    }
+
+    // Auto-créer note maintenance si km ou jours dépassés
+    if (alerts.length > 0) {
+      const existingScheduled = await prisma.maintenanceRecord.findFirst({
+        where: { fleetId: fleet.id, status: "SCHEDULED" }
+      })
+      if (!existingScheduled) {
+        await prisma.maintenanceRecord.create({
+          data: {
+            fleetId: fleet.id,
+            type: "SCHEDULED",
+            description: "Maintenance planifiée (auto): " + alerts.join(" | "),
+            mileage: fleet.currentMileage,
+            status: "SCHEDULED",
+            priority: "HIGH",
+            scheduledDate: now
+          }
+        })
+      }
+    }
+
+    return res.json({
+      action: "maintenance",
+      fleet,
+      alerts,
+      maintenanceRecords: fleet.maintenanceRecords
+    })
+  } catch (e: any) {
+    console.error("QR scan error:", e)
+    res.status(500).json({ error: "QR scan failed", details: e.message })
   }
 })
 

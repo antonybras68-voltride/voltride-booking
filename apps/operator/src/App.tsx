@@ -401,7 +401,14 @@ export default function App() {
     return d
   })
 
-  useEffect(() => { loadData() }, [selectedAgency, brand, user])
+  // Auto-refresh toutes les 45 secondes
+  useEffect(() => {
+    loadData()
+    const refreshInterval = setInterval(() => {
+      if (user) loadData()
+    }, 45000)
+    return () => clearInterval(refreshInterval)
+  }, [selectedAgency, brand, user])
   
   // QR Code detection - scan booking or vehicle
   useEffect(() => {
@@ -1393,6 +1400,14 @@ export default function App() {
             )}
           </div>
           
+          {/* Indicateur auto-refresh */}
+          <div className="flex items-center gap-1.5 mr-3" title="Auto-refresh actif (45s)">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+            </span>
+            <span className="text-xs text-green-600 font-medium hidden md:inline">Live</span>
+          </div>
           <span className="text-sm text-gray-500">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
 

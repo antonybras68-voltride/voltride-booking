@@ -319,7 +319,7 @@ app.delete('/api/options/:id', async (req, res) => {
 })
 
 // ============== INVENTORY ==============
-app.get('/api/inventory', async (req, res) => {
+app.get('/api/stock', async (req, res) => {
   try {
     const inventory = await prisma.inventory.findMany({ include: { vehicle: { include: { category: true, pricing: true } }, agency: true } })
     res.json(inventory)
@@ -4439,7 +4439,7 @@ app.post('/api/fleet/generate-qr-all/:agencyId', async (req, res) => {
 
 
 // ============== STOCK CENTRAL ==============
-app.get('/api/inventory', async (req, res) => {
+app.get('/api/stock', async (req, res) => {
   try {
     const { category, vehicleType, search } = req.query
     const where: any = { isActive: true }
@@ -4459,7 +4459,7 @@ app.get('/api/inventory', async (req, res) => {
   } catch (e: any) { res.status(500).json({ error: e.message }) }
 })
 
-app.post('/api/inventory', async (req, res) => {
+app.post('/api/stock', async (req, res) => {
   try {
     const part = await prisma.inventoryPart.create({
       data: {
@@ -4484,7 +4484,7 @@ app.post('/api/inventory', async (req, res) => {
   } catch (e: any) { res.status(500).json({ error: e.message }) }
 })
 
-app.put('/api/inventory/:id', async (req, res) => {
+app.put('/api/stock/:id', async (req, res) => {
   try {
     const part = await prisma.inventoryPart.update({
       where: { id: req.params.id },
@@ -4494,7 +4494,7 @@ app.put('/api/inventory/:id', async (req, res) => {
   } catch (e: any) { res.status(500).json({ error: e.message }) }
 })
 
-app.delete('/api/inventory/:id', async (req, res) => {
+app.delete('/api/stock/:id', async (req, res) => {
   try {
     await prisma.inventoryPart.update({ where: { id: req.params.id }, data: { isActive: false } })
     res.json({ success: true })
@@ -4502,7 +4502,7 @@ app.delete('/api/inventory/:id', async (req, res) => {
 })
 
 // Stock movements
-app.get('/api/inventory/:id/movements', async (req, res) => {
+app.get('/api/stock/:id/movements', async (req, res) => {
   try {
     const movements = await prisma.stockMovement.findMany({
       where: { partId: req.params.id },
@@ -4513,7 +4513,7 @@ app.get('/api/inventory/:id/movements', async (req, res) => {
   } catch (e: any) { res.status(500).json({ error: e.message }) }
 })
 
-app.post('/api/inventory/:id/movement', async (req, res) => {
+app.post('/api/stock/:id/movement', async (req, res) => {
   try {
     const { type, quantity, fleetVehicleId, note, cost, createdBy } = req.body
     const movement = await prisma.stockMovement.create({
@@ -4539,7 +4539,7 @@ app.post('/api/inventory/:id/movement', async (req, res) => {
 })
 
 // Low stock alert
-app.get('/api/inventory/alerts/low-stock', async (req, res) => {
+app.get('/api/stock/alerts/low-stock', async (req, res) => {
   try {
     const parts = await prisma.inventoryPart.findMany({
       where: {

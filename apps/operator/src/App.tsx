@@ -1247,7 +1247,7 @@ export default function App() {
     <div className="flex h-screen bg-gray-100 relative overflow-hidden">
       {/* Sidebar */}
       <div 
-  className={(mobileMenuOpen ? "translate-x-0" : "-translate-x-full") + ` md:translate-x-0 fixed md:relative z-40 ${sidebarExpanded ? 'w-56' : 'w-16'} flex flex-col shadow-xl relative transition-all duration-300`} 
+  className={(mobileMenuOpen ? "translate-x-0" : "-translate-x-full") + ` md:translate-x-0 fixed z-40 top-0 left-0 h-full ${sidebarExpanded ? 'w-56' : 'w-16'} flex flex-col shadow-xl transition-all duration-300`} 
   style={{ background: 'linear-gradient(180deg, #abdee6 0%, #ffaf10 100%)' }}
   onMouseEnter={() => setSidebarExpanded(true)}
   onMouseLeave={() => setSidebarExpanded(false)}
@@ -1310,7 +1310,7 @@ export default function App() {
       {/* Mobile overlay */}
       {mobileMenuOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setMobileMenuOpen(false)} />}
       {/* Main content */}
-      <div className="flex-1 overflow-auto bg-gradient-to-br from-gray-50 to-gray-100 w-full relative z-10">
+      <div className="flex-1 overflow-auto bg-gradient-to-br from-gray-50 to-gray-100 w-full relative z-10 md:ml-16">
         <div className="bg-white/95 backdrop-blur shadow-sm px-4 md:px-6 py-4 flex items-center gap-4 border-b border-gray-100">
           <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 rounded-lg hover:bg-gray-100">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>

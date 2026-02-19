@@ -4341,6 +4341,32 @@ console.log('App settings routes loaded')
 
 
 // Generate and save QR code for a single fleet vehicle
+
+// ============== UPLOAD IMAGE (Cloudinary signed) ==============
+app.post("/api/upload-image", async (req, res) => {
+  try {
+    const { file, folder = "uploads" } = req.body
+    if (!file) return res.status(400).json({ error: "No file provided" })
+    const crypto = require("crypto")
+    const timestamp = Math.round(Date.now() / 1000)
+    const publicId = folder.replace(/\//g, "-") + "-" + timestamp
+    const apiSecret = process.env.CLOUDINARY_API_SECRET || ""
+    const signStr = "folder=" + folder + "\&public_id=" + publicId + "\&timestamp=" + timestamp + apiSecret
+    const signature = crypto.createHash("sha1").update(signStr).digest("hex")
+    const formData = new URLSearchParams()
+    formData.append("file", file)
+    formData.append("folder", folder)
+    formData.append("public_id", publicId)
+    formData.append("timestamp", String(timestamp))
+    formData.append("api_key", process.env.CLOUDINARY_API_KEY || "485395684484158")
+    formData.append("signature", signature)
+    const cloudRes = await fetch("https://api.cloudinary.com/v1_1/dis5pcnfr/image/upload", { method: "POST", body: formData })
+    const cloudData: any = await cloudRes.json()
+    if (!cloudData.secure_url) return res.status(500).json({ error: "Upload failed", details: cloudData })
+    res.json({ secure_url: cloudData.secure_url, public_id: cloudData.public_id })
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
+
 app.post('/api/fleet/:id/generate-qr', async (req, res) => {
   try {
     const fleet = await prisma.fleet.findUnique({

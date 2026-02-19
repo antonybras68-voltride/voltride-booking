@@ -283,6 +283,30 @@ export default function App() {
     window.location.reload()
   }
 
+  // ===== DÉCONNEXION AUTO APRÈS 3H D'INACTIVITÉ =====
+  useEffect(() => {
+    if (!user) return
+    let inactivityTimer: any
+    const TIMEOUT = 3 * 60 * 60 * 1000 // 3 heures en millisecondes
+
+    const resetTimer = () => {
+      clearTimeout(inactivityTimer)
+      inactivityTimer = setTimeout(() => {
+        alert("Sesión expirada por inactividad (3h)")
+        handleLogout()
+      }, TIMEOUT)
+    }
+
+    const events = ["mousedown", "keydown", "touchstart", "scroll"]
+    events.forEach(e => window.addEventListener(e, resetTimer))
+    resetTimer() // Lancer le timer au montage
+
+    return () => {
+      clearTimeout(inactivityTimer)
+      events.forEach(e => window.removeEventListener(e, resetTimer))
+    }
+  }, [user])
+
   const [tab, setTab] = useState('planning')
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)

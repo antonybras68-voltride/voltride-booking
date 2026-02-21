@@ -2957,7 +2957,8 @@ app.get('/api/rental-documents', async (req, res) => {
             include: {
               inspections: { include: { photos: true } }
             }
-          }
+          },
+          fleetInspections: { include: { photos: true }, orderBy: { inspectedAt: 'desc' } }
         },
         orderBy: { endDate: 'desc' },
         take,
@@ -2968,8 +2969,10 @@ app.get('/api/rental-documents', async (req, res) => {
 
     const docs = bookings.map((b: any) => {
       const contract = b.contract
-      const checkOutInsp = contract?.inspections?.find((i: any) => i.type === 'CHECK_OUT')
-      const checkInInsp = contract?.inspections?.find((i: any) => i.type === 'CHECK_IN')
+      // Chercher dans contract.inspections ET booking.fleetInspections
+      const allInspections = [...(contract?.inspections || []), ...(b.fleetInspections || [])]
+      const checkOutInsp = allInspections.find((i: any) => i.type === 'CHECK_OUT')
+      const checkInInsp = allInspections.find((i: any) => i.type === 'CHECK_IN')
       const vehicle = b.fleetVehicle || {}
       const vehName = vehicle?.vehicle?.name
       const vehNumber = vehicle?.vehicleNumber || 'N/A'
@@ -2997,6 +3000,13 @@ app.get('/api/rental-documents', async (req, res) => {
           contractNumber: contract?.contractNumber || null,
           pdfUrl: contract?.contractPdfUrl || null
         },
+        checkInPhotos: {
+          front: b.photoFront || null,
+          left: b.photoLeft || null,
+          right: b.photoRight || null,
+          rear: b.photoRear || null,
+          counter: b.photoCounter || null
+        },
         inspections: {
           checkOut: checkOutInsp ? {
             date: checkOutInsp.inspectedAt,
@@ -3009,7 +3019,7 @@ app.get('/api/rental-documents', async (req, res) => {
             photos: checkInInsp.photos?.map((p: any) => ({ angle: p.angle, url: p.photoUrl })) || []
           } : null
         },
-        totalAmount: b.totalAmount || 0
+        totalAmount: contract?.totalAmount || b.totalAmount || 0
       }
     })
 

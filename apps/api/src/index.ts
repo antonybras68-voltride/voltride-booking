@@ -2958,7 +2958,6 @@ app.get('/api/rental-documents', async (req, res) => {
               inspections: { include: { photos: true } }
             }
           },
-          fleetInspections: { include: { photos: true }, orderBy: { inspectedAt: 'desc' } }
         },
         orderBy: { endDate: 'desc' },
         take,
@@ -2969,10 +2968,8 @@ app.get('/api/rental-documents', async (req, res) => {
 
     const docs = bookings.map((b: any) => {
       const contract = b.contract
-      // Chercher dans contract.inspections ET booking.fleetInspections
-      const allInspections = [...(contract?.inspections || []), ...(b.fleetInspections || [])]
-      const checkOutInsp = allInspections.find((i: any) => i.type === 'CHECK_OUT')
-      const checkInInsp = allInspections.find((i: any) => i.type === 'CHECK_IN')
+      const checkOutInsp = contract?.inspections?.find((i: any) => i.type === 'CHECK_OUT')
+      const checkInInsp = contract?.inspections?.find((i: any) => i.type === 'CHECK_IN')
       const vehicle = b.fleetVehicle || {}
       const vehName = vehicle?.vehicle?.name
       const vehNumber = vehicle?.vehicleNumber || 'N/A'

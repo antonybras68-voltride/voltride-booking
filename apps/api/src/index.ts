@@ -2931,6 +2931,106 @@ app.get("/api/fleet/:id/upcoming-bookings", async (req, res) => {
     res.json(bookings)
   } catch (e: any) { res.status(500).json({ error: e.message }) }
 })
+// ============== MAINTENANCE PDF ==============
+app.get('/api/fleet/:id/maintenance-pdf', async (req, res) => {
+  try {
+    const PDFDocument = require('pdfkit')
+    const fleet = await prisma.fleet.findUnique({
+      where: { id: req.params.id },
+      include: {
+        vehicle: { include: { category: true } },
+        agency: true,
+        maintenanceRecords: { orderBy: { createdAt: 'desc' } }
+      }
+    })
+    if (!fleet) return res.status(404).json({ error: 'Vehicle not found' })
+
+    const doc = new PDFDocument({ size: 'A4', margin: 40 })
+    const chunks: Buffer[] = []
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk))
+    doc.on('end', () => {
+      const pdf = Buffer.concat(chunks)
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', 'attachment; filename=mantenimiento-' + fleet.vehicleNumber + '.pdf')
+      res.send(pdf)
+    })
+
+    // Logo
+    try {
+      const logoUrl = 'https://res.cloudinary.com/dis5pcnfr/image/upload/v1769278425/IMG-20260111-WA0001_1_-removebg-preview_zzajxa.png'
+      const logoRes = await fetch(logoUrl)
+      const logoBuffer = Buffer.from(await logoRes.arrayBuffer())
+      doc.image(logoBuffer, 40, 30, { width: 100 })
+    } catch (e) {}
+
+    // Header
+    doc.fontSize(18).font('Helvetica-Bold')
+    doc.text('Historial de Mantenimiento', 160, 40, { align: 'right' })
+    doc.fontSize(10).font('Helvetica')
+    doc.text('Fecha: ' + new Date().toLocaleDateString('es-ES'), 160, 65, { align: 'right' })
+    doc.moveTo(40, 90).lineTo(555, 90).stroke()
+
+    // Vehicle info
+    const catName = (fleet.vehicle as any)?.category?.name || ''
+    const vehName = (fleet.vehicle as any)?.name?.es || (fleet.vehicle as any)?.name?.fr || ''
+    doc.fontSize(12).font('Helvetica-Bold')
+    doc.text(fleet.vehicleNumber + ' - ' + vehName, 40, 100)
+    doc.fontSize(9).font('Helvetica')
+    doc.text('Categoría: ' + catName + '  |  Agencia: ' + ((fleet.agency as any)?.name || '') + '  |  KM: ' + fleet.currentMileage, 40, 118)
+    doc.text('Intervalo KM: ' + (fleet.maintenanceIntervalKm || '-') + '  |  Intervalo días: ' + (fleet.maintenanceIntervalDays || '-') + '  |  Próx. KM: ' + (fleet.nextMaintenanceMileage || '-'), 40, 132)
+
+    // Table header
+    let y = 160
+    doc.rect(40, y, 515, 20).fill('#ffaf10')
+    doc.fillColor('white').fontSize(8).font('Helvetica-Bold')
+    doc.text('Fecha', 45, y + 5, { width: 70 })
+    doc.text('Tipo', 115, y + 5, { width: 60 })
+    doc.text('Descripción', 175, y + 5, { width: 200 })
+    doc.text('Estado', 375, y + 5, { width: 60 })
+    doc.text('Prioridad', 435, y + 5, { width: 50 })
+    doc.text('Coste', 490, y + 5, { width: 60 })
+    y += 20
+
+    // Records
+    doc.fillColor('black').font('Helvetica').fontSize(7)
+    const records = fleet.maintenanceRecords || []
+    for (const m of records as any[]) {
+      if (y > 760) { doc.addPage(); y = 40 }
+      const bg = m.status === 'SCHEDULED' ? '#fff3cd' : m.status === 'COMPLETED' ? '#d4edda' : '#ffffff'
+      doc.rect(40, y, 515, 18).fill(bg).stroke('#e0e0e0')
+      doc.fillColor('black')
+      const date = m.completedAt || m.scheduledDate || m.createdAt
+      doc.text(date ? new Date(date).toLocaleDateString('es-ES') : '-', 45, y + 4, { width: 70 })
+      doc.text(m.type || '-', 115, y + 4, { width: 60 })
+      doc.text((m.description || '-').substring(0, 50), 175, y + 4, { width: 200 })
+      doc.text(m.status === 'COMPLETED' ? '✓ Hecho' : m.status === 'SCHEDULED' ? '⏳ Pendiente' : m.status, 375, y + 4, { width: 60 })
+      doc.text(m.priority || '-', 435, y + 4, { width: 50 })
+      doc.text(Number(m.totalCost || 0).toFixed(2) + '€', 490, y + 4, { width: 60 })
+      y += 18
+    }
+
+    if (records.length === 0) {
+      doc.fontSize(10).text('Sin registros de mantenimiento', 40, y + 10)
+    }
+
+    // Total
+    const total = (records as any[]).filter((m: any) => m.status === 'COMPLETED').reduce((s: number, m: any) => s + Number(m.totalCost || 0), 0)
+    y += 10
+    if (y > 760) { doc.addPage(); y = 40 }
+    doc.fontSize(10).font('Helvetica-Bold')
+    doc.text('Coste total mantenimiento: ' + total.toFixed(2) + '€', 350, y, { align: 'right' })
+
+    // Footer
+    doc.fontSize(7).font('Helvetica').fillColor('gray')
+    doc.text('Generado por Voltride Maintenance - ' + new Date().toLocaleString('es-ES'), 40, 780)
+
+    doc.end()
+  } catch (e: any) {
+    console.error('Maintenance PDF error:', e)
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // ============== SPARE PARTS ==============
 
 

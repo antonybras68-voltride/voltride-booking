@@ -2953,7 +2953,7 @@ app.get('/api/rental-documents', async (req, res) => {
           customer: true,
           fleetVehicle: { include: { vehicle: { include: { category: true } } } },
           items: { include: { vehicle: { include: { category: true } } } },
-          contracts: {
+          contract: {
             include: {
               inspections: { include: { photos: true } }
             }
@@ -2967,7 +2967,7 @@ app.get('/api/rental-documents', async (req, res) => {
     ])
 
     const docs = bookings.map((b: any) => {
-      const contract = b.contracts?.[0]
+      const contract = b.contract
       const checkOutInsp = contract?.inspections?.find((i: any) => i.type === 'CHECK_OUT')
       const checkInInsp = contract?.inspections?.find((i: any) => i.type === 'CHECK_IN')
       const vehicle = b.fleetVehicle || {}

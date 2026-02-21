@@ -2934,13 +2934,19 @@ app.get("/api/fleet/:id/upcoming-bookings", async (req, res) => {
 // ============== DOCUMENTOS ALQUILER ==============
 app.get('/api/rental-documents', async (req, res) => {
   try {
-    const { brand, page, limit } = req.query
+    const { brand, page, limit, from, to, agencyId } = req.query
     const take = parseInt(limit as string) || 20
     const skip = ((parseInt(page as string) || 1) - 1) * take
 
     const where: any = {
       status: 'COMPLETED',
       checkedOut: true
+    }
+    if (agencyId) where.agencyId = agencyId
+    if (from || to) {
+      where.startDate = {}
+      if (from) where.startDate.gte = new Date(from as string)
+      if (to) where.startDate.lte = new Date((to as string) + 'T23:59:59')
     }
     if (brand) {
       where.items = { some: { vehicle: { category: { brand: brand } } } }

@@ -787,6 +787,20 @@ export default function App() {
   return () => window.removeEventListener('click', handleClick)
   }, [])
 
+  // Pull-to-refresh
+  const [pullRefreshing, setPullRefreshing] = useState(false)
+  const touchStartY = useRef(0)
+  const pullRef = useRef<HTMLDivElement>(null)
+  const handlePullStart = (e: any) => { touchStartY.current = e.touches[0].clientY }
+  const handlePullEnd = async (e: any) => {
+    const diff = e.changedTouches[0].clientY - touchStartY.current
+    if (diff > 100 && window.scrollY === 0 && !pullRefreshing) {
+      setPullRefreshing(true)
+      await loadData()
+      setPullRefreshing(false)
+    }
+  }
+
   const loadData = async () => {
     setLoading(true)
     try {
@@ -1282,7 +1296,8 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100 relative overflow-hidden">
+    <div className="flex h-screen bg-gray-100 relative overflow-hidden" onTouchStart={handlePullStart} onTouchEnd={handlePullEnd}>
+      {pullRefreshing && <div className="fixed top-0 left-0 right-0 z-[9999] flex justify-center py-2 bg-[#abdee6]"><div className="animate-spin text-xl">🔄</div></div>}
       {/* Sidebar */}
       <div 
   className={(mobileMenuOpen ? "translate-x-0" : "-translate-x-full") + ` md:translate-x-0 fixed z-40 top-0 left-0 h-full ${sidebarExpanded ? 'w-56' : 'w-16'} flex flex-col shadow-xl transition-all duration-300`} 

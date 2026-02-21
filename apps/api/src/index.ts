@@ -2914,6 +2914,23 @@ app.put('/api/maintenance/:id', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to update maintenance record' }) }
 })
 
+
+// ============== FLEET - PROCHAINES RÉSERVATIONS ==============
+app.get("/api/fleet/:id/upcoming-bookings", async (req, res) => {
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: {
+        fleetVehicleId: req.params.id,
+        status: { in: ["CONFIRMED", "CHECKED_IN"] },
+        startDate: { gte: new Date() }
+      },
+      orderBy: { startDate: "asc" },
+      take: 5,
+      select: { id: true, startDate: true, endDate: true, status: true, customer: { select: { firstName: true, lastName: true } } }
+    })
+    res.json(bookings)
+  } catch (e: any) { res.status(500).json({ error: e.message }) }
+})
 // ============== SPARE PARTS ==============
 
 
@@ -4939,6 +4956,21 @@ app.post('/api/bookings/:id/cancel-checkin', async (req, res) => {
           ...(switchToMaintenance && maintenanceNote ? { maintenanceNotes: maintenanceNote } : {})
         }
       })
+      // Auto-créer tâche maintenance si passage en maintenance
+      if (switchToMaintenance) {
+        await prisma.maintenanceRecord.create({
+          data: {
+            fleetId: booking.fleetVehicleId,
+            type: 'REPAIR',
+            description: 'Annulation check-in: ' + (maintenanceNote || reason || 'Problème signalé'),
+            mileage: booking.fleetVehicle?.currentMileage || 0,
+            status: 'SCHEDULED',
+            priority: 'HIGH',
+            scheduledDate: new Date()
+          }
+        })
+        console.log('Auto-maintenance created from cancel-checkin for fleet', booking.fleetVehicleId)
+      }
     }
     
     // 3. Cancel the contract if exists

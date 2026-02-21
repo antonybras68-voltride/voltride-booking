@@ -2931,6 +2931,94 @@ app.get("/api/fleet/:id/upcoming-bookings", async (req, res) => {
     res.json(bookings)
   } catch (e: any) { res.status(500).json({ error: e.message }) }
 })
+// ============== DOCUMENTOS ALQUILER ==============
+app.get('/api/rental-documents', async (req, res) => {
+  try {
+    const { brand, page, limit } = req.query
+    const take = parseInt(limit as string) || 20
+    const skip = ((parseInt(page as string) || 1) - 1) * take
+
+    const where: any = {
+      status: 'COMPLETED',
+      checkedOut: true
+    }
+    if (brand) {
+      where.items = { some: { vehicle: { category: { brand: brand } } } }
+    }
+
+    const [bookings, total] = await Promise.all([
+      prisma.booking.findMany({
+        where,
+        include: {
+          customer: true,
+          fleetVehicle: { include: { vehicle: { include: { category: true } } } },
+          items: { include: { vehicle: { include: { category: true } } } },
+          contracts: {
+            include: {
+              inspections: { include: { photos: true } }
+            }
+          }
+        },
+        orderBy: { endDate: 'desc' },
+        take,
+        skip
+      }),
+      prisma.booking.count({ where })
+    ])
+
+    const docs = bookings.map((b: any) => {
+      const contract = b.contracts?.[0]
+      const checkOutInsp = contract?.inspections?.find((i: any) => i.type === 'CHECK_OUT')
+      const checkInInsp = contract?.inspections?.find((i: any) => i.type === 'CHECK_IN')
+      const vehicle = b.fleetVehicle || {}
+      const vehName = vehicle?.vehicle?.name
+      const vehNumber = vehicle?.vehicleNumber || 'N/A'
+      const startDate = b.startDate ? new Date(b.startDate).toISOString().substring(0, 10) : 'N/A'
+      const endDate = b.endDate ? new Date(b.endDate).toISOString().substring(0, 10) : 'N/A'
+
+      return {
+        id: b.id,
+        folderName: startDate + '_' + vehNumber,
+        customer: b.customer ? (b.customer.firstName + ' ' + b.customer.lastName) : 'N/A',
+        vehicleNumber: vehNumber,
+        vehicleName: vehName,
+        brand: b.items?.[0]?.vehicle?.category?.brand || 'VOLTRIDE',
+        startDate,
+        endDate,
+        status: b.status,
+        identity: {
+          idCardFront: b.idCardUrl || null,
+          idCardBack: b.idCardVersoUrl || null,
+          licenseFront: b.licenseUrl || null,
+          licenseBack: b.licenseVersoUrl || null
+        },
+        contract: {
+          id: contract?.id || null,
+          contractNumber: contract?.contractNumber || null,
+          pdfUrl: contract?.contractPdfUrl || null
+        },
+        inspections: {
+          checkOut: checkOutInsp ? {
+            date: checkOutInsp.inspectedAt,
+            mileage: checkOutInsp.mileage,
+            photos: checkOutInsp.photos?.map((p: any) => ({ angle: p.angle, url: p.photoUrl })) || []
+          } : null,
+          checkIn: checkInInsp ? {
+            date: checkInInsp.inspectedAt,
+            mileage: checkInInsp.mileage,
+            photos: checkInInsp.photos?.map((p: any) => ({ angle: p.angle, url: p.photoUrl })) || []
+          } : null
+        },
+        totalAmount: b.totalAmount || 0
+      }
+    })
+
+    res.json({ docs, total, page: parseInt(page as string) || 1, totalPages: Math.ceil(total / take) })
+  } catch (e: any) {
+    console.error('Rental documents error:', e)
+    res.status(500).json({ error: e.message })
+  }
+})
 // ============== MAINTENANCE PDF ==============
 app.get('/api/fleet/:id/maintenance-pdf', async (req, res) => {
   try {
